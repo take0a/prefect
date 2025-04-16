@@ -1,33 +1,38 @@
 ---
-title: Run tasks in the background
-description: Learn to defer task runs to task workers running in a separate process.
+title: バックグラウンドでタスクを実行する
+description: 別のプロセスで実行されているタスク ワーカーにタスクの実行を延期する方法を学習します。
 ---
 
-## Introduction
-Prefect [tasks](/v3/develop/write-tasks) are atomic pieces of work that you might want to cache or retry. Tasks have `.submit()` and  `.map()` methods to [simplify concurrent execution](/v3/develop/task-runners) of a task in a given workflow.
+## はじめに
+Prefect [タスク](/v3/develop/write-tasks) は、キャッシュまたは再試行が必要なアトミックな作業単位です。
+タスクには、特定のワークフロー内でのタスクの[同時実行を簡素化](/v3/develop/task-runners) するための `.submit()` メソッドと `.map()` メソッドがあります。
 
 <Warning>
-If you need your task results available to the calling context, you probably want to use Prefect's [task runners](/v3/develop/task-runners) via `.submit()` or `.map()` instead.
+タスクの結果を呼び出しコンテキストで利用できるようにする必要がある場合は、代わりに `.submit()` または `.map()` を介して Prefect の [タスク ランナー](/v3/develop/task-runners) を使用することをお勧めします。
 </Warning>
 
-Sometimes your parent workflow doesn't need to resolve a task's result, it just needs the task to produce some side effect or save a result. In this case, the caller doesn't need to waste time blocking on the task's completion - instead, it can "background" that task run _somewhere else_.
+親ワークフローでは、タスクの結果を解決する必要がなく、タスクが何らかの副作用を生成したり、結果を保存したりするだけで済む場合があります。
+この場合、呼び出し元はタスクの完了をブロックして時間を無駄にする必要がなく、代わりにそのタスクを別の場所で「バックグラウンド」実行できます。
 
 
-Background tasks are built for this use case. They allow you to defer a task's execution to a [task worker](#task-workers) running in a separate process.
+バックグラウンドタスクは、このようなユースケースのために構築されています。
+バックグラウンドタスクを使用すると、別のプロセスで実行されている[タスクワーカー](#task-workers)にタスクの実行を延期できます。
 
 <Note>
-Prefect background tasks can be used in place of tools like [Celery](https://docs.celeryq.dev/en/stable/getting-started/introduction.html) and [RabbitMQ](https://www.rabbitmq.com/).
+Prefect バックグラウンド タスクは、[Celery](https://docs.celeryq.dev/en/stable/getting-started/introduction.html) や [RabbitMQ](https://www.rabbitmq.com/) などのツールの代わりに使用できます。
 </Note>
 
 
-### Motivating example
-Background tasks are useful for dispatching heavy and/or blocking work from your application or workflow to task workers on static infrastructure that you can scale or manage independently.
+### 動機付けの例
+バックグラウンドタスクは、アプリケーションやワークフローから、負荷の高い処理や処理をブロックする処理を、独立してスケーリングまたは管理できる静的インフラストラクチャ上のタスクワーカーにディスパッチするのに役立ちます。
 
-For example, imagine a web application that needs to trigger an agentic `while` loop for each request, which we encapsulate as a `@task`-decorated function named `run_agent_loop`. The task will likely run longer than an acceptable request-response cycle. You can `delay()` the expensive task from your endpoint to any task workers subscribed to `run_agent_loop`'s runs.
+例えば、リクエストごとにエージェント的な `while` ループをトリガーする必要があるウェブアプリケーションを想像してみてください。このループは、`@task` で修飾された `run_agent_loop` という関数としてカプセル化されています。
+このタスクは、許容されるリクエスト/レスポンスサイクルよりも長く実行される可能性があります。
+この負荷の高いタスクを、エンドポイントから `run_agent_loop` の実行をサブスクライブしている任意のタスクワーカーに `delay()` で遅延させることができます。
 
 
-### Define a background task
-Define a task by adding the `@task` decorator to a Python function (like any other Prefect task)
+### バックグラウンドタスクを定義する
+他のPrefectタスクと同様に、Python関数に`@task`デコレータを追加してタスクを定義します。
 
 ```python
 from prefect import task
@@ -37,11 +42,11 @@ def add(a: int, b: int):
     print(f"{a} + {b} = {a + b}")
 ```
 
-All task configuration options (e.g. `log_prints`, `retries`, `result_storage`) are supported.
+すべてのタスク構成オプション (例: `log_prints`、`retries`、`result_storage`) がサポートされています。
 
-### Background task methods
-- Use the `.delay()` method to background a run of this task
-- Use the `.serve()` method or `serve()` function to start a task worker and execute any waiting task runs
+### バックグラウンドタスクメソッド
+- `.delay()` メソッドを使用して、このタスクをバックグラウンドで実行します。
+- `.serve()` メソッドまたは `serve()` 関数を使用して、タスクワーカーを起動し、待機中のタスクを実行します。
 
 ```python
 add.delay(1, 2) # background one task run
@@ -50,7 +55,7 @@ add.delay(42, 100) # background another task run
 add.serve() # start a task worker and execute any waiting task runs
 ```
 
-The `.serve()` method starts a task worker subscribed to that specific task's runs.
+`.serve()` メソッドは、特定のタスクの実行をサブスクライブするタスク ワーカーを開始します。
 
 <Accordion title="Complete example with output">
 
@@ -84,11 +89,11 @@ add.serve() # start a task worker and execute any waiting task runs
 </Accordion>
 
 <Tip>
-`.delay()` has the same signature as the `@task` decorated function.
+`.delay()` は `@task` 装飾関数と同じシグネチャを持ちます。
 </Tip>
 
 
-Subscribe to many background tasks at once by providing the `serve()` utility more than one task:
+`serve()` ユーティリティに複数のタスクを提供することで、一度に多くのバックグラウンド タスクをサブスクライブできます:
 
 ```python
 from prefect import task
@@ -124,7 +129,8 @@ serve(add, multiply) # start a task worker listening for both `add` and `multipl
 22:27:10.871 | INFO    | prefect.task_worker - Subscribing to runs of task(s): add | multiply
 22:27:11.117 | INFO    | prefect.task_worker - Received task run: 0f955090-89ce-402a-a7bd-057c5cecb0ae - add
 22:27:11.124 | INFO    | prefect.task_worker - Submitting task run 'add' to engine.
-22:27:11.197 | INFO    | Task run 'add' - 1 + 4 = 5                                                                                      22:27:11.203 | INFO    | Task run 'add' - Finished in state Completed()
+22:27:11.197 | INFO    | Task run 'add' - 1 + 4 = 5
+22:27:11.203 | INFO    | Task run 'add' - Finished in state Completed()
 22:27:11.681 | INFO    | prefect.task_worker - Received task run: 8969b4d1-b662-452e-95e3-7536cb9f6a0d - multiply
 22:27:11.688 | INFO    | prefect.task_worker - Submitting task run 'multiply' to engine.
 22:27:11.724 | INFO    | prefect.task_worker - Received task run: 0bf25ec4-cdae-44bd-a2b6-1fa9cdd2ba4e - add
@@ -151,33 +157,36 @@ serve(add, multiply) # start a task worker listening for both `add` and `multipl
 </Accordion>
 
 <Tip>
-`.map()` accepts `Iterable[P.args]`, `Iterable[P.kwargs]` or `unmapped` inputs as well as the `deferred: bool` argument to control whether the tasks are run in the background (instead of the current context's task runner)
+`.map()` は、`Iterable[P.args]`、`Iterable[P.kwargs]`、または `unmapped` 入力に加えて、タスクをバックグラウンドで実行するかどうかを制御する `deferred: bool` 引数を受け入れます（現在のコンテキストのタスクランナーではなく）。
 </Tip>
 
 
-### Task workers
-Task workers are push-based consumers that subscribe to some set of tasks' runs. They can subscribe to many tasks, and be safely scaled horizontally (e.g. `replicas: 4`).
+### タスクワーカー
+タスクワーカーは、一連のタスクの実行をサブスクライブするプッシュベースのコンシューマーです。
+タスクワーカーは複数のタスクをサブスクライブでき、安全に水平方向にスケールできます（例：`replicas: 4`）。
 
-They generally do not need to be interacted with by Prefect users. Instead, they are started and stopped implicitly when you call `.serve()` or `serve()`.
+通常、Prefect ユーザーが操作する必要はありません。
+代わりに、`.serve()` または `serve()` を呼び出すと、暗黙的に開始および停止されます。
 
-## Tour of the Prefect background task examples repository
+## Prefect バックグラウンドタスクサンプルリポジトリの概要
 
-The [prefect-background-task-examples](https://github.com/PrefectHQ/prefect-background-task-examples) repository contains reference implementations of applications leveraging background tasks.
+[prefect-background-task-examples](https://github.com/PrefectHQ/prefect-background-task-examples) リポジトリには、バックグラウンドタスクを活用したアプリケーションのリファレンス実装が含まれています。
 
-Examples are generally Docker Compose setups that can be run locally with `docker compose up`. However, as shown above, you can decouple the task submission and execution however you like.
+サンプルは主に、`docker compose up` でローカルで実行できる Docker Compose セットアップです。
+ただし、上記のように、タスクの送信と実行を任意の方法で分離できます。
 
 <summary>Expand</summary>
 
-### Step 0: Clone the repository
+### ステップ0: リポジトリのクローンを作成する
 
 ```bash
 git clone https://github.com/PrefectHQ/prefect-background-task-examples.git
 cd prefect-background-task-examples
 ```
 
-### Step 1: Setup python environment
+### ステップ1: Python環境のセットアップ
 
-This example uses [uv](https://docs.astral.sh/uv/), which is generally recommended for python dependency management.
+この例では、Python の依存関係管理に一般的に推奨される [uv](https://docs.astral.sh/uv/) を使用しています。
 
 ```bash
 uv venv
@@ -199,11 +208,11 @@ source .venv/bin/activate
 uv pip install -U prefect
 ```
 
-### Step 2: Connect to Prefect Cloud or a self-hosted Prefect server
+### ステップ2: Prefect Cloudまたはセルフホスト型Prefectサーバーに接続する
 
-Use either Prefect Cloud or a self-hosted Prefect server for these examples.
+これらの例では、Prefect Cloud またはセルフホスト型の Prefect サーバーのいずれかを使用してください。
 
-You must have `PREFECT_API_URL` set to a Prefect server or Prefect Cloud API URL.
+`PREFECT_API_URL` を Prefect サーバーまたは Prefect Cloud API URL に設定する必要があります。
 
 <CodeGroup>
 
@@ -217,9 +226,10 @@ prefect config set PREFECT_API_URL=https://api.prefect.cloud/api/accounts/{accou
 
 </CodeGroup>
 
-If using Prefect Cloud, [make sure your `PREFECT_API_URL` and `PREFECT_API_KEY` are set](https://docs.prefect.io/v3/manage/cloud/connect-to-cloud).
+Prefect Cloud をご利用の場合は、[`PREFECT_API_URL` と `PREFECT_API_KEY` が設定されていることを確認してください](https://docs.prefect.io/v3/manage/cloud/connect-to-cloud)。
 
-Otherwise, start a Prefect server by running one of the following commands:
+それ以外の場合は、以下のいずれかのコマンドを実行して Prefect サーバーを起動してください:
+
 ```bash
 # blocks the current terminal session
 prefect server start
@@ -228,8 +238,8 @@ prefect server start
 docker run -d -p 4200:4200 --name prefect-server prefecthq/prefect:3-latest prefect server start --host 0.0.0.0
 ```
 
-### Step 3: Run the minimal local example
-In `minimal-local-setup` you'll find a minimal `fastapi` application using background tasks.
+### ステップ3: 最小限のローカルサンプルを実行する
+`minimal-local-setup` には、バックグラウンドタスクを使用する最小限の `fastapi` アプリケーションが含まれています。
 
 ```bash
 cd minimal-local-setup
@@ -243,13 +253,14 @@ cd minimal-local-setup
 └── test
 ```
 
-There's a `test` script that starts an ephemeral web server and task worker, then sends a demo request and cleans up.
+一時的な Web サーバーとタスク ワーカーを起動し、デモ要求を送信してクリーンアップする `test` スクリプトがあります。
 
 ```bash
 cat test
 ```
 
-If you're comfortable, permit and run the script.
+問題がなければ、スクリプトを許可して実行します。
+
 ```bash
 chmod +x test
 ./test
@@ -283,7 +294,7 @@ chmod +x test
 ```
 </Accordion>
 
-Otherwise feel free to run the commands at your own pace in separate terminals.
+それ以外の場合は、別のターミナルで自分のペースでコマンドを実行してください。
 
 ```bash
 # start the web server
@@ -296,17 +307,18 @@ uv run --with-requirements requirements.txt tasks.py
 ```
 
 <Warning>
-If you're already running a Prefect server, kill it for the following steps.
+すでにPrefectサーバーを実行している場合は、以下の手順を実行するためにサーバーを強制終了してください。
 
-For example, to kill the `prefect-server` container started in [Step 2](#step-2%3A-connect-to-prefect-cloud-or-a-self-hosted-prefect-server), run:
+例えば、[ステップ2](#step-2%3A-connect-to-prefect-cloud-or-a-self-hosted-prefect-server)で起動した`prefect-server`コンテナを強制終了するには、次のコマンドを実行します:
+
 ```bash
 docker kill prefect-server
 ```
 </Warning>
 
-### Step 4: Run the minimal docker compose example
+### ステップ 4: 最小限の docker compose サンプルを実行する
 
-In `minimal-docker-compose` you'll find a minimal `fastapi` application defined in `main.py` with a `/POST /job` endpoint that calls `process_job.delay(**job_request)`.
+`minimal-docker-compose` には、`main.py` で定義された最小限の `fastapi` アプリケーションがあります。このアプリケーションには、`process_job.delay(**job_request)` を呼び出す `/POST /job` エンドポイントが含まれています。
 
 ```bash
 cd minimal-docker-compose
@@ -321,16 +333,16 @@ cd minimal-docker-compose
 └── tasks.py
 ```
 
-Start the Docker Compose stack in detached mode:
+Docker Compose スタックをデタッチモードで起動します:
 
 ```bash
 docker compose up -d
 ```
 
 
-Navigate to [http://localhost:8000/docs](http://localhost:8000/docs) and try out the `/POST /job` endpoint.
+[http://localhost:8000/docs](http://localhost:8000/docs) にアクセスし、`/POST /job` エンドポイントを試してください。
 
-Watch the logs:
+ログを確認します:
 
 ```bash
 docker compose logs -f
@@ -381,11 +393,11 @@ tasks-1           | 05:26:32.782 | INFO    | Task run 'process_job' - Finished i
 
 </Accordion>
 
-### Step 5: Explore the rest of the examples
-Check out the rest of the examples in the repository, like [`fastapi-user-signups`](https://github.com/PrefectHQ/prefect-background-task-examples/tree/main/fastapi-user-signups) and [`chaos-duck`](https://github.com/PrefectHQ/prefect-background-task-examples/tree/main/chaos-duck).
+### ステップ5: 残りのサンプルを確認する
+リポジトリ内の[`fastapi-user-signups`](https://github.com/PrefectHQ/prefect-background-task-examples/tree/main/fastapi-user-signups)や[`chaos-duck`](https://github.com/PrefectHQ/prefect-background-task-examples/tree/main/chaos-duck)などの残りのサンプルを確認してください。
 
 
-## Next steps
+## 次のステップ
 
-- Learn about [Results](/v3/develop/results) to enable task [caching](/v3/develop/task-caching) and [idempotency](/v3/develop/transactions).
-- Explore a [complete example of a FastAPI application that backgrounds tasks](/v3/deploy/static-infrastructure-examples/background-tasks)
+- タスクの[キャッシュ](/v3/develop/task-caching)と[べき等性](/v3/develop/transactions)を有効にするには、[Results](/v3/develop/results)について学習します。
+- [タスクをバックグラウンドで実行するFastAPIアプリケーションの完全な例](/v3/deploy/static-infrastructure-examples/background-tasks)を確認します。

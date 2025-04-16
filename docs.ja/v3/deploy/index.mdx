@@ -1,25 +1,25 @@
 ---
 title: Deploy overview
 sidebarTitle: Overview
-description: Learn how to use deployments to trigger flow runs remotely.
+description: デプロイメントを使用してフロー実行をリモートでトリガーする方法を学習します。
 ---
 
-Deployments allow you to run flows on a [schedule](/v3/automate/add-schedules/) and trigger runs based on [events](/v3/automate/events/automations-triggers/).
+デプロイメントを使用すると、[スケジュール](/v3/automate/add-schedules/)に基づいてフローを実行したり、[イベント](/v3/automate/events/automations-triggers/)に基づいて実行をトリガーしたりできます。
 
-Deployments are server-side representations of flows.
-They store the crucial metadata for remote orchestration including when, where, and how a workflow should run.
+デプロイメントは、フローをサーバー側で表現したものです。
+ワークフローをいつ、どこで、どのように実行するかなど、リモートオーケストレーションに不可欠なメタデータを保存します。
 
-In addition to manually triggering and managing flow runs, deploying a flow exposes an API and UI that allow you to:
+フロー実行を手動でトリガーおよび管理するだけでなく、フローをデプロイすると、次の操作を実行できる API と UI が公開されます。
 
-- trigger new runs, [cancel active runs](/v3/develop/write-flows/#cancel-a-flow-run), pause scheduled runs, customize parameters, and more
-- remotely configure [schedules](/v3/automate/add-schedules) and [automation rules](/v3/automate/events/automations-triggers)
-- dynamically provision infrastructure with [work pools](/v3/deploy/infrastructure-concepts/work-pools) - optionally with templated guardrails for other users
+- 新しい実行のトリガー、[アクティブな実行のキャンセル](/v3/develop/write-flows/#cancel-a-flow-run)、スケジュール済みの実行の一時停止、パラメータのカスタマイズなど
+- [スケジュール](/v3/automate/add-schedules) と [自動化ルール](/v3/automate/events/automations-triggers) をリモートで設定
+- [ワークプール](/v3/deploy/infrastructure-concepts/work-pools) を使用してインフラストラクチャを動的にプロビジョニング - オプションで、他のユーザー向けのテンプレート化されたガードレールを使用
 
-## Create a deployment 
+## デプロイメントを作成する
 
-### Create a deployment with `serve`
+### `serve` を使ってデプロイメントを作成する
 
-This is the simplest way to get started with deployments:
+これがデプロイメントを始める最も簡単な方法です:
 
 ```python
 from prefect import flow
@@ -34,27 +34,27 @@ if __name__ == "__main__":
     my_flow.serve(name="my-first-deployment", cron="* * * * *")
 ```
 
-The `serve` method creates a deployment from your flow and immediately begins listening for scheduled runs to execute. 
-Providing `cron="* * * * *"` to `.serve` associates a schedule with your flow so it will run every minute of every day.
+`serve` メソッドはフローからデプロイメントを作成し、すぐにスケジュールされた実行のリッスンを開始します。
+`.serve` に `cron="* * * * *"` を指定すると、フローにスケジュールが関連付けられ、毎日毎分実行されます。
 
-For more configuration, you can create a deployment that uses a work pool.
-Reasons to create a work-pool based deployment include:
+より詳細な構成が必要な場合は、ワークプールを使用するデプロイメントを作成できます。
+ワークプールベースのデプロイメントを作成する理由としては、次のようなものが挙げられます。
 
-- Wanting to run your flow on dynamically provisioned infrastructure
-- Needing more control over the execution environment on a per-flow run basis
-- Creating an infrastructure template to use across deployments
+- 動的にプロビジョニングされたインフラストラクチャ上でフローを実行したい場合
+- フロー実行ごとに実行環境をより細かく制御する必要がある場合
+- デプロイメント全体で使用できるインフラストラクチャテンプレートを作成する場合
 
-Work pools are popular with data platform teams because they allow you to manage infrastructure configuration across an organization. 
+ワークプールは、組織全体のインフラストラクチャ構成を管理できるため、データプラットフォームチームに人気があります。
 
-### Create a work pool-based deployment
+### ワークプールベースのデプロイメントを作成する
 
-Prefect offers two options for creating work pool-based deployments: a Python script or a YAML file.
+Prefect では、ワークプールベースのデプロイメントを作成するために、Python スクリプトと YAML ファイルの 2 つのオプションが用意されています。
 
-### Create a deployment with `deploy`
+### `deploy` でデプロイメントを作成する
 
-To define a deployment with a Python script, use the `flow.deploy` method.
+Python スクリプトでデプロイメントを定義するには、`flow.deploy` メソッドを使用します。
 
-Here's an example of a deployment that uses a work pool and bakes the code into a Docker image.
+以下は、ワークプールを使用し、コードを Docker イメージにベイクするデプロイメントの例です。
 
 ```python
 from prefect import flow
@@ -74,145 +74,132 @@ if __name__ == "__main__":
     )
 ```
 
-To learn more about the `deploy` method, see [Deploy flows with Python](/v3/deploy/infrastructure-concepts/deploy-via-python).
+`deploy` メソッドの詳細については、[Python を使用したフローのデプロイ](/v3/deploy/infrastructure-concepts/deploy-via-python) を参照してください。
 
-### Create a deployment with a YAML file
+### YAML ファイルでデプロイメントを作成する
 
-If you'd rather take a declarative approach to defining a deployment through a YAML file, use a [`prefect.yaml` file](/v3/deploy/infrastructure-concepts/prefect-yaml).
+YAML ファイルを使って宣言的なアプローチでデプロイメントを定義したい場合は、[`prefect.yaml` ファイル](/v3/deploy/infrastructure-concepts/prefect-yaml) を使用してください。
 
-Prefect provides an interactive CLI that walks you through creating a `prefect.yaml` file:
+Prefect は、`prefect.yaml` ファイルの作成手順を案内する対話型 CLI を提供しています。
 
 ```bash
 prefect deploy
 ```
 
-The result is a `prefect.yaml` file for deployment creation. 
-The file contains `build`, `push`, and `pull` steps for building a Docker image, pushing code to a Docker registry, and pulling code at runtime.
-Learn more about creating deployments with a YAML file in [Define deployments with YAML](/v3/deploy/infrastructure-concepts/prefect-yaml).
+結果として、デプロイメント作成用の `prefect.yaml` ファイルが作成されます。
+このファイルには、Docker イメージのビルド、Docker レジストリへのコードのプッシュ、実行時のコードのプルを行うための `build`、`push`、`pull` ステップが含まれています。
+YAML ファイルを使用したデプロイメントの作成の詳細については、[YAML を使用したデプロイメントの定義](/v3/deploy/infrastructure-concepts/prefect-yaml) を参照してください。
 
-Prefect also provides [CI/CD options](/v3/deploy/infrastructure-concepts/deploy-ci-cd) for automatically creating YAML-based deployments. 
+Prefect は、YAML ベースのデプロイメントを自動的に作成するための [CI/CD オプション](/v3/deploy/infrastructure-concepts/deploy-ci-cd) も提供しています。
 
-### Create a deployment with Terraform
+### Terraform でデプロイメントを作成する
 
 import { TF } from "/snippets/resource-management/terraform.mdx"
 import { deployments } from "/snippets/resource-management/vars.mdx"
 
 <TF name="deployments" href={deployments.tf} />
 
-### Create a deployment with the API
+### APIを使用してデプロイメントを作成する
 
 import { API } from "/snippets/resource-management/api.mdx"
 
 <API name="deployments" href={deployments.api} />
 
-### Work pools
+### ワークプール
 
-[Work pools](/v3/deploy/infrastructure-concepts/work-pools/) allow you to switch between different types of infrastructure and to create a template for deployments. 
-Data platform teams find work pools especially useful for managing infrastructure configuration across teams of data professionals.
+[ワークプール](/v3/deploy/infrastructure-concepts/work-pools/)を使用すると、異なるタイプのインフラストラクチャを切り替えたり、デプロイメント用のテンプレートを作成したりできます。
+データプラットフォームチームにとって、ワークプールはデータプロフェッショナルのチーム間でインフラストラクチャ構成を管理するのに特に便利です。
 
-Common work pool types include [Docker](/v3/deploy/infrastructure-examples/docker), [Kubernetes](/v3/deploy/infrastructure-examples/kubernetes), and serverless options such as [AWS ECS](/integrations/prefect-aws/ecs_guide#ecs-worker-guide), [Azure ACI](/integrations/prefect-azure/aci_worker), [GCP Vertex AI](/integrations/prefect-gcp/index#run-flows-on-google-cloud-run-or-vertex-ai), or [GCP Google Cloud Run](/integrations/prefect-gcp/gcp-worker-guide). 
+一般的な作業プールの種類には、[Docker](/v3/deploy/infrastructure-examples/docker)、[Kubernetes](/v3/deploy/infrastructure-examples/kubernetes)、および [AWS ECS](/integrations/prefect-aws/ecs_guide#ecs-worker-guide)、[Azure ACI](/integrations/prefect-azure/aci_worker)、[GCP Vertex AI](/integrations/prefect-gcp/index#run-flows-on-google-cloud-run-or-vertex-ai)、[GCP Google Cloud Run](/integrations/prefect-gcp/gcp-worker-guide) などのサーバーレス オプションがあります。
 
-### Work pool-based deployment requirements
+### ワークプールベースのデプロイメント要件
 
-Deployments created through the Python SDK that use a work pool require a `name`. 
-This value becomes the deployment name.
-A `work_pool_name` is also required.
+Python SDK で作成され、ワー​​クプールを使用するデプロイメントには、`name` が必要です。
+この値がデプロイメント名になります。
+`work_pool_name` も必須です。
 
-Your flow code location can be specified in a few ways:
+フローコードの場所は、いくつかの方法で指定できます。
 
-1. Bake it into your Docker image (for work-pools that use Docker images). 
-    As shown in the example above,Prefect facilitates this as the default method for deployments created with the Python SDK. 
-    This method requires that you specify the `image` argument in the `deploy` method.
-2. Call `from_source` on a flow and specify one of the following:  
-    1. the git-based cloud provider location (for example, GitHub) 
-    2. the cloud provider storage location (for example, AWS S3)
-    3. the local path (an option for Process work pools)
+1. Docker イメージにベイクする（Docker イメージを使用するワークプールの場合）。
+上記の例に示すように、Prefect は Python SDK で作成されたデプロイメントのデフォルトの方法としてこれをサポートしています。
+この方法では、`deploy` メソッドで `image` 引数を指定する必要があります。
+2. フローで `from_source` を呼び出し、次のいずれかを指定します。
+    1. Git ベースのクラウドプロバイダーの場所（例：GitHub）
+    2. クラウドプロバイダーのストレージの場所（例：AWS S3）
+    3. ローカルパス（プロセスワークプールのオプション）
 
-See the [Retrieve code from storage docs](/v3/deploy/infrastructure-concepts/store-flow-code) for more information about flow code storage.
+フローコードのストレージの詳細については、[ストレージからのコードの取得に関するドキュメント](/v3/deploy/infrastructure-concepts/store-flow-code)を参照してください。
 
-## Run a deployment
+## デプロイメントを実行する
 
-You can set a deployment to run manually, on a [schedule](/v3/automate/add-schedules#schedule-flow-runs), or [in response to an event](/v3/automate/events/automations-triggers).
+デプロイメントは、手動で実行したり、[スケジュール](/v3/automate/add-schedules#schedule-flow-runs)、または[イベントに応じて](/v3/automate/events/automations-triggers)実行するように設定できます。
 
-The deployment inherits the infrastructure configuration from the work pool, and can be overridden at deployment creation time or at runtime. 
+デプロイメントはワークプールからインフラストラクチャ構成を継承し、デプロイメント作成時または実行時にオーバーライドできます。
 
-### Work pools that require a worker
+### ワーカーを必要とするワークプール
 
-To run a deployment with a hybrid work pool type, such as Docker or Kubernetes, you must start a [worker](/v3/deploy/infrastructure-concepts/workers/).
+Docker や Kubernetes などのハイブリッドワークプールタイプでデプロイメントを実行するには、[ワーカー](/v3/deploy/infrastructure-concepts/workers/) を起動する必要があります。
 
-A [Prefect worker](/v3/deploy/infrastructure-concepts/workers) is a client-side process that checks for scheduled flow runs in the work pool that it matches.
-When a scheduled run is found, the worker kicks off a flow run on the specified infrastructure and monitors the flow run until completion.
+[Prefect ワーカー](/v3/deploy/infrastructure-concepts/workers) は、一致するワークプール内でスケジュールされたフロー実行をチェックするクライアント側プロセスです。
+スケジュールされた実行が見つかると、ワーカーは指定されたインフラストラクチャ上でフロー実行を開始し、完了するまでフロー実行を監視します。
 
-### Work pools that don't require a worker
+### ワーカーを必要としないワークプール
 
-Prefect Cloud offers [push work pools](/v3/deploy/infrastructure-examples/serverless#automatically-create-a-new-push-work-pool-and-provision-infrastructure) that run flows on Cloud provider serverless infrastructure without a worker and that can be set up quickly. 
+Prefect Cloud は、ワーカーなしでクラウドプロバイダーのサーバーレスインフラストラクチャ上でフローを実行し、迅速にセットアップできる [push ワークプール](/v3/deploy/infrastructure-examples/serverless#automatically-create-a-new-push-work-pool-and-provision-infrastructure) を提供しています。
 
-Prefect Cloud also provides the option to run work flows on Prefect's infrastructure through a [Prefect Managed work pool](/v3/deploy/infrastructure-examples/managed).
+Prefect Cloud は、[Prefect マネージドワークプール](/v3/deploy/infrastructure-examples/managed) を通じて Prefect のインフラストラクチャ上でワークフローを実行するオプションも提供しています。
 
-These work pool types do not require a worker to run flows. 
-However, they do require sharing a bit more information with Prefect, which can be a challenge depending upon the security posture of your organization.
+これらのワークプールタイプでは、フローを実行するためにワーカーは必要ありません。
+ただし、Prefect との情報共有が多少必要になるため、組織のセキュリティ体制によっては困難となる可能性があります。
 
-## Static vs. dynamic infrastructure
+## 静的インフラストラクチャ vs. 動的インフラストラクチャ
 
-You can deploy your flows on long-lived static infrastructure or on dynamic infrastructure that is able to scale horizontally.
-The best choice depends on your use case.
+フローは、長期にわたって利用可能な静的インフラストラクチャ、または水平方向にスケール可能な動的インフラストラクチャにデプロイできます。
+最適な選択はユースケースによって異なります。
 
-### Static infrastructure
+### 静的インフラストラクチャ
 
-When you have several flows running regularly, [the `serve` method](/v3/deploy/run-flows-in-local-processes#serve-a-flow)
-of the `Flow` object or [the `serve` utility](/v3/develop/write-flows/#serving-multiple-flows-at-once)
-is a great option for managing multiple flows simultaneously.
+複数のフローを定期的に実行する場合、`Flow` オブジェクトの [`serve` メソッド](/v3/deploy/run-flows-in-local-processes#serve-a-flow) または [`serve` ユーティリティ](/v3/develop/write-flows/#serving-multiple-flows-at-once) は、複数のフローを同時に管理するのに最適なオプションです。
 
-Once you have authored your flow and decided on its deployment settings, run this long-running
-process in a location of your choosing.
-The process stays in communication with the Prefect API, monitoring for work and submitting each run
-within an individual subprocess.
-Because runs are submitted to subprocesses, any external infrastructure configuration
-must be set up beforehand and kept associated with this process.
+フローを作成し、デプロイ設定を決定したら、この長時間実行プロセスを任意の場所で実行します。
+プロセスは Prefect API と通信を続け、作業を監視し、各実行を個別のサブプロセスに送信します。
+実行はサブプロセスに送信されるため、外部インフラストラクチャの設定は事前に設定し、このプロセスと関連付けておく必要があります。
 
-Benefits to this approach include:
+このアプローチの利点は次のとおりです:
 
-- Users are in complete control of their infrastructure, and anywhere the "serve" Python process can
-run is a suitable deployment environment.
-- It is simple to reason about.
-- Creating deployments requires a minimal set of decisions.
-- Iteration speed is fast.
+- ユーザーはインフラストラクチャを完全に制御でき、「serve」Python プロセスが実行できる場所であればどこでも適切なデプロイ環境となります。
+- 理解が容易です。
+- デプロイメントの作成には最小限の決定が必要です。
+- 反復処理の速度が速いです。
 
-### Dynamic infrastructure
+### 動的インフラストラクチャ
 
-Consider running flows on dynamically provisioned infrastructure with work pools when you have any of the following:
+以下のいずれかの条件に該当する場合は、ワークプールを使用して動的にプロビジョニングされたインフラストラクチャ上でフローを実行することを検討してください。
 
-- Flows that require expensive infrastructure due to the long-running process.
-- Flows with heterogeneous infrastructure needs across runs.
-- Large volumes of deployments.
-- An internal organizational structure in which deployment authors or runners are not members of
-the team that manages the infrastructure.
+- 長時間実行されるプロセスのために、高価なインフラストラクチャを必要とするフロー。
+- 実行ごとに異なるインフラストラクチャを必要とするフロー。
+- 大量のデプロイメント。
+- デプロイメントの作成者または実行者が、インフラストラクチャを管理するチームのメンバーではないという社内組織構造。
 
-[Work pools](/v3/deploy/infrastructure-concepts/work-pools/) allow Prefect to exercise greater control
-of the infrastructure on which flows run.
-Options for [serverless work pools](/v3/deploy/infrastructure-examples/serverless/) allow you to
-scale to zero when workflows aren't running.
-Prefect even provides you with the ability to
-[provision cloud infrastructure via a single CLI command](/v3/deploy/infrastructure-examples/serverless/#automatically-create-a-new-push-work-pool-and-provision-infrastructure),
-if you use a Prefect Cloud push work pool option.
+[ワークプール](/v3/deploy/infrastructure-concepts/work-pools/)を使用すると、Prefect はフローが実行されるインフラストラクチャをより詳細に制御できます。
+[サーバーレス ワークプール](/v3/deploy/infrastructure-examples/serverless/) のオプションを使用すると、ワークフローが実行されていないときにスケールをゼロにすることができます。
+Prefect Cloud プッシュワークプールオプションを使用すると、Prefect では [単一の CLI コマンドでクラウドインフラストラクチャをプロビジョニング](/v3/deploy/infrastructure-examples/serverless/#automatically-create-a-new-push-work-pool-and-provision-infrastructure) する機能も提供されます。
 
-With work pools:
+ワークプールを使用する場合：
 
-- You can configure and monitor infrastructure configuration within the Prefect UI.
-- Infrastructure is ephemeral and dynamically provisioned.
-- Prefect is more infrastructure-aware and collects more event data from your infrastructure by default.
-- Highly decoupled setups are possible.
+- Prefect UI 内でインフラストラクチャ構成を設定および監視できます。
+- インフラストラクチャは一時的なものであり、動的にプロビジョニングされます。
+- Prefect はインフラストラクチャをより意識しており、デフォルトでインフラストラクチャからより多くのイベントデータを収集します。
+- 高度に分離されたセットアップが可能です。
 
 <Note>
-**You don't have to commit to one approach**
+**1つのアプローチに固執する必要はありません**
 
-You can mix and match approaches based on the needs of each flow. You can also change the
-deployment approach for a particular flow as its needs evolve.
-For example, you might use workers for your expensive machine learning pipelines,
-but use the serve mechanics for smaller, more frequent file-processing pipelines.
+各フローのニーズに合わせて、複数のアプローチを組み合わせることができます。また、特定のフローのニーズの変化に合わせて、デプロイ方法を変更することも可能です。
+例えば、高負荷な機械学習パイプラインにはワーカーを使用し、小規模で頻度の高いファイル処理パイプラインにはサーブメカニズムを使用するといった具合です。
 </Note>
 
-## Deployment schema
+## デプロイメントスキーマ
 
 {/* pmd-metadata: notest */}
 ```python
@@ -252,23 +239,21 @@ class Deployment:
     pull_steps: Optional[Dict[str, Any]] = None
 ```
 
-All methods for creating Prefect deployments are interfaces for populating this schema.
+Prefect デプロイメントを作成するためのすべてのメソッドは、このスキーマを入力するためのインターフェイスです。
 
-### Required defining data
+### 必要な定義データ
 
-Deployments require a `name` and a reference to an underlying `Flow`.
+デプロイメントには、「名前」と基盤となる「フロー」への参照が必要です。
 
-The deployment name is not required to be unique across all deployments, but is required to be unique
-for a given flow ID. This means you will often see references to the deployment's unique identifying name
-`{FLOW_NAME}/{DEPLOYMENT_NAME}`.
+デプロイメント名はすべてのデプロイメント間で一意である必要はありませんが、特定のフローIDに対しては一意である必要があります。つまり、デプロイメントの一意の識別名である「{FLOW_NAME}/{DEPLOYMENT_NAME}」への参照が頻繁に使用されます。
 
-For example, to trigger a deployment run from the Prefect CLI:
+例えば、Prefect CLI からデプロイメントの実行をトリガーするには、次のようにします:
 
 ```bash
 prefect deployment run my-first-flow/my-first-deployment
 ```
 
-or from the Python SDK with [`run_deployment`](https://reference.prefect.io/prefect/deployments/flow_runs/#prefect.deployments.flow_runs.run_deployment):
+または Python SDK から [`run_deployment`](https://reference.prefect.io/prefect/deployments/flow_runs/#prefect.deployments.flow_runs.run_deployment) を使用して実行することもできます。
 
 {/* pmd-metadata: notest */}
 ```python
@@ -283,71 +268,60 @@ run_deployment(
 )
 ```
 
-The other two fields are:
+他の 2 つのフィールドは次のとおりです。
 
-- **`path`**: think of the path as the runtime working directory for the flow.
-For example, if a deployment references a workflow defined within a Docker image, the `path` is the
-absolute path to the parent directory where that workflow will run anytime the deployment is triggered.
-This interpretation is more subtle in the case of flows defined in remote filesystems.
-- **`entrypoint`**: the entrypoint of a deployment is a relative reference to a function decorated as a
-flow that exists on some filesystem. It is always specified relative to the `path`.
-Entrypoints use Python's standard path-to-object syntax
-(for example, `path/to/file.py:function_name` or simply `path:object`).
+- **`path`**: パスはフローの実行時作業ディレクトリと考えてください。
+たとえば、デプロイメントが Docker イメージ内に定義されたワークフローを参照する場合、`path` は、デプロイメントがトリガーされるたびにそのワークフローが実行される親ディレクトリへの絶対パスです。
+この解釈は、リモートファイルシステムで定義されたフローの場合はより複雑です。
+- **`entrypoint`**: デプロイメントのエントリポイントは、あるファイルシステム上に存在するフローとしてデコレートされた関数への相対参照です。常に `path` を基準として指定されます。
+エントリポイントは、Python の標準的なオブジェクトへのパス構文を使用します (例: `path/to/file.py:function_name` または単に `path:object`)。
 
-The entrypoint must reference the same flow as the flow ID.
+エントリポイントは、フロー ID と同じフローを参照する必要があります。
 
-Prefect requires that deployments reference flows defined _within Python files_.
-Flows defined within interactive REPLs or notebooks cannot currently be deployed as such.
-They are still valid flows that will be monitored by the API and observable in the UI whenever they are run,
-but Prefect cannot trigger them.
+Prefect では、デプロイメントが _Python ファイル内_ で定義されたフローを参照する必要があります。
+対話型 REPL またはノートブック内で定義されたフローは、現在、そのままではデプロイできません。
+これらは有効なフローであり、実行されるたびに API によって監視され、UI で確認できますが、Prefect ではトリガーできません。
 
 <Note>
-**Deployments do not contain code definitions**
+**デプロイメントにはコード定義は含まれません**
 
-Deployment metadata references code that exists in potentially diverse locations within your environment.
-This separation means that your flow code stays within your storage and execution
-infrastructure.
+デプロイメントメタデータは、環境内のさまざまな場所に存在する可能性のあるコードを参照します。
+この分離により、フローコードはストレージと実行インフラストラクチャ内に留まります。
 
-This is key to the Prefect hybrid model: there's a boundary between your proprietary assets,
-such as your flow code, and the Prefect backend (including [Prefect Cloud](/v3/manage/cloud/)).
+これがPrefectハイブリッドモデルの鍵となります。フローコードなどの独自の資産とPrefectバックエンド（[Prefect Cloud](/v3/manage/cloud/)を含む）の間には境界が存在します。
 </Note>
 
-### Workflow scheduling and parametrization
+### ワークフローのスケジューリングとパラメータ化
 
-One of the primary motivations for creating deployments of flows is to remotely _schedule_ and _trigger_ them.
-Just as you can call flows as functions with different input values, deployments can be triggered or
-scheduled with different values through parameters.
+フローのデプロイメントを作成する主な目的の一つは、リモートからフローをスケジュールおよびトリガーすることです。
+フローを異なる入力値を持つ関数として呼び出すことができるのと同様に、デプロイメントもパラメータを介して異なる値でトリガーまたはスケジュールできます。
 
-These are the fields to capture the required metadata for those actions:
+これらのアクションに必要なメタデータを取得するためのフィールドは次のとおりです。
 
-- **`schedules`**: a list of [schedule objects](/v3/automate/add-schedules/).
-Most of the convenient interfaces for creating deployments allow users to avoid creating this object themselves.
-For example, when [updating a deployment schedule in the UI](/v3/automate/add-schedules/#creating-schedules-through-the-ui)
-basic information such as a cron string or interval is all that's required.
-- **`parameter_openapi_schema`**: an [OpenAPI compatible schema](https://swagger.io/specification/) that defines
-the types and defaults for the flow's parameters.
-This is used by the UI and the backend to expose options for creating manual runs as well as type validation.
-- **`parameters`**: default values of flow parameters that this deployment will pass on each run.
-These can be overwritten through a trigger or when manually creating a custom run.
-- **`enforce_parameter_schema`**: a boolean flag that determines whether the API should validate the parameters
-passed to a flow run against the schema defined by `parameter_openapi_schema`.
+- **`schedules`**: [スケジュールオブジェクト](/v3/automate/add-schedules/)のリスト。
+デプロイメントを作成するための便利なインターフェースのほとんどでは、ユーザーがこのオブジェクトを自分で作成する必要はありません。
+例えば、[UIでデプロイメントスケジュールを更新する](/v3/automate/add-schedules/#creating-schedules-through-the-ui)場合、必要なのはcron文字列や間隔などの基本情報だけです。
+- **`parameter_openapi_schema`**: フローのパラメータの型とデフォルトを定義する [OpenAPI 互換スキーマ](https://swagger.io/specification/)。
+UI とバックエンドで、手動実行の作成オプションと型検証オプションを公開するために使用されます。
+- **`parameters`**: このデプロイメントが各実行時に渡すフローパラメータのデフォルト値。
+これらはトリガーまたはカスタム実行を手動で作成するときに上書きできます。
+- **`enforce_parameter_schema`**: フロー実行に渡されるパラメータを、`parameter_openapi_schema` で定義されたスキーマに対して API が検証するかどうかを決定するブール型フラグ。
 
 <Tip>
-**Scheduling is asynchronous and decoupled**
+**スケジュールは非同期かつ分離されています**
 
-Pausing a schedule, updating your deployment, and other actions reset your auto-scheduled runs.
+スケジュールの一時停止、デプロイメントの更新、その他のアクションを実行すると、自動スケジュール実行がリセットされます。
 </Tip>
 
-### Concurrency limiting
+### 同時実行の制限
 
-Prefect supports managing concurrency at the deployment level to enable limiting how many runs of a
-deployment can be active at once. To enable this behavior, deployments have the following fields:
+Prefect はデプロイメントレベルでの同時実行の管理をサポートしており、デプロイメントの実行を一度にアクティブにできる回数を制限できます。この動作を有効にするために、デプロイメントには以下のフィールドがあります。
 
-- **`concurrency_limit`**: an integer that sets the maximum number of concurrent flow runs for the deployment.
-- **`collision_strategy`**: configure the behavior for runs once the concurrency limit is reached.
-Falls back to `ENQUEUE` if unset.
-  - `ENQUEUE`: new runs transition to `AwaitingConcurrencySlot` and execute as slots become available.
-  - `CANCEL_NEW`: new runs are canceled until a slot becomes available.
+- **`concurrency_limit`**: デプロイメントで同時に実行できるフローの最大数を設定する整数。
+- **`collision_strategy`**: 同時実行の制限に達した場合の実行の動作を設定します。
+未設定の場合は `ENQUEUE` にフォールバックします。
+- `ENQUEUE`: 新しい実行は `AwaitingConcurrencySlot` に遷移し、スロットが利用可能になると実行されます。
+- `CANCEL_NEW`: スロットが利用可能になるまで、新しい実行はキャンセルされます。
 
 <CodeGroup>
 
@@ -389,48 +363,38 @@ my_flow.serve(
 
 </CodeGroup>
 
-### Metadata for bookkeeping
+### 記録用メタデータ
 
-Important information for the versions, descriptions, and tags fields:
+バージョン、説明、タグの各フィールドに関する重要な情報:
 
-- **`version`**: versions are always set by the client and can be any arbitrary string.
-We recommend tightly coupling this field on your deployments to your software development lifecycle.
-For example if you leverage `git` to manage code changes, use either a tag or commit hash in this field.
-If you don't set a value for the version, Prefect will compute a hash.
-- **`description`**: provide reference material such as intended use and parameter documentation.
-Markdown is accepted. The docstring of your flow function is the default value.
-- **`tags`**: group related work together across a diverse set of objects.
-Tags set on a deployment are inherited by that deployment's flow runs. Filter, customize views, and
-searching by tag.
+- **`version`**: バージョンは常にクライアントによって設定され、任意の文字列を指定できます。
+デプロイメントのこのフィールドは、ソフトウェア開発ライフサイクルと密接に連携させることをお勧めします。
+例えば、`git` を使用してコード変更を管理する場合は、このフィールドにタグまたはコミットハッシュのいずれかを使用します。
+バージョンの値を指定しない場合は、Prefect がハッシュを計算します。
+- **`description`**: 使用目的やパラメータの説明などの参考資料を提供します。
+Markdown が使用できます。フロー関数の docstring がデフォルト値です。
+- **`tags`**: 多様なオブジェクトセットにまたがる関連する作業をグループ化します。
+デプロイメントに設定されたタグは、そのデプロイメントのフロー実行に継承されます。タグによるフィルタリング、ビューのカスタマイズ、検索が可能です。
 
 <Tip>
-**Everything has a version**
+**すべてにバージョンがあります**
 
-Deployments have a version attached; and flows and tasks also have
-versions set through their respective decorators. These versions are sent to the API
-anytime the flow or task runs, allowing you to audit changes.
+デプロイメントにはバージョンが付与されます。フローとタスクにも、それぞれのデコレータを通じてバージョンが設定されます。
+これらのバージョンは、フローまたはタスクが実行されるたびにAPIに送信され、変更内容を監査できます。
 </Tip>
 
-### Worker-specific fields
+### ワーカー固有のフィールド
 
-[Work pools](/v3/deploy/infrastructure-concepts/work-pools/) and [workers](/v3/deploy/infrastructure-concepts/workers/) are an advanced deployment pattern that
-allow you to dynamically provision infrastructure for each flow run.
-The work pool job template interface allows users to create and govern opinionated interfaces
-to their workflow infrastructure.
-To do this, a deployment using workers needs the following fields:
+[ワークプール](/v3/deploy/infrastructure-concepts/work-pools/) と [ワーカー](/v3/deploy/infrastructure-concepts/workers/) は、フロー実行ごとにインフラストラクチャを動的にプロビジョニングできる高度なデプロイメントパターンです。
+ワークプールのジョブテンプレートインターフェースを使用すると、ユーザーはワークフローインフラストラクチャへの独自のインターフェースを作成および管理できます。
+そのためには、ワーカーを使用するデプロイメントに以下のフィールドが必要です。
 
-- **`work_pool_name`**: the name of the work pool this deployment is associated with.
-Work pool types mirror infrastructure types, which means this field impacts the options available
-for the other fields.
-- **`work_queue_name`**: if you are using work queues to either manage priority or concurrency, you can
-associate a deployment with a specific queue within a work pool using this field.
-- **`job_variables`**: this field allows deployment authors to customize whatever infrastructure
-options have been exposed on this work pool.
-This field is often used for Docker image names, Kubernetes annotations and limits,
-and environment variables.
-- **`pull_steps`**: a JSON description of steps that retrieves flow code or
-configuration, and prepares the runtime environment for workflow execution.
+- **`work_pool_name`**: このデプロイメントが関連付けられているワークプールの名前。
+ワークプールのタイプはインフラストラクチャのタイプを反映しているため、このフィールドは他のフィールドで使用できるオプションに影響します。
+- **`work_queue_name`**: 優先度または同時実行性を管理するためにワークキューを使用している場合、このフィールドを使用して、デプロイメントをワークプール内の特定のキューに関連付けることができます。
+- **`job_variables`**: このフィールドを使用すると、デプロイメント作成者は、このワークプールで公開されているインフラストラクチャオプションをカスタマイズできます。
+このフィールドは、Docker イメージ名、Kubernetes のアノテーションと制限、環境変数などによく使用されます。
+- **`pull_steps`**: フローコードまたは構成を取得し、ワークフロー実行用のランタイム環境を準備するステップの JSON 記述。
 
-Pull steps allow users to highly decouple their workflow architecture.
-For example, a common use of pull steps is to dynamically pull code from remote filesystems such as
-GitHub with each run of their deployment.
+プルステップを使用すると、ユーザーはワークフローアーキテクチャを高度に分離できます。
+例えば、プルステップの一般的な用途は、デプロイメントの実行ごとに GitHub などのリモートファイルシステムからコードを動的にプルすることです。

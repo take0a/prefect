@@ -1,36 +1,41 @@
 ---
-title: Introduction
+title: 導入
 sidebarTitle: Welcome
 icon: hand-wave
 ---
-Prefect is an open-source orchestration engine that turns your Python functions into production-grade data pipelines with minimal friction. You can build and schedule workflows in pure Python—no DSLs or complex config files—and run them anywhere. Prefect handles the heavy lifting for you out of the box: automatic state tracking, failure handling, real-time monitoring, and more.
+Prefect は、Python 関数を最小限の手間で本番環境レベルのデータパイプラインに変換するオープンソースのオーケストレーションエンジンです。
+DSL や複雑な設定ファイルを必要とせず、純粋な Python でワークフローを構築・スケジュールし、どこでも実行できます。
+Prefect は、自動状態追跡、障害処理、リアルタイム監視など、面倒な処理をすぐに実行できます。
 
-**Why?** In 2018, we set out to solve a problem many of you know too well: orchestrating data workflows shouldn’t feel like pulling teeth (e.g. writing DAGs in YAML). Prefect was designed to handle the challenges that tools like Airflow struggled with: dynamic workflows, modern infrastructure, and the complexity of today’s data pipelines. Since then, it’s become a go-to tool for everyone from startups to Fortune 100 companies. Prefect helps you ship production-ready workflows without the headaches, so you can spend more time building and less time debugging.
+**なぜ？** 2018年、私たちは多くの方がよくご存知の問題を解決することを目指しました。それは、データワークフローのオーケストレーションを、歯を抜くような苦労（例えば、YAMLでDAGを記述すること）ではなく、もっと簡単に実現したいというものです。
+Prefectは、Airflowのようなツールが対応に苦戦していた課題、つまり動的なワークフロー、最新のインフラストラクチャ、そして今日のデータパイプラインの複雑さに対処するために設計されました。
+それ以来、Prefectはスタートアップ企業からFortune 100企業まで、あらゆる企業にとって頼りになるツールとなっています。
+Prefectは、手間をかけずに本番環境対応のワークフローをリリースできるよう支援します。そのため、デバッグに費やす時間を減らし、構築に多くの時間を費やすことができます。
 
-### Essential features
+### 必須機能
 <div className="t-full-width">
 | Feature | Description |
 |---------|-------------|
-| **Pythonic** | Write workflows in native Python—no DSLs, YAML, or special syntax. Full support for type hints, async/await, and modern Python patterns. Use your existing IDE, debugger, and testing tools. |
-| **State & Recovery** | Robust state management that tracks success, failure, and retry states. Resume interrupted runs from the last successful point, and cache expensive computations to avoid unnecessary rework. |
-| **Flexible & Portable Execution** | Start flows locally for easy development, then deploy them anywhere—from a single process to containers, Kubernetes, or cloud services—without locking into a vendor. Infrastructure is defined by code (not just configuration), making it simple to scale or change environments. |
-| **Event-Driven** | Trigger flows on schedules, external events, or via API. Pause flows for human intervention or approval. Chain flows together based on states, conditions, or any custom logic. |
-| **Dynamic Runtime** | Create tasks dynamically at runtime based on actual data or conditions. Easily spawn new tasks and branches during execution for truly data-driven workflows. |
-| **Modern UI** | Real-time flow run monitoring, logging, and state tracking through an intuitive interface. View dependency graphs and DAGs automatically—just run your flow and open the UI. |
-| **CI/CD First** | Test and simulate flows like normal Python code, giving you fast feedback during development. Integrate seamlessly into your existing CI/CD pipeline for automated testing and deployment. |
+| **Pythonic** | ネイティブPythonでワークフローを記述できます。DSL、YAML、特別な構文は不要です。型ヒント、async/await、最新のPythonパターンをフルサポート。既存のIDE、デバッガー、テストツールもご利用いただけます。 |
+| **State & Recovery** | 成功、失敗、再試行の状態を追跡する堅牢な状態管理。中断された実行を最後の成功時点から再開し、高負荷な計算をキャッシュすることで不要な再処理を回避します。 |
+| **Flexible & Portable Execution** | フローをローカルで開始することで開発が容易になり、単一のプロセスからコンテナ、Kubernetes、クラウドサービスまで、ベンダーに縛られることなく、どこにでもデプロイできます。インフラストラクチャは構成だけでなくコードによって定義されるため、環境の拡張や変更も容易です。 |
+| **Event-Driven** | スケジュール、外部イベント、またはAPI経由でフローをトリガーします。フローを一時停止して、人による介入や承認を求めます。状態、条件、または任意のカスタムロジックに基づいてフローを連結します。 |
+| **Dynamic Runtime** | 実際のデータや条件に基づいて、実行時に動的にタスクを作成します。実行中に新しいタスクやブランチを簡単に生成し、真のデータ駆動型ワークフローを実現します。 |
+| **Modern UI** | 直感的なインターフェースで、フロー実行のリアルタイム監視、ログ記録、状態追跡が可能です。フローを実行してUIを開くだけで、依存関係グラフとDAGを自動的に表示できます。 |
+| **CI/CD First** | 通常のPythonコードと同様にフローをテストおよびシミュレートし、開発中に迅速なフィードバックを提供します。既存のCI/CDパイプラインにシームレスに統合し、テストとデプロイメントを自動化します。 |
 </div>
 
 ## Get started
 
 <CardGroup cols={3}>
   <Card title="Quickstart" icon="play" href="/v3/get-started/quickstart">
-    Quickly create your first deployable workflow tracked by Prefect.
+    Prefect によって追跡される最初の展開可能なワークフローをすばやく作成します。
   </Card>
   <Card title="Prefect Cloud" icon="cloud" href="/v3/manage/cloud/index">
-    Supercharge Prefect with enhanced governance, security, and performance capabilities.
+    強化されたガバナンス、セキュリティ、パフォーマンス機能により Prefect を強化します。
   </Card>
   <Card title="Upgrade to Prefect 3" icon="sparkles" href="/v3/resources/upgrade-to-prefect-3">
-    Upgrade from Prefect 2 to Prefect 3 to get the latest features and performance enhancements.
+    最新の機能とパフォーマンス強化を得るには、Prefect 2 から Prefect 3 にアップグレードしてください。
   </Card>
 </CardGroup>
 
@@ -38,22 +43,22 @@ Prefect is an open-source orchestration engine that turns your Python functions 
 
 <CardGroup cols={3}>
   <Card title="Schedule a flow" icon="calendar" href="/v3/tutorials/schedule">
-    Get a workflow off of your laptop and run it on remote infrastructure on a schedule.
+    ノートパソコンからワークフローを取得し、スケジュールに従ってリモート インフラストラクチャで実行します。
   </Card>
   <Card title="Build a data pipeline" icon="database" href="/v3/tutorials/pipelines">
-    Build a resilient and performant data pipeline with Prefect's primitives.
+    Prefect のプリミティブを使用して、回復力とパフォーマンスに優れたデータ パイプラインを構築します。
   </Card>
   <Card title="Extract data from websites" icon="globe" href="/v3/tutorials/scraping">
-    Handle data dependencies and use pagination to efficiently extract data from websites.
+    データの依存関係を処理し、ページネーションを使用して Web サイトからデータを効率的に抽出します。
   </Card>
   <Card title="Set up a platform" icon="code" href="/v3/tutorials/platform">
-    Use Prefect as a platform for your teams' data pipelines.
+    Prefect をチームのデータ パイプラインのプラットフォームとして使用します。
   </Card>
   <Card title="Debug a data pipeline" icon="bug" href="/v3/tutorials/debug">
-    Learn how to debug flow runs that fail, crash, or hang.
+    失敗、クラッシュ、またはハングしたフロー実行をデバッグする方法を学習します。
   </Card>
   <Card title="Send alerts on failure" icon="bell" href="/v3/tutorials/alerts">
-    Set up an email alert to notify your teams about failures.
+    失敗についてチームに通知するための電子メールアラートを設定します。
   </Card>
 </CardGroup>
 
@@ -61,31 +66,31 @@ Prefect is an open-source orchestration engine that turns your Python functions 
 
 <CardGroup cols={3}>
   <Card title="Develop" icon="code" href="/v3/develop/write-flows">
-    Write, run, configure, and observe workflows and their tasks, results, artifacts, and more.
+    ワークフローとそのタスク、結果、成果物などを記述、実行、構成、監視します。
   </Card>
   <Card title="Deploy" icon="rocket" href="/v3/deploy/index">
-    Run workflows in local processes or deploy them to dynamically provisioned infrastructure.
+    ワークフローをローカル プロセスで実行するか、動的にプロビジョニングされたインフラストラクチャにデプロイします。
   </Card>
   <Card title="Automate" icon="robot" href="/v3/automate/events/automations-triggers">
-    Enable workflows to react to their environment with events, automations, and webhooks.
+    ワークフローがイベント、自動化、Webhook を使用して環境に反応できるようにします。
   </Card>
 </CardGroup>
 
-## Mini-history of Prefect
+## Prefect のミニ歴史
 
-**2018-2021:** Our story begins in 2018, when we introduced the idea that workflow orchestration should be Pythonic.
-Inspired by distributed tools like Dask, and building on the experience of our founder, Jeremiah Lowin (a PMC member of Apache Airflow), we created a system based on simple Python decorators for tasks and flows.
-But what made Prefect truly special was our introduction of task mapping—a feature that would later become foundational to our dynamic execution capabilities (and eventually imitated by other orchestration SDKs).
-
-
-**2022:** Prefect's 2.0 release became inevitable once we recognized that real-world workflows don't always fit into neat, pre-planned DAG structures: sometimes you need to update a job definition based on runtime information, for example by skipping a branch of your workflow.
-So we removed a key constraint that workflows be written explicitly as DAGs, fully embracing native Python control flow—if/else conditionals, while loops-everything that makes Python…Python.
+**2018-2021:** 私たちの物語は、ワークフローオーケストレーションはPythonで実現すべきというアイデアを発表した2018年に始まります。
+Daskのような分散ツールにインスピレーションを受け、創業者であるJeremiah Lowin（Apache AirflowのPMCメンバー）の経験を基に、タスクとフロー用のシンプルなPythonデコレータをベースとしたシステムを開発しました。
+しかし、Prefectを真に特別なものにしたのは、タスクマッピングの導入でした。これは後に動的実行機能の基盤となる機能であり、最終的には他のオーケストレーションSDKにも模倣されました。
 
 
-**2023-present:** With our release of Prefect 3.0 in 2024, we fully embraced these dynamic patterns by open-sourcing our events and automations backend, allowing users to natively represent event-driven workflows and gain additional observability into their execution.
-Prefect 3.0 also unlocked a leap forward in performance, improving the runtime overhead of Prefect by up to 90%.
+**2022:** 現実世界のワークフローは、必ずしも整然とした事前に計画されたDAG構造に収まるわけではないことを認識した時点で、Prefect 2.0のリリースは必然となりました。例えば、ワークフローの分岐をスキップするなど、実行時情報に基づいてジョブ定義を更新する必要がある場合があります。
+そこで、ワークフローをDAGとして明示的に記述するという重要な制約を取り除き、if/else条件文やwhileループなど、PythonをPythonたらしめるあらゆる要素をネイティブのPython制御フローとして完全に採用しました。
 
 
-## Join our community
+**2023-present:** 2024年にリリースされたPrefect 3.0では、イベントと自動化のバックエンドをオープンソース化することで、これらの動的パターンを全面的に採用しました。これにより、ユーザーはイベントドリブンのワークフローをネイティブに表現し、その実行に対する可観測性を高めることができます。
+Prefect 3.0はパフォーマンスの飛躍的な向上も実現し、Prefectの実行時オーバーヘッドを最大90%改善しました。
 
-Join Prefect's vibrant [community of nearly 30,000 engineers](/contribute/index/) to learn with others and share your knowledge!
+
+## コミュニティに参加する
+
+Prefect の活気ある [約 30,000 人のエンジニアのコミュニティ](/contribute/index/) に参加して、他のユーザーと学び、知識を共有しましょう。

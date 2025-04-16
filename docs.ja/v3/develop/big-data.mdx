@@ -1,28 +1,24 @@
 ---
-title: Process big data
-description: Guidance for using Prefect with big data.
+title: ビッグデータを処理する
+description: ビッグデータで Prefect を使用するためのガイダンス。
 ---
 
-This page explores methods to reduce the processing time or memory utilization of Prefect
-workflows that process large volumes of data, without editing your Python code. There
-are several options to optimize your Python code for speed, memory, compute, and
-storage, including:
+このページでは、Python コードを編集することなく、大量のデータを処理する Prefect ワークフローの処理時間やメモリ使用量を削減する方法について説明します。
+速度、メモリ、コンピューティング、ストレージの面で Python コードを最適化するには、次のようないくつかの方法があります。
 
-1. Removing task introspection with `quote` to save time running your code.
-1. Writing task results to cloud storage such as S3 using a block to save memory.
-1. Saving data to disk within a flow rather than using results.
-1. Caching task results to save time and compute.
-1. Compressing results written to disk to save space.
-1. Using a [task runner](/v3/develop/task-runners/) for parallelizable
-operations to save time.
+1. `quote` を使用してタスクのイントロスペクションを削除し、コード実行時間を節約する。
+1. ブロックを使用してタスクの結果を S3 などのクラウドストレージに書き込むことでメモリを節約する。
+1. 結果を使用するのではなく、フロー内でデータをディスクに保存する。
+1. タスクの結果をキャッシュして、時間とコンピューティングを節約する。
+1. ディスクに書き込まれた結果を圧縮してスペースを節約する。
+1. 並列処理可能な操作に [タスクランナー](/v3/develop/task-runners/) を使用して時間を節約する。
 
-### Remove task introspection
+### タスクのイントロスペクションの削除
 
-When a task is called from a flow, each argument is introspected by Prefect, by default.
-To speed up your flow runs, disable this behavior for a task by wrapping the argument using
-[`quote`](https://docs.prefect.io/latest/api-ref/prefect/utilities/annotations/#prefect.utilities.annotations.quote).
+フローからタスクが呼び出されると、デフォルトでは各引数がPrefectによってイントロスペクションされます。
+フローの実行速度を上げるには、引数を[`quote`](https://docs.prefect.io/latest/api-ref/prefect/utilities/annotations/#prefect.utilities.annotations.quote)で囲むことで、タスクのこの動作を無効にしてください。
 
-Here's a basic example that extracts and transforms some New York taxi data:
+以下は、ニューヨークのタクシーデータを抽出して変換する基本的な例です:
 
 ```python et_quote.py
 from prefect import task, flow
@@ -58,25 +54,22 @@ if __name__ == "__main__":
     et(url)
 ```
 
-Introspection can take significant time when the object being passed is a large collection,
-such as dictionary or DataFrame, where each element needs to be visited.
+渡されるオブジェクトが辞書やデータフレームなどの大規模なコレクションで、各要素を参照する必要がある場合、イントロスペクションにかなりの時間がかかることがあります。
 
-Using `quote` reduces execution time at the expense of disabling task dependency
-tracking for the wrapped object.
+`quote` を使用すると、ラップされたオブジェクトのタスク依存関係の追跡が無効になりますが、実行時間が短縮されます。
 
-### Write task results to cloud storage
+### タスク結果をクラウドストレージに書き込む
 
-By default, the results of task runs are stored in memory in your execution environment.
-This behavior makes flow runs fast for small data, but can be problematic for large data.
-Save memory by writing results to disk.
+デフォルトでは、タスク実行の結果は実行環境のメモリに保存されます。
+この動作により、小さなデータの場合はフロー実行が高速になりますが、大きなデータの場合は問題が発生する可能性があります。
+結果をディスクに書き込むことでメモリを節約できます。
 
-In production, it's recommended to write results to a cloud provider storage such as AWS S3.
-Prefect lets you use a storage block from a Prefect Cloud integration library such as
-[prefect-aws](/integrations/prefect-aws) to save your configuration information.
-Learn more about [blocks](/v3/develop/blocks/).
+本番環境では、AWS S3 などのクラウドプロバイダーのストレージに結果を書き込むことをお勧めします。
+Prefect では、[prefect-aws](/integrations/prefect-aws) などの Prefect Cloud 統合ライブラリのストレージブロックを使用して設定情報を保存できます。
+[blocks](/v3/develop/blocks/) の詳細については、こちらをご覧ください。
 
-Install the relevant library, register the block type with the server, and create your block.
-Then reference the block in your flow:
+関連するライブラリをインストールし、サーバーにブロックタイプを登録して、ブロックを作成します。
+次に、フロー内でブロックを参照します。
 
 ```python
 ...
@@ -89,9 +82,9 @@ my_s3_block = S3Bucket.load("MY_BLOCK_NAME")
 
 ```
 
-The result of the task writes to S3, rather than stored in memory.
+タスクの結果はメモリに保存されるのではなく、S3 に書き込まれます。
 
-### Save data to disk within a flow
+### フロー内でデータをディスクに保存する
 
 {/*
 <!-- vale off -->
@@ -103,31 +96,28 @@ Prefect has integration libraries for each of the major cloud providers.
 <!-- vale on -->
 */}
 
-Each library contains blocks with methods that make it convenient to read and write data to and
-from cloud object storage.
+各ライブラリには、クラウド オブジェクト ストレージとの間でデータの読み取りと書き込みを便利にするメソッドを備えたブロックが含まれています。
 
 
-### Cache task results
+### タスク結果をキャッシュする
 
-Caching saves you time and compute by allowing you to avoid re-running tasks unnecessarily.
-Note that caching requires task result persistence.
-Learn more about [caching](/v3/develop/task-caching/).
+キャッシュを使用すると、タスクの不要な再実行を回避できるため、時間とコンピューティングリソースを節約できます。
+キャッシュにはタスク結果の永続性が必要であることに注意してください。
+[キャッシュ](/v3/develop/task-caching/) の詳細については、こちらをご覧ください。
 
-### Compress results written to disk
+### ディスクに書き込まれる結果を圧縮する
 
-If you're using Prefect's task result persistence, save disk space by compressing the results.
-Specify the result type with `compressed/` prefixed:
+Prefect のタスク結果の永続化を使用している場合は、結果を圧縮してディスク容量を節約できます。
+結果の型を `compressed/` プレフィックスを付けて指定します:
 
 ```python
 @task(result_serializer="compressed/json")
 ```
 
-Note that compression takes time to compress and decompress the data.
+圧縮にはデータの圧縮と解凍に時間がかかることに注意してください。
 
-### Use a task runner for parallelizable operations
+### 並列処理にはタスクランナーを使用する
 
-Prefect's task runners allow you to use the Dask and Ray Python libraries to run tasks in parallel,
-distributed across multiple machines.
-This can save you time and compute when operating on large data structures.
-See the [guide to working with Dask and Ray Task Runners](/v3/develop/task-runners/)
-for details.
+Prefect のタスクランナーでは、Dask および Ray Python ライブラリを使用して、複数のマシンに分散したタスクを並列実行できます。
+これにより、大規模なデータ構造を処理する際の時間と計算コストを節約できます。
+詳細については、[Dask および Ray タスクランナーの使用ガイド](/v3/develop/task-runners/) をご覧ください。

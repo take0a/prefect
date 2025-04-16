@@ -1,14 +1,14 @@
 ---
-title: Write and run flows
-description: Learn the basics of defining and running flows.
+title: フローを書いて実行する
+description: フローの定義と実行の基本を学びます。
 ---
 
-**A flow is a container for workflow logic.**
+**フローはワークフローロジックのコンテナです。**
 
-Flows are defined as Python functions.
-They can take inputs, perform work, and return a result.
+フローはPython関数として定義されます。
+フローは入力を受け取り、処理を実行し、結果を返すことができます。
 
-Make any Python function a Prefect flow by adding the `@flow` decorator to it:
+任意のPython関数に `@flow` デコレータを追加すると、Prefectフローになります。
 
 ```python
 from prefect import flow
@@ -22,18 +22,18 @@ if __name__ == "__main__":
     print(my_flow())
 ```
 
-When a function becomes a flow, it gains the following capabilities:
+関数がフローになると、以下の機能が追加されます:
 
-- Metadata about [flow runs](#flow-runs), such as run time and final state, is automatically tracked.
-- Each [state](/v3/develop/manage-states/) the flow enters is recorded. This
-allows you to observe and [act upon each transition](/v3/develop/manage-states#execute-code-on-state-changes) in the flow's execution.
-- Input arguments can be type validated as workflow [parameters](/#specify-flow-parameters).
-- [Retries](#retries) can be performed on failure, with configurable delay and retry limits.
-- Timeouts can be enforced to prevent unintentional, long-running workflows.
-- A flow can be [deployed](/v3/deploy/infrastructure-examples/docker/), which exposes an API for interacting with it remotely.
+- 実行時間や最終状態など、[フロー実行](#flow-runs)に関するメタデータが自動的に追跡されます。
+- フローが遷移する各[状態](/v3/develop/manage-states/)が記録されます。
+これにより、フロー実行中の[各遷移](/v3/develop/manage-states#execute-code-on-state-changes)を監視し、それに応じて対処できます。
+- 入力引数は、ワークフロー[パラメータ](/#specify-flow-parameters)として型検証できます。
+- 失敗時に[再試行](#retries)を実行できます。遅延と再試行回数の制限は設定可能です。
+- 意図しない長時間実行のワークフローを防ぐために、タイムアウトを設定できます。
+- フローは[デプロイ](/v3/deploy/infrastructure-examples/docker/)することができ、リモートから操作するためのAPIが公開されます。
 
-Flows are uniquely identified by name.
-You can provide a `name` parameter value for the flow:
+フローは名前で一意に識別されます。
+フローには`name`パラメータ値を指定できます。
 
 ```python
 from prefect import flow
@@ -43,24 +43,24 @@ def my_flow() -> str:
     return "Hello, world!"
 ```
 
-If you don't provide a name, Prefect uses the flow function name.
+名前を指定しない場合は、Prefect はフロー関数名を使用します。
 
-## Run flows
+## フローの実行
 
-A _flow run_ is a single execution of a flow.
+_フロー実行_ とは、フローを1回実行することです。
 
-Create a flow run by calling a flow by its function name, just as you would a normal Python function.
+通常の Python 関数と同様に、関数名でフローを呼び出すことで、フロー実行を作成できます。
 
-You can also create a flow run by:
+フロー実行は、次の方法でも作成できます:
 
-- Using external schedulers such as `cron` to invoke a flow function
-- Triggering a [deployment](/v3/deploy/infrastructure-examples/docker/) of that flow in Prefect Cloud or self-hosted Prefect server
-- Starting a flow run for the deployment through a schedule, the Prefect UI, or the Prefect API
+- `cron` などの外部スケジューラを使用してフロー関数を呼び出す
+- Prefect Cloud またはセルフホスト型 Prefect サーバーで、そのフローの [デプロイメント](/v3/deploy/infrastructure-examples/docker/) をトリガーする
+- スケジュール、Prefect UI、または Prefect API を使用して、デプロイメントのフロー実行を開始する
 
-However you run your flow, Prefect monitors the flow run, capturing its state for observability.
-You can log a [variety of metadata](/v3/develop/logging) about flow runs for monitoring, troubleshooting, and auditing purposes.
+フローの実行方法に関係なく、Prefect はフロー実行を監視し、その状態をキャプチャして観測できるようにします。
+監視、トラブルシューティング、監査のために、フロー実行に関する [さまざまなメタデータ](/v3/develop/logging) をログに記録できます。
 
-The example below uses the HTTPX client library to fetch statistics about the [main Prefect repository](https://github.com/PrefectHQ/prefect).
+以下の例では、HTTPX クライアント ライブラリを使用して、[メインの Prefect リポジトリ](https://github.com/PrefectHQ/prefect) に関する統計情報を取得します。
 
 ```python repo_info.py
 import httpx
@@ -82,7 +82,7 @@ if __name__ == "__main__":
     get_repo_info()
 ```
 
-Running this script results in the following output:
+このスクリプトを実行すると、次の出力が生成されます:
 
 ```bash
 12:47:42.792 | INFO | prefect.engine - Created flow run 'ludicrous-warthog' for flow 'get-repo-info'
@@ -92,17 +92,17 @@ Forks 🍴 : 1245
 12:47:45.008 | INFO | Flow run 'ludicrous-warthog' - Finished in state Completed()
 ```
 
-## Specify flow parameters
+## フローパラメータの指定
 
-As with any Python function, you can pass arguments to a flow, including both positional and keyword arguments.
-These arguments defined on your flow function are called [parameters](/v3/develop/write-flows/#parameters).
-They are stored by the Prefect orchestration engine on the flow run object.
+他の Python 関数と同様に、位置引数とキーワード引数の両方を含む引数をフローに渡すことができます。
+フロー関数で定義されたこれらの引数は [parameters](/v3/develop/write-flows/#parameters) と呼ばれます。
+これらは、Prefect オーケストレーションエンジンによってフロー実行オブジェクトに保存されます。
 
-Prefect automatically performs type conversion of inputs using any provided type hints.
-Type hints provide a simple way to enforce typing on your flow parameters and can be customized with [Pydantic](https://pydantic-docs.helpmanual.io/).
-Prefect supports any Pydantic model as a type hint for a flow parameter.
+Prefect は、提供された型ヒントを使用して、入力の型変換を自動的に実行します。
+型ヒントは、フローパラメータの型指定を強制する簡単な方法を提供し、[Pydantic](https://pydantic-docs.helpmanual.io/) を使用してカスタマイズできます。
+Prefect は、フローパラメータの型ヒントとして、任意の Pydantic モデルをサポートしています。
 
-For example, to automatically convert an argument to a datetime object:
+たとえば、引数を datetime オブジェクトに自動的に変換するには、次のようにします。
 
 ```python
 from datetime import (
@@ -125,7 +125,7 @@ if __name__ == "__main__":
     what_day_is_it("2021-01-01T02:00:19.180906")
 ```
 
-When you run this flow, you'll see the following output:
+このフローを実行すると、次の出力が表示されます:
 
 ```bash
 It was Friday on 2021-01-01T02:00:19.180906
@@ -133,7 +133,8 @@ It was Friday on 2021-01-01T02:00:19.180906
 
 ---
 
-You may pass also a `dict` representation of a `BaseModel` parameter and it will be coerced:
+`BaseModel` パラメータの `dict` 表現を渡すこともできます。これは強制変換されます:
+
 ```python
 from prefect import flow
 from pydantic import BaseModel
@@ -152,32 +153,33 @@ if __name__ == "__main__":
         model={"a": "WRONG", "b": "fine"}
     )
 ```
-This flow run will fail with the following error:
+
+このフローの実行は次のエラーで失敗します:
+
 ```
 Flow run received invalid parameters:
  - model.a: Input should be a valid integer, unable to parse string as an integer
 ```
 
-Note that you can provide parameter values to a flow through the API using a [deployment](/v3/deploy/).
-Flow run parameters sent to the API are coerced to the appropriate types when possible.
+なお、[デプロイメント](/v3/deploy/)を使用して、API経由でフローにパラメータ値を提供することができます。
+APIに送信されるフロー実行パラメータは、可能な場合は適切な型に強制変換されます。
 
 <Warning>
-**Prefect API requires keyword arguments**
+**Prefect API にはキーワード引数が必要です**
 
-When creating flow runs from the Prefect API, you must specify parameter names when overriding defaults.
-The values passed cannot be positional.
+Prefect API からフロー実行を作成する際、デフォルトをオーバーライドする際にはパラメータ名を指定する必要があります。
+渡す値は位置指定できません。
 </Warning>
 
-Parameters are validated before a flow is run.
-If a flow run for a deployment receives invalid parameters, it moves from a `Pending` state to a `Failed` state without entering a `Running` state.
+パラメータはフロー実行前に検証されます。デプロイメントのフロー実行で無効なパラメータが受け取られた場合、フローは「実行中」状態にならずに「保留中」状態から「失敗」状態に移行します。
 
 <Note>
-Flow run parameters cannot exceed `512kb` in size.
+フロー実行パラメータのサイズは `512kb` を超えることはできません。
 </Note>
 
-## Compose flows
+## フローを作成する
 
-Flows can call [tasks](/v3/develop/write-tasks), the most granular units of orchestrated work in Prefect workflows:
+フローは、Prefect ワークフローにおけるオーケストレーションされた作業の最も細かい単位である [タスク](/v3/develop/write-tasks) を呼び出すことができます。
 
 ```python
 from prefect import flow, task
@@ -193,46 +195,46 @@ def hello_world(name="world"):
     print_hello(name)
 ```
 
-A single flow function can contain all of your workflow's code.
-However, if you put all of your workflow logic in a single flow function and any line of code fails, the entire flow fails and must be retried from the beginning.
-The more granular you make your workflows, the better they can recover from failures and the easier you can find and fix issues.
+単一のフロー関数にワークフローのコード全体を含めることができます。
+ただし、すべてのワークフローロジックを単一のフロー関数にまとめた場合、コードの1行でもエラーが発生するとフロー全体が失敗し、最初からやり直す必要があります。
+ワークフローを細かく分割すればするほど、エラーからの回復性が向上し、問題の発見と修正が容易になります。
 
-Prefect tasks are well suited for parallel or distributed execution using distributed computation frameworks such as Dask or Ray.
+Prefectタスクは、DaskやRayなどの分散コンピューティングフレームワークを使用した並列実行や分散実行に適しています。
 
-### Nest flows
+### フローのネスト
 
-In addition to calling tasks from a flow, flows can also call other flows.
-A nested flow run is created when a flow function is called by another flow.
-When one flow calls another, the calling flow run is the "parent" run, the called flow run is the "child" run.
+フローは、あるフローからタスクを呼び出すだけでなく、他のフローを呼び出すこともできます。
+ネストされたフロー実行は、あるフロー関数が別のフローから呼び出されたときに作成されます。
+あるフローが別のフローを呼び出す場合、呼び出し側のフロー実行が「親」実行、呼び出された側のフロー実行が「子」実行となります。
 
-In the UI, each child flow run is linked to its parent and can be individually observed.
+UI では、各子フロー実行は親フロー実行にリンクされており、個別に監視できます。
 
-For most purposes, nested flow runs behave just like unnested flow runs.
-There is a full representation of the nested flow run in the backend as if it had been called separately.
-Nested flow runs differ from normal flow runs in that they resolve any passed task futures into data.
-This allows data to be passed from the parent flow run to a nested flow run easily.
+ほとんどの場合、ネストされたフロー実行は、ネストされていないフロー実行と同じように動作します。
 
-When a nested flow run starts, it creates a new [task runner](/v3/develop/task-runners/) for any tasks it contains.
-When the nested flow run completes, the task runner shuts down.
-Nested flow runs block execution of the parent flow run until completion.
-However, asynchronous nested flows can run concurrently with [AnyIO task groups](https://anyio.readthedocs.io/en/stable/tasks.html) or [asyncio.gather](https://docs.python.org/3/library/asyncio-task.html#id6).
+バックエンドでは、ネストされたフロー実行は、個別に呼び出された場合と同じように、完全に表示されます。
+ネストされたフロー実行は、渡されたタスクの Future をデータに解決するという点で、通常のフロー実行とは異なります。
+これにより、親フロー実行からネストされたフロー実行にデータを簡単に渡すことができます。
 
-The relationship between nested runs is recorded through a special task run in the parent flow run that represents the child flow run.
-The `state_details` field of the task run representing the child flow run includes a `child_flow_run_id`.
-The `state_details` field of the nested flow run includes a `parent_task_run_id`.
+ネストされたフロー実行が開始されると、含まれるすべてのタスクに対して新しい [タスクランナー](/v3/develop/task-runners/) が作成されます。
+ネストされたフロー実行が完了すると、タスクランナーはシャットダウンします。
+ネストされたフロー実行は、完了するまで親フロー実行をブロックします。
+ただし、非同期のネストされたフローは、[AnyIO タスクグループ](https://anyio.readthedocs.io/en/stable/tasks.html) または [asyncio.gather](https://docs.python.org/3/library/asyncio-task.html#id6) と同時に実行できます。
 
-You can define multiple flows within the same file.
-Whether running locally or through a [deployment](/v3/deploy/infrastructure-examples/docker/), you must indicate which flow is the entrypoint for a flow run.
+ネストされたフロー実行間の関係は、子フロー実行を表す親フロー実行内の特別なタスク実行を通じて記録されます。
+子フロー実行を表すタスク実行の `state_details` フィールドには `child_flow_run_id` が含まれます。
+ネストされたフロー実行の `state_details` フィールドには `parent_task_run_id` が含まれます。
+
+同じファイル内に複数のフローを定義できます。
+ローカルで実行する場合でも、[デプロイメント](/v3/deploy/infrastructure-examples/docker/)を介して実行する場合でも、どのフローがフロー実行のエントリポイントであるかを指定する必要があります。
 
 <Warning>
-**Cancel nested flow runs**
+**ネストされたフロー実行をキャンセルする**
 
-A nested flow run cannot be cancelled without cancelling its parent flow run.
-If you need to be able to cancel a nested flow run independent of its parent flow run, we recommend deploying it separately and starting it with
-the [run_deployment](https://reference.prefect.io/prefect/deployments/flow_runs/#prefect.deployments.flow_runs.run_deployment) method.
+ネストされたフロー実行は、親フロー実行をキャンセルしなければキャンセルできません。
+親フロー実行とは独立してネストされたフロー実行をキャンセルする必要がある場合は、ネストされたフロー実行を個別にデプロイし、[run_deployment](https://reference.prefect.io/prefect/deployments/flow_runs/#prefect.deployments.flow_runs.run_deployment) メソッドで開始することをお勧めします。
 </Warning>
 
-You can also define flows or tasks in separate modules and import them for use:
+フローやタスクを別のモジュールで定義し、インポートして使用することもできます:
 
 ```python
 from prefect import flow, task
@@ -243,7 +245,7 @@ def my_nested_flow(msg):
     print(f"Nestedflow says: {msg}")
 ```
 
-Here's a parent flow that imports and uses `my_nested_flow` as a nested flow:
+以下は、`my_nested_flow` をネストされたフローとしてインポートして使用する親フローです:
 
 ```python hello.py
 from prefect import flow, task
@@ -267,7 +269,7 @@ if __name__=="__main__":
     hello_world("Marvin")
 ```
 
-Running the `hello_world()` flow creates a flow run like this:
+`hello_world()` フローを実行すると、次のようなフロー実行が作成されます:
 
 ```bash
 08:24:06.617 | INFO    | prefect.engine - Created flow run 'sage-mongoose' for flow 'Hello Flow'
@@ -282,31 +284,29 @@ Nestedflow says: Hello Marvin!
 08:24:08.296 | INFO    | Flow run 'sage-mongoose' - Finished in state Completed()
 ```
 
-Here are some scenarios where you might want to define a nested flow rather than call tasks individually:
+タスクを個別に呼び出すのではなく、ネストされたフローを定義する方が適しているシナリオをいくつかご紹介します。
 
-- Observability: Nested flows, like any other flow run, have first-class observability within the Prefect UI and Prefect Cloud. You'll
-see nested flows' status in the **Runs** dashboard rather than having to dig down into the tasks within a specific flow run.
-See [Final state determination](#final-state-determination) for examples of using task state within flows.
-- Conditional flows: If you have a group of tasks that run only under certain conditions, you can group them within a nested flow and
-conditionally run the nested flow rather than each task individually.
-- Parameters: Flows have first-class support for parameterization, making it easy to run the same group of tasks in different use
-cases by simply passing different parameters to the nested flow in which they run.
-- Task runners: Nested flows enable you to specify the task runner used for tasks within the flow. For example, to optimize
-parallel execution of certain tasks with Dask, group them in a nested flow that uses the Dask task runner. You can use a different
-task runner for each nested flow.
+- 可観測性: ネストされたフローは、他のフロー実行と同様に、Prefect UI と Prefect Cloud 内で高度な可観測性を備えています。
+ネストされたフローのステータスは、特定のフロー実行内のタスクを詳細に確認しなくても、**Runs** ダッシュボードで確認できます。
+フロー内でタスク状態を使用する例については、[最終状態の決定](#final-state-determination) をご覧ください。
+- 条件付きフロー: 特定の条件下でのみ実行されるタスクのグループがある場合、それらをネストされたフロー内にグループ化し、各タスクを個別に実行するのではなく、ネストされたフロー全体を条件付きで実行できます。
+- パラメーター: フローはパラメーター化を高度にサポートしているため、タスクが実行されるネストされたフローに異なるパラメーターを渡すだけで、同じタスクグループを異なるユースケースで簡単に実行できます。
+- タスクランナー: ネストされたフローでは、フロー内のタスクに使用するタスクランナーを指定できます。
+たとえば、Dask を使用して特定のタスクの並列実行を最適化するには、それらのタスクを、Dask タスクランナーを使用するネストされたフローにグループ化します。
+ネストされたフローごとに異なるタスクランナーを使用できます。
 
-## Supported functions
+## サポートされている関数
 
-Almost any standard Python function can be turned into a Prefect flow by adding the `@flow` decorator.
-Flows are executed in the main thread by default to facilitate native Python debugging and profiling.
+ほぼすべての標準 Python 関数は、`@flow` デコレータを追加することで Prefect フローに変換できます。
+フローは、ネイティブ Python のデバッグとプロファイリングを容易にするため、デフォルトでメインスレッドで実行されます。
 
-As shown in the examples above, flows run synchronously by default.
+上記の例に示すように、フローはデフォルトで同期的に実行されます。
 
-### Asynchronous functions
+### 非同期関数
 
-Prefect also supports asynchronous execution.
-The resulting flows are coroutines that can be awaited or run concurrently, following [the standard rules of async Python](https://docs.python.org/3/library/asyncio-task.html).
-For example:
+Prefect は非同期実行もサポートしています。
+結果として得られるフローは、待機または並行実行が可能なコルーチンであり、[Python の非同期処理の標準ルール](https://docs.python.org/3/library/asyncio-task.html) に従っています。
+例:
 
 ```python
 import asyncio
@@ -336,10 +336,10 @@ if __name__ == "__main__":
     asyncio.run(async_flow())
 ```
 
-### Class methods
+### クラスメソッド
 
-Prefect supports synchronous and asynchronous class methods as flows, including instance methods, class methods, and static methods.
-For class methods and static methods, apply the appropriate method decorator _above_ the `@flow` decorator:
+Prefect は、インスタンスメソッド、クラスメソッド、静的メソッドを含む同期および非同期のクラスメソッドをフローとしてサポートします。
+クラスメソッドと静的メソッドの場合は、適切なメソッドデコレータを `@flow` デコレータの上に適用します。
 
 ```python
 from prefect import flow
@@ -369,12 +369,12 @@ MyClass.my_class_method()
 MyClass.my_static_method()
 ```
 
-### Generators
+### ジェネレータ
 
-Prefect supports synchronous and asynchronous generators as flows.
-The flow is considered to be `Running` as long as the generator is yielding values.
-When the generator is exhausted, the flow is considered `Completed`.
-Any values yielded by the generator can be consumed by other flows or tasks.
+Prefect は、同期ジェネレータと非同期ジェネレータをフローとしてサポートします。
+ジェネレータが値を生成している間、フローは「実行中」とみなされます。
+ジェネレータが値を使い果たすと、フローは「完了」とみなされます。
+ジェネレータによって生成された値は、他のフローやタスクで使用できます。
 
 ```python
 from prefect import flow
@@ -395,13 +395,13 @@ for val in generator():
 ```
 
 <Warning>
-**Generator functions are consumed when returned from flows**
+**ジェネレータ関数はフローから返された時点で消費されます**
 
-The result of a completed flow must be serializable, but generators cannot be serialized.
-Therefore, if you return a generator from a flow, the generator will be fully consumed and its yielded values will be returned as a list.
-This can lead to unexpected behavior or blocking if the generator is infinite or very large.
+完了したフローの結果はシリアル化可能である必要がありますが、ジェネレータはシリアル化できません。
+したがって、フローからジェネレータを返すと、ジェネレータは完全に消費され、生成された値はリストとして返されます。
+ジェネレータが無限または非常に大きい場合、予期しない動作やブロックが発生する可能性があります。
 
-Here is an example of proactive generator consumption:
+以下は、プロアクティブなジェネレータ消費の例です。
 
 ```python
 from prefect import flow
@@ -420,8 +420,8 @@ def f():
 f()  # prints 'Generator consumed!'
 ```
 
-If you need to return a generator without consuming it, you can `yield` it instead of using `return`.
-Values yielded from generator flows are not considered final results and do not face the same serialization constraints:
+ジェネレータを消費せずに返す必要がある場合は、`return` を使用する代わりに `yield` を使用できます。
+ジェネレータフローから生成された値は最終結果とはみなされず、同じシリアル化制約は適用されません:
 
 ```python
 from prefect import flow
@@ -443,32 +443,32 @@ list(generator()) # prints 'Generator consumed!'
 </Warning>
 
 
-## Flow runs
+## フロー実行
 
-A _flow run_ is a single execution of a flow.
+_フロー実行_ とは、フローを1回実行することです。
 
-You can create a flow run by calling the flow function manually, or even by using an external scheduler such as `cron` to invoke a flow function.
-Most users run flows by creating a [deployment](/v3/deploy/) on Prefect Cloud or Prefect server and then scheduling a flow run for the deployment through a schedule, the Prefect UI, or the Prefect API.
+フロー実行は、フロー関数を手動で呼び出すか、`cron` などの外部スケジューラを使用してフロー関数を呼び出すことで作成できます。
+ほとんどのユーザーは、Prefect Cloud または Prefect Server 上に [デプロイメント](/v3/deploy/) を作成し、スケジュール、Prefect UI、または Prefect API を使用して、そのデプロイメントに対してフロー実行をスケジュールすることでフローを実行します。
 
-However you run a flow, the Prefect API monitors the flow run and records information for monitoring, troubleshooting, and auditing.
+フローの実行方法に関係なく、Prefect API はフロー実行を監視し、監視、トラブルシューティング、監査のための情報を記録します。
 
-## Flow settings
+## フロー設定
 
-All flows can be configured by passing arguments to the decorator. Flows accept the following optional settings:
+すべてのフローは、デコレータに引数を渡すことで設定できます。フローは以下のオプション設定を受け付けます:
 
 | Argument                                           | Description                                                                                                                                                                                                          |
 | -------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `description`                                      | An optional string description for the flow. If not provided, the description is pulled from the docstring for the decorated function.                                                                          |
-| `name`                                             | An optional name for the flow. If not provided, the name is inferred from the function.                                                                                                                         |
-| `retries`                                          | An optional number of times to retry on flow run failure.                                                                                                                                                            |
-| <span class="no-wrap">`retry_delay_seconds`</span> | An optional number of seconds to wait before retrying the flow after failure. This is only applicable if `retries` is nonzero.                                                                                       |
-| `flow_run_name`                                    | An optional name to distinguish runs of this flow; this name can be provided as a string template with the flow's parameters as variables; you can also provide this name as a function that returns a string.       |
-| `task_runner`                                      | An optional [task runner](/v3/develop/task-runners/) to use for task execution within the flow when you `.submit()` tasks. If not provided and you `.submit()` tasks, the `ThreadPoolTaskRunner` is used.         |
-| `timeout_seconds`                                  | An optional number of seconds indicating a maximum runtime for the flow. If the flow exceeds this runtime, it is marked as failed. Flow execution may continue until the next task is called.                   |
-| `validate_parameters`                              | Boolean indicating whether parameters passed to flows are validated by Pydantic. Default is `True`.                                                                                                                  |
-| `version`                                          | An optional version string for the flow. If not provided, we will attempt to create a version string as a hash of the file containing the wrapped function. If the file cannot be located, the version will be null. |
+| `description`                                      | フローの説明（オプション）文字列。指定されていない場合は、デコレートされた関数のドキュメント文字列から説明が取得されます。   |
+| `name`                                             | フローの名前（オプション）。指定しない場合は、関数から推測された名前になります。                                                                          |
+| `retries`                                          | フロー実行が失敗した場合に再試行する回数（オプション）。  |
+| <span class="no-wrap">`retry_delay_seconds`</span> | フローが失敗した後に再試行するまでの待機時間（秒数）（オプション）。これは、`retries` が 0 以外の場合にのみ適用されます。              |
+| `flow_run_name`                                    | このフローの実行を区別するためのオプションの名前。この名前は、フローのパラメータを変数として含む文字列テンプレートとして提供できます。また、この名前を文字列を返す関数として提供することもできます。    |
+| `task_runner`                                      | タスクを `.submit()` する際に、フロー内でタスク実行に使用するオプションの [タスクランナー](/v3/develop/task-runners/) です。指定せずにタスクを `.submit()` する場合は、`ThreadPoolTask​​Runner` が使用されます。 |
+| `timeout_seconds`                                  | フローの最大実行時間（秒数）（オプション）です。フローがこの実行時間を超えると、失敗とマークされます。フローの実行は、次のタスクが呼び出されるまで継続されます。 |
+| `validate_parameters`                              | フローに渡されるパラメータがPydanticによって検証されるかどうかを示すブール値。デフォルトは「True」です。        |
+| `version`                                          | フローのバージョン文字列（オプション）。指定されていない場合は、ラップされた関数を含むファイルのハッシュとしてバージョン文字列を作成しようとします。ファイルが見つからない場合、バージョンはnullになります。 |
 
-For example, you can provide `name` and `description` arguments.
+たとえば、`name` および `description` 引数を指定できます。
 
 ```python
 from prefect import flow
@@ -484,11 +484,11 @@ if __name__ == "__main__":
     my_flow()
 ```
 
-If no description is provided, a flow function's docstring is used as the description.
+説明が指定されていない場合は、フロー関数のドキュメント文字列が説明として使用されます。
 
-You can distinguish runs of a flow by passing a `flow_run_name`.
-This parameter accepts a string that can contain templated references to the parameters of your flow.
-The name is formatted using Python's standard string formatting syntax:
+`flow_run_name` を渡すことで、フローの実行を区別できます。
+このパラメータには、フローのパラメータへのテンプレート参照を含む文字列を指定できます。
+名前は、Python の標準文字列フォーマット構文を使用してフォーマットされます:
 
 ```python
 import datetime
@@ -505,7 +505,7 @@ if __name__ == "__main__":
     my_flow(name="marvin", date=datetime.datetime.now(datetime.timezone.utc))
 ```
 
-This setting also accepts a function that returns a string for the flow run name:
+この設定では、フロー実行名の文字列を返す関数も受け入れます:
 
 ```python
 import datetime
@@ -527,7 +527,7 @@ if __name__ == "__main__":
     my_flow(name="marvin")
 ```
 
-If you need access to information about the flow, use the `prefect.runtime` module. For example:
+フローに関する情報にアクセスする必要がある場合は、`prefect.runtime` モジュールを使用します。例:
 
 ```python
 from prefect import flow
@@ -554,23 +554,23 @@ if __name__ == "__main__":
     my_flow(name="marvin")
 ```
 
-Note that `validate_parameters` checks that input values conform to the annotated types on the function.
-Where possible, values are coerced into the correct type.
-For example, if a parameter is defined as `x: int` and the string **"5"** is passed, it resolves to `5`.
-If set to `False`, no validation is performed on flow parameters.
+`validate_parameters` は、入力値が関数でアノテーションが付けられた型に準拠しているかどうかを確認します。
+可能な場合は、値は正しい型に強制変換されます。
+たとえば、パラメータが `x: int` として定義され、文字列 **"5"** が渡された場合、`5` として解決されます。
+`False` に設定されている場合、フローパラメータの検証は実行されません。
 
-## Final state determination
+## 最終状態の決定
 
-A state is a record of the status of a particular task run or flow run.
-See the [manage states](/v3/develop/manage-states) page for more information.
+状態とは、特定のタスク実行またはフロー実行のステータスの記録です。
+詳細については、[状態の管理](/v3/develop/manage-states)ページをご覧ください。
 
 import FinalFlowState from '/snippets/final-flow-state.mdx'
 
 <FinalFlowState />
 
-### Return a future
+### Future を返す
 
-If a flow returns one or more futures, the final state is determined based on the underlying states.
+フローが 1 つ以上の Future を返す場合、最終状態は基になる状態に基づいて決定されます。
 
 ```python
 from prefect import flow, task
@@ -598,7 +598,7 @@ if __name__ == "__main__":
     always_succeeds_flow()
 ```
 
-This flow run finishes in a **Completed** final state because the flow returns the future of the task that succeeds:
+このフロー実行は、成功したタスクの将来を返すため、**完了** 最終状態で終了します。
 
 ```bash
 18:35:24.965 | INFO    | prefect.engine - Created flow run 'whispering-guan' for flow 'always-succeeds-flow'
@@ -616,10 +616,9 @@ I'm fail safe!
 18:35:25.362 | INFO    | Flow run 'whispering-guan' - Finished in state Completed('All states completed.')
 ```
 
-### Return multiple states or futures
+### 複数の状態または Future を返す
 
-If a flow returns a mix of futures and states, the final state is determined by resolving all futures to states,
-then determining if any of the states are not `COMPLETED`.
+フローが Future と状態を混在させて返す場合、すべての Future を状態に解決し、いずれかの状態が `COMPLETED` でないかどうかを判定することで、最終状態が決定されます。
 
 ```python
 from prefect import task, flow
@@ -648,8 +647,8 @@ def always_fails_flow():
     return x, y, z
 ```
 
-Running `always_fails_flow` fails because one of the three returned futures fails.
-Note that the states of each of the returned futures are included in the flow run output:
+`always_fails_flow` の実行は、返された 3 つの futures のうちの 1 つが失敗したため失敗します。
+返された各 futures の状態がフロー実行出力に含まれていることに注意してください:
 
 ```bash
 ...
@@ -658,11 +657,11 @@ Note that the states of each of the returned futures are included in the flow ru
 Failed(message='1/3 states failed.', type=FAILED, result=(Failed(message='Task run encountered an exception.', type=FAILED, result=ValueError('I am bad task'), task_run_id=5fd4c697-7c4c-440d-8ebc-dd9c5bbf2245), Completed(message=None, type=COMPLETED, result='foo', task_run_id=df9b6256-f8ac-457c-ba69-0638ac9b9367), Completed(message=None, type=COMPLETED, result='bar', task_run_id=cfdbf4f1-dccd-4816-8d0f-128750017d0c)), flow_run_id=6d2ec094-001a-4cb0-a24e-d2051db6318d)
 ```
 
-If multiple states are returned, they must be contained in a `set`, `list`, or `tuple`.
+複数の状態が返される場合、それらは `set`、`list`、または `tuple` に含まれている必要があります。
 
-### Return a manual state
+### 手動で作成された状態を返す
 
-If a flow returns a manually created state, the final state is determined based upon the return value.
+フローが手動で作成された状態を返す場合、最終状態は戻り値に基づいて決定されます。
 
 ```python
 from prefect import task, flow
@@ -694,7 +693,7 @@ if __name__ == "__main__":
     always_succeeds_flow()
 ```
 
-Running this flow produces the following result:
+このフローを実行すると、次の結果が生成されます。
 
 ```bash
 ...
@@ -706,13 +705,13 @@ I'm fail safe!
 07:29:35.225 | INFO    | Flow run 'hidden-butterfly' - Finished in state Completed('I am happy with this result')
 ```
 
-If a flow run returns any other object, then it is recorded as `COMPLETED`
+フロー実行が他のオブジェクトを返す場合、それは `COMPLETED` として記録されます。
 
-#### Custom named states
+#### カスタム名付き状態
 
-You can also create custom named states to provide more granularity in your flow run states.
+フロー実行状態をより細かく制御するために、カスタム名付き状態を作成することもできます。
 
-For example, we could create a `Skipped` state to indicate that a flow run was skipped.
+例えば、フロー実行がスキップされたことを示す「スキップ済み」状態を作成できます。
 
 ```python
 from prefect import flow
@@ -736,23 +735,23 @@ Running this flow produces the following result:
 15:26:49.644 | INFO    | Flow run 'liberal-zebra' - Finished in state Skipped('No work to do', type=COMPLETED)
 ```
 
-## Retries
+## 再試行
 
-Unexpected errors may occur in workflows.
-For example the GitHub API may be temporarily unavailable or rate limited.
+ワークフローでは予期しないエラーが発生する可能性があります。
+例えば、GitHub API が一時的に利用できなくなったり、レート制限がかかったりする場合があります。
 
-Prefect can automatically retry flow runs on failure.
+Prefect は、失敗した場合にフロー実行を自動的に再試行できます。
 
-To enable retries, pass an integer to the flow's `retries` parameter.
-If the flow run fails, Prefect will retry it up to `retries` times.
+再試行を有効にするには、フローの `retries` パラメータに整数を渡します。
+フロー実行が失敗した場合、Prefect は `retries` 回まで再試行します。
 
-If the flow run fails on the final retry, Prefect records the final flow run state as _failed_.
+フロー実行が最後の再試行で失敗した場合、Prefect は最終的なフロー実行状態を _failed_ として記録します。
 
-Optionally, pass an integer to `retry_delay_seconds` to specify how many seconds to wait between each retry attempt.
+必要に応じて、`retry_delay_seconds` に整数を渡して、再試行間の待機秒数を指定します。
 
-Check out [Transactions](/v3/develop/transactions/) to make your flows even more resilient and rollback actions when desired.
+[Transactions](/v3/develop/transactions/) をチェックして、フローの回復力をさらに高め、必要に応じてアクションをロールバックしてください。
 
-## See also
+## 参照
 
-- Store and reuse non-sensitive bits of data, such as configuration information, by using [variables](/v3/develop/variables).
-- Make your flow more manageable, performant, and observable by breaking it into discrete units of orchestrated work with [tasks](/v3/develop/write-tasks/).
+- [変数](/v3/develop/variables) を使用して、設定情報などの機密性が低いデータを保存し、再利用します。
+- [タスク](/v3/develop/write-tasks/) を使用して、フローを個別のオーケストレーションされた作業単位に分割することで、フローの管理性、パフォーマンス、監視性を向上させます。

@@ -1,21 +1,20 @@
 ---
-title: Set up a platform for data pipelines
-description: Give your data team the ability to deploy and run workflows.
+title: データパイプラインのプラットフォームを構築する
+description: データ チームにワークフローを展開および実行する能力を提供します。
 ---
 
-In this tutorial, you'll learn how to set up a platform for data pipelines with Prefect Cloud.
-We'll show you how to create workspaces, work pools, workers, and then deploy flows to the infrastructure you've provisioned.
+このチュートリアルでは、Prefect Cloud を使用してデータパイプライン用のプラットフォームを設定する方法を学習します。ワークスペース、ワークプール、ワーカーを作成し、プロビジョニングしたインフラストラクチャにフローをデプロイする方法を説明します。
 
-## Prerequisites
+## 前提条件
 
-To complete this tutorial, you'll need:
+このチュートリアルを完了するには、以下のものが必要です。
 
 - Git
 - Docker
-- Python 3.9 or newer
-- A paid [Prefect Cloud](https://app.prefect.cloud/) account (free accounts do not support multiple workspaces)
+- Python 3.9 以降
+- 有料の [Prefect Cloud](https://app.prefect.cloud/) アカウント（無料アカウントでは複数のワークスペースをサポートしていません）
 
-You'll also need to clone the Prefect demo repository and install the prefect library:
+また、Prefect デモリポジトリをクローンし、Prefect ライブラリをインストールする必要があります。
 
 ```bash
 # Clone the demo repository
@@ -33,47 +32,49 @@ pip install -r requirements.txt
 prefect --version
 ```
 
-## Create workspaces
+## ワークスペースの作成
 
-We recommend one workspace per development environment.
-In this tutorial, we'll create a production workspace and a staging workspace.
-To create multiple workspaces on Prefect Cloud, you'll need a paid account.
+開発環境ごとに1つのワークスペースを作成することをお勧めします。
+このチュートリアルでは、本番環境用ワークスペースとステージング環境用ワークスペースを作成します。
+Prefect Cloud で複数のワークスペースを作成するには、有料アカウントが必要です。
 
-1. Head to https://app.prefect.cloud/ and sign in to your paid account.
-1. If you haven't created a workspace yet, you'll be prompted to choose a name for your workspace. 
-Name your first workspace `production`.
+1. https://app.prefect.cloud/ にアクセスし、有料アカウントにサインインします。
+1. まだワークスペースを作成していない場合は、ワークスペースの名前を選択するように求められます。
 
-Next, create a staging workspace:
+最初のワークスペースの名前を「production」にします。
 
-1. Click the workspace switcher in the sidebar
-1. Go to **Switch workspace** / **Create a new workspace**
-1. Name this workspace `staging`.
+次に、ステージング環境用ワークスペースを作成します。
 
-You should now have two workspaces named `production` and `staging`.
+1. サイドバーのワークスペース切り替えボタンをクリックします。
+1. **Switch workspace** または **Create a new workspace** に進みます。
+1. このワークスペースの名前を「staging」にします。
 
-## Create work pools
+これで、「production」と「staging」という2つのワークスペースが作成されます。
 
-Work pools let you dynamically provision infrastructure for your flows.
-First, create a work pool for your production workspace.
+## ワークプールの作成
 
-1. Switch to the `production` workspace using the workspace switcher in the sidebar.
-1. Click **Work pools** in the sidebar.
-1. Create a new **Docker** hybrid work pool, named `default-work-pool` and using the default configuration.
+ワークプールを使用すると、フローのインフラストラクチャを動的にプロビジョニングできます。
+まず、本番環境ワークスペース用のワークプールを作成します。
 
-Next, repeat this steps and create a second work pool named `default-work-pool` in the `staging` workspace.
-You should now have one work pool in each workspace.
+1. サイドバーのワークスペーススイッチャーを使用して、「production」ワークスペースに切り替えます。
+1. サイドバーで **Work pools** をクリックします。
+1. 「default-work-pool」という名前で、デフォルト構成を使用して、新しい **Docker** ハイブリッドワークプールを作成します。
 
-## Start workers
+次に、この手順を繰り返して、「staging」ワークスペースに「default-work-pool」という名前で 2 つ目のワークプールを作成します。
 
-Because you're using hybrid work pools, you need to start at least one worker for each work pool to process flow runs.
+これで、各ワークスペースに 1 つのワークプールが作成されます。
 
-First, you need to authenticate to Prefect Cloud [using the CLI](/v3/manage/cloud/connect-to-cloud#log-into-prefect-cloud-from-a-terminal).
+## ワーカーを起動する
+
+ハイブリッドワークプールを使用しているため、フロー実行を処理するには、ワークプールごとに少なくとも1つのワーカーを起動する必要があります。
+
+まず、[CLIを使用](/v3/manage/cloud/connect-to-cloud#log-into-prefect-cloud-from-a-terminal) してPrefect Cloudに認証する必要があります。
 
 ```bash
 prefect cloud login
 ```
 
-Once you've authenticated to Prefect Cloud, open two terminal windows and run two workers:
+Prefect Cloud に認証したら、2 つのターミナル ウィンドウを開き、2 つのワーカーを実行します:
 
 ```bash Terminal 1
 # Switch to the production workspace
@@ -92,12 +93,12 @@ prefect worker start --pool default-work-pool
 ```
 
 <Note>
-You can use `prefect cloud workspace ls` to see the fully qualified names of the workspaces in your account
+アカウント内のワークスペースの完全修飾名を確認するには、「prefect cloud workspace ls」を使用します。
 </Note>
 
-## Deploy and run flows
+## フローのデプロイと実行
 
-Run the following script from the demo repository to create flow runs in each workspace:
+デモリポジトリから次のスクリプトを実行して、各ワークスペースにフロー実行を作成します:
 
 ```bash
 # Run flows in the production workspace
@@ -111,85 +112,88 @@ prefect cloud workspace set --workspace "<account handle>/staging"
 python simulate_failures.py --fail-at-run 3
 ```
 
-Each script invocation will take approximately one minute to finish.
-If you check the logs for the worker running in the staging workspace, you will see errors, this is expected.
+各スクリプトの呼び出しは完了するまでに約 1 分かかります。
+ステージング ワークスペースで実行されているワーカーのログを確認すると、エラーが表示されますが、これは想定内の動作です。
 
-## View flow run activity
+## フロー実行アクティビティの表示
 
-Now that you've deployed and run your flows, you can view the run details in the UI.
-If you go to the **Home** page for each workspace, you can see run activity.
+フローをデプロイして実行したら、UI で実行の詳細を確認できます。
 
-![Home page](/v3/img/ui/home-page.png)
+各ワークスペースの **Home** ページに移動すると、実行アクティビティを確認できます。
 
-Here's what happened:
+![ホーム ページ](/v3/img/ui/home-page.png)
 
-- The script created two deployments of the flow, one deployment per workspace.
-- The script then generated multiple flow runs for each deployment.
-- The activity graph on the **Home** page shows successful runs as green and failed runs as red.
-- Notice that the flow runs in the `production` workspace succeeded, but some of the flow runs in the `staging` workspace failed.
+実行内容は次のとおりです。
 
-This output is expected, you'll learn how to debug these failures in the next tutorial.
+- スクリプトによって、ワークスペースごとに 1 つずつ、フローのデプロイメントが 2 つ作成されました。
+- 次に、スクリプトによって各デプロイメントに対して複数のフロー実行が生成されました。
+- **Home** ページのアクティビティ グラフでは、成功した実行が緑色、失敗した実行が赤色で表示されます。
+- `production` ワークスペースのフロー実行は成功しましたが、`staging` ワークスペースの一部のフロー実行は失敗していることがわかります。
 
-## Optional: Manage team access
+この出力は想定どおりです。これらの失敗をデバッグする方法については、次のチュートリアルで学習します。
 
-If you're a Prefect Enterprise customer, you can use [Teams](/v3/manage/cloud/manage-users/manage-teams) to manage access to your workspaces and work pools.
+## オプション：チームアクセスの管理
+
+Prefect Enterprise をご利用の場合は、[Teams](/v3/manage/cloud/manage-users/manage-teams) を使用して、ワークスペースとワークプールへのアクセスを管理できます。
 
 <Expandable title="steps">
-### Define your team structure
+### チーム構造を定義する
 
-Most data platforms serve multiple teams.
-In Prefect Enterprise, you can create teams to control access to your infrastructure.
+ほとんどのデータプラットフォームは複数のチームで運用されています。
+Prefect Enterprise では、チームを作成してインフラストラクチャへのアクセスを制御できます。
 
-#### Create teams
+#### チームを作成する
 
-First, you need to create teams in your Prefect Cloud account.
+まず、Prefect Cloud アカウントでチームを作成する必要があります。
 
-1. Click the workspace switcher in the sidebar, and then click **Account settings**.
-1. Click **Teams** in the sidebar.
-1. Create two teams, named `everyone` and `developers`.
-1. Optional: Choose the team you want to add members to, and then click **Add team members**.
+1. サイドバーのワークスペース切り替えボタンをクリックし、**Account settings** をクリックします。
+1. サイドバーの **Teams** をクリックします。
+1. 「everyone」と「developers」という2つのチームを作成します。
+1. オプション：メンバーを追加するチームを選択し、**Add team members** をクリックします。
 
-#### Grant workspace access
+#### ワークスペースへのアクセスを許可する
 
-You need to explicitly grant teams access to workspaces.
+チームにワークスペースへのアクセスを明示的に許可する必要があります。
 
-1. Select the `production` workspace using the workspace switcher.
-1. From the workspace switcher, click **Invite and manage members**.
-1. In the **Teams** section, add the two teams you created (`everyone` and `developers`) with the **Developer** role.
+1. ワークスペーススイッチャーを使用して、「production」ワークスペースを選択します。
+1. ワークスペーススイッチャーで、**Invite and manage members** をクリックします。
+1.  **Teams** セクションで、作成した2つのチーム（「everyone」と「developers」）を **Developer** ロールで追加します。
 
-Repeat these steps for the `staging` workspace.
-Your teams now have developer access to both workspaces.
+`staging` ワークスペースでもこれらの手順を繰り返します。
 
-### Grant team access to work pools
+これで、チームは両方のワークスペースへの開発者アクセスを取得できました。
 
-By default, your teams have access to all work pools in the workspace.
-However, you can partition your infrastructure by granting teams access to only specific work pools.
+### チームにワークプールへのアクセス権を付与する
 
-1. Select the `staging` workspace using the workspace switcher.
-1. Click **Work pools** in the sidebar.
-1. Open the actions menu for the `default-work-pool` work pool, and then click **Manage Access**.
-1. Click **Add Users, Service Accounts, & Teams**.
-1. Click the **Actors** dropdown, and then select the `everyone` and `developers` teams.
-1. Click the **Access Level** dropdown, and then select **Run**.
-1. Click **Add**.
+デフォルトでは、チームはワークスペース内のすべてのワークプールにアクセスできます。
+ただし、特定のワークプールへのアクセス権のみをチームに付与することで、インフラストラクチャを分割できます。
 
-Repeat these steps to grant `developers` access to the `production` work pool.
-You've now set up your infrastructure so that the `developers` team can run flows on the work pool in either `production` or `staging`, but the `everyone` team can run flows only on the work pool in `staging`.
+1. ワークスペース切り替えツールを使用して、`staging` ワークスペースを選択します。
+1. サイドバーで **Work pools** をクリックします。
+1. `default-work-pool` ワークプールのアクションメニューを開き、**Manage Access** をクリックします。
+1. **Add Users, Service Accounts, & Teams** をクリックします。
+1. **Actors** ドロップダウンをクリックし、`everyone` チームと `developers` チームを選択します。
+1. **Access Level** ドロップダウンをクリックし、**Run** を選択します。
+1. **Add** をクリックします。
+
+これらの手順を繰り返して、`developers` に `production` ワークプールへのアクセス権を付与します。
+これで、`developers` チームが `production` または `staging` のいずれかの作業プールでフローを実行できるが、`everyone` チームは `staging` の作業プールでのみフローを実行できるようにインフラストラクチャが設定されました。
 </Expandable>
 
-## Next steps
+## 次のステップ
 
-In this tutorial, you successfully set up a platform for data pipelines, and then deployed and ran flows on the infrastructure you provisioned.
-If this doesn't perfectly match your use case, here are some variations you can explore:
+このチュートリアルでは、データパイプライン用のプラットフォームをセットアップし、プロビジョニングしたインフラストラクチャ上にフローをデプロイして実行しました。
 
-- You can set up a self-managed instance with [Prefect server](/v3/manage/server).
-- You can provision users with [SSO](/v3/manage/cloud/manage-users/configure-sso) or just use [service accounts](/v3/manage/cloud/manage-users/service-accounts).
-- You can deploy flows with [Kubernetes](/v3/deploy/infrastructure-examples/kubernetes), [serverless compute](/v3/deploy/infrastructure-examples/serverless), or [Prefect Managed infrastructure](/v3/deploy/infrastructure-examples/managed).
-- You can [write flows from scratch](/v3/develop/write-flows).
-- You can [automate deployments with GitHub Actions](/v3/deploy/infrastructure-concepts/deploy-ci-cd).
+これがユースケースに完全に一致しない場合は、以下のバリエーションを検討してみてください。
 
-Next, learn how to [debug a flow run](/v3/tutorials/debug) when things go wrong.
+- [Prefect サーバー](/v3/manage/server) を使用してセルフマネージドインスタンスをセットアップできます。
+- [SSO](/v3/manage/cloud/manage-users/configure-sso) を使用してユーザーをプロビジョニングすることも、[サービスアカウント](/v3/manage/cloud/manage-users/service-accounts) を使用することもできます。
+- [Kubernetes](/v3/deploy/infrastructure-examples/kubernetes)、[サーバーレスコンピューティング](/v3/deploy/infrastructure-examples/serverless)、または [Prefect マネージドインフラストラクチャ](/v3/deploy/infrastructure-examples/managed) を使用してフローをデプロイできます。
+- [フローをゼロから作成](/v3/develop/write-flows)できます。
+- [GitHub Actions を使ってデプロイを自動化](/v3/deploy/infrastructure-concepts/deploy-ci-cd)できます。
+
+次に、問題が発生した場合に[フロー実行をデバッグ](/v3/tutorials/debug)する方法を学びます。
 
 <Tip>
-Need help? [Book a meeting](https://calendly.com/prefect-experts/prefect-product-advocates?utm_campaign=prefect_docs_cloud&utm_content=prefect_docs&utm_medium=docs&utm_source=docs) with a Prefect Product Advocate to get your questions answered.
+サポートが必要ですか? Prefect 製品アドボケートとの[ミーティングを予約](https://calendly.com/prefect-experts/prefect-product-advocates?utm_campaign=prefect_docs_cloud&utm_content=prefect_docs&utm_medium=docs&utm_source=docs)して、ご質問にお答えします。
 </Tip>

@@ -1,33 +1,31 @@
 ---
-title: Write and run tasks
-description: Learn the basics of writing tasks.
+title: タスクを書いて実行する
+description: タスクを書く基本を学びます。
 ---
 
-A Prefect task is a discrete unit of work in a Prefect workflow. 
-You can turn any Python function into a task by adding an `@task` decorator to it.
-Tasks can:
+Prefect タスクは、Prefect ワークフローにおける個別の作業単位です。
+任意の Python 関数に `@task` デコレータを追加することで、タスクに変換できます。
+タスクは次のことが可能です。
 
-- Take inputs, perform work, and return outputs
-- Cache their execution across invocations
-- Encapsulate workflow logic into reusable units across flows
-- Receive metadata about upstream task dependencies and their state before running
-- Use automatic [logging](/v3/develop/logging/) to capture runtime details, tags, 
-and final state
-- Execute concurrently
-- Be defined in the same file as the flow or imported from modules
-- Be called from flows or other tasks
+- 入力を受け取り、処理を実行し、出力を返す
+- 呼び出し間で実行をキャッシュする
+- ワークフローロジックを、フロー全体で再利用可能なユニットにカプセル化する
+- 実行前に上流タスクの依存関係とその状態に関するメタデータを受け取る
+- 自動 [ログ記録](/v3/develop/logging/) を使用して、実行時の詳細、タグ、最終状態を取得する
+- 同時実行
+- フローと同じファイルで定義するか、モジュールからインポートする
+- フローまたは他のタスクから呼び出す
 
-Flows and tasks share some common features:
+フローとタスクには、いくつかの共通点があります:
 
-- They can be defined using their respective decorator, which accepts configuration settings 
-(see all [task settings](/v3/develop/write-tasks/#task-configuration) and 
-[flow settings](/v3/develop/write-flows/#flow-settings))
-- They can have a name, description, and tags for organization and bookkeeping
-- They provide retries, timeouts, and other hooks to handle failure and completion events
+- それぞれのデコレータを使用して定義できます。デコレータは設定を受け付けます。
+([タスク設定](/v3/develop/write-tasks/#task-configuration)と[フロー設定](/v3/develop/write-flows/#flow-settings)を参照してください)
+- 整理と管理のために、名前、説明、タグを設定できます。
+- 再試行、タイムアウト、その他のフックを使用して、失敗イベントや完了イベントを処理できます。
 
-## Example task
+## タスクの例
 
-Here's an example of a simple flow with a single task:
+1つのタスクを含むシンプルなフローの例を以下に示します:
 
 ```python repo_info.py
 import httpx
@@ -55,7 +53,7 @@ if __name__ == "__main__":
     get_repo_info()
 ```
 
-Running that flow in the terminal results in output like this:
+ターミナルでそのフローを実行すると、次のような出力が得られます:
 
 ```bash
 09:55:55.412 | INFO    | prefect.engine - Created flow run 'great-ammonite' for flow 'get-repo-info'
@@ -68,36 +66,38 @@ Running that flow in the terminal results in output like this:
 09:55:55.849 | INFO    | Flow run 'great-ammonite' - Finished in state Completed('All states completed.')
 ```
 
-This task run is tracked in the UI as well.
+このタスクの実行はUIでも追跡されます。
 
-Tasks are uniquely identified by a task key, which is a hash composed of the task name, the fully qualified name of the function, and any tags. 
-If the task does not have a name specified, the name is derived from the decorated function object.
+タスクはタスクキーによって一意に識別されます。タスクキーは、タスク名、関数の完全修飾名、およびタグで構成されるハッシュです。
+タスクに名前が指定されていない場合、名前はデコレートされた関数オブジェクトから派生されます。
 
 <Note>
-**How big should a task be?**
+**タスクはどのくらいの大きさにすべきか？**
 
-Prefect encourages "small tasks." Each one should represent a single logical step of your workflow. 
-This allows Prefect to better contain task failures and offer more granular observability and control of results.
+Prefect では「小さなタスク」を推奨しています。それぞれのタスクは、ワークフローの論理的なステップを1つずつ表す必要があります。
+これにより、Prefect はタスクの失敗をより適切に制御し、よりきめ細かな結果の監視と制御が可能になります。
 
-There's nothing stopping you from putting all of your code in a single task. However, if any line of 
-code fails, the entire task fails and must be retried from the beginning. 
-Avoid this by splitting the code into multiple dependent tasks.
+すべてのコードを1つのタスクにまとめることも可能です。ただし、コードの1行でも失敗すると、タスク全体が失敗し、最初からやり直す必要があります。
+コードを複数の依存関係のあるタスクに分割することで、このような状況を避けられます。
 </Note>
 
 
-## Supported functions
+## サポートされている関数
 
-Almost any standard Python function can be turned into a Prefect task by adding the `@task` decorator. 
+ほぼすべての標準 Python 関数は、`@task` デコレータを追加することで Prefect タスクに変換できます。
 
-Prefect uses client-side task run orchestration by default, which significantly improves performance, especially for workflows with many tasks. Task creation and state updates happen locally, reducing API calls to the Prefect server during execution. This enables efficient handling of large-scale workflows and improves reliability when server connectivity is intermittent.
+Prefect はデフォルトでクライアントサイドのタスク実行オーケストレーションを使用します。これにより、特に多数のタスクを含むワークフローでパフォーマンスが大幅に向上します。タスクの作成と状態の更新はローカルで行われるため、実行中の Prefect サーバーへの API 呼び出しが削減されます。これにより、大規模なワークフローを効率的に処理できるようになり、サーバー接続が断続的な場合でも信頼性が向上します。
 <Tip>
-Tasks are always executed in the main thread by default, unless a specific [task runner](/v3/develop/task-runners) is used to execute them on different threads, processes, or infrastructure. This facilitates native Python debugging and profiling.
+タスクは、特定の[タスクランナー](/v3/develop/task-runners)を使用して別のスレッド、プロセス、またはインフラストラクチャで実行されない限り、デフォルトで常にメインスレッドで実行されます。
+これにより、ネイティブPythonのデバッグとプロファイリングが容易になります。
 </Tip>
-Task updates are logged in batch, leading to eventual consistency for task states in the UI and API queries. While this means there may be a slight delay in seeing the most up-to-date task states, it allows for substantial performance improvements and increased workflow scale.
+タスクの更新は一括でログに記録されるため、UI および API クエリにおけるタスク状態の最終的な一貫性が確保されます。
+これにより、最新のタスク状態の表示に若干の遅延が生じる可能性がありますが、パフォーマンスの大幅な向上とワークフロー規模の拡大が実現します。
 
-### Synchronous functions
+### 同期関数
 
-The simplest Prefect task is a synchronous Python function. Here's an example of a synchronous task that prints a message:
+最もシンプルなPrefectタスクは、同期Python関数です。
+以下は、メッセージを出力する同期タスクの例です:
 
 ```python
 from prefect import task
@@ -112,10 +112,10 @@ if __name__ == "__main__":
     print_message()
 ```
 
-### Asynchronous functions
+### 非同期関数
 
-Prefect also supports asynchronous Python functions. 
-The resulting tasks are coroutines that can be awaited or run concurrently, following [standard async Python behavior](https://docs.python.org/3/library/asyncio-task.html).
+Prefect は非同期 Python 関数もサポートしています。
+結果として得られるタスクはコルーチンであり、[標準的な Python の非同期動作](https://docs.python.org/3/library/asyncio-task.html) に従って、待機または並行実行が可能です。
 
 ```python
 from prefect import task
@@ -131,9 +131,9 @@ async def print_message():
 asyncio.run(print_message())
 ```
 
-### Class Methods
+### クラスメソッド
 
-Prefect supports synchronous and asynchronous methods as tasks, including instance methods, class methods, and static methods. For class methods and static methods, you must apply the appropriate method decorator _above_ the `@task` decorator:
+Prefect は、インスタンスメソッド、クラスメソッド、静的メソッドを含む同期メソッドと非同期メソッドをタスクとしてサポートします。クラスメソッドと静的メソッドの場合は、適切なメソッドデコレータを `@task` デコレータの上に適用する必要があります:
 
 ```python
 from prefect import task
@@ -163,9 +163,12 @@ MyClass.my_class_method()
 MyClass.my_static_method()
 ```
 
-### Generators
+### ジェネレータ
 
-Prefect supports synchronous and asynchronous generators as tasks. The task is considered to be `Running` as long as the generator is yielding values. When the generator is exhausted, the task is considered `Completed`. Any values yielded by the generator can be consumed by other tasks, and they will automatically record the generator task as their parent. 
+Prefect は、同期ジェネレータと非同期ジェネレータをタスクとしてサポートします。
+ジェネレータが値を生成している間、タスクは「実行中」とみなされます。
+ジェネレータが値を使い切ると、タスクは「完了」とみなされます。
+ジェネレータによって生成された値は他のタスクで使用でき、他のタスクはジェネレータタスクを親タスクとして自動的に記録します。
 
 ```python
 from prefect import task
@@ -187,13 +190,13 @@ for val in generator():
 ```
 
 <Warning>
-**Generator functions are consumed when returned from tasks**
+**ジェネレータ関数はタスクから返された時点で消費されます**
 
-The result of a completed task must be serializable, but generators cannot be serialized. 
-Therefore, if you return a generator from a task, the generator will be fully consumed and its yielded values will be returned as a list. 
-This can lead to unexpected behavior or blocking if the generator is infinite or very large.
+完了したタスクの結果はシリアル化可能である必要がありますが、ジェネレータはシリアル化できません。
+したがって、タスクからジェネレータを返すと、ジェネレータは完全に消費され、生成された値はリストとして返されます。
+ジェネレータが無限大または非常に大きい場合、予期しない動作やブロックが発生する可能性があります。
 
-Here is an example of proactive generator consumption:
+以下は、プロアクティブなジェネレータ消費の例です:
 
 ```python
 from prefect import task
@@ -212,8 +215,8 @@ def f():
 f()  # prints 'Generator consumed!'
 ```
 
-If you need to return a generator without consuming it, you can `yield` it instead of using `return`. 
-Values yielded from generator tasks are not considered final results and do not face the same serialization constraints:
+ジェネレータを消費せずに返す必要がある場合は、`return` を使用する代わりに `yield` を使用できます。
+ジェネレータタスクから生成された値は最終結果とはみなされず、同じシリアル化制約は適用されません。
 
 ```python
 from prefect import task
@@ -234,12 +237,12 @@ list(generator) # prints 'Generator consumed!'
 ```
 </Warning>
 
-## Concurrency
+## 同時実行
 
-Tasks enable concurrent execution, allowing you to execute multiple tasks concurrently.
-This concurrency can greatly enhance the efficiency and performance of your workflows.
+タスクは同時実行を可能にし、複数のタスクを同時に実行できます。
+この同時実行により、ワークフローの効率とパフォーマンスが大幅に向上します。
 
-To motivate task concurrency, let's imagine expanding the [example script](/v3/develop/write-tasks/#example-task) to calculate the average open issues per user by making more requests:
+タスクの同時実行を促進するために、[サンプルスクリプト](/v3/develop/write-tasks/#example-task)を拡張し、リクエスト数を増やしてユーザーあたりのオープン課題の平均数を計算することを想像してみましょう。
 
 ```python repo_info.py
 import httpx
@@ -285,14 +288,10 @@ if __name__ == "__main__":
 
 ```
 
-Now you're fetching the data you need, but the requests happen sequentially.
+これで必要なデータを取得できるようになりましたが、リクエストは順次実行されます。
 
-
-Tasks expose a [`submit`](https://reference.prefect.io/prefect/tasks/#prefect.tasks.Task.submit) method that changes 
-the execution from sequential to concurrent.
-In this example, you also need to use the 
-[`result`](https://reference.prefect.io/prefect/futures/#prefect.futures.PrefectFuture.result) 
-method to unpack a list of return values:
+タスクは、実行を順次から同時実行に変更する [`submit`](https://reference.prefect.io/prefect/tasks/#prefect.tasks.Task.submit) メソッドを公開しています。
+この例では、[`result`](https://reference.prefect.io/prefect/futures/#prefect.futures.PrefectFuture.result) メソッドも使用して、戻り値のリストを展開する必要があります。
 
 ```python 
 def get_open_issues(repo_name: str, open_issues_count: int, per_page: int = 100):
@@ -342,28 +341,28 @@ Average open issues per user 💌 : 2.27
 
 </Accordion>
 
-Read more about implementing task concurrency in the [Task Runners](/v3/develop/task-runners) guide.
+タスクの同時実行の実装の詳細については、[タスク ランナー](/v3/develop/task-runners) ガイドをご覧ください。
 
-## Task configuration
+## タスク設定
 
-Tasks allow for customization through optional arguments that can be provided to the [task decorator](https://reference.prefect.io/prefect/tasks/#prefect.tasks.task).
+タスクは、[タスクデコレータ](https://reference.prefect.io/prefect/tasks/#prefect.tasks.task) に渡すオプションの引数を通じてカスタマイズできます。
 
 | Argument              | Description                                                                                                                                                                                                             |
 | --------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `name`                | An optional name for the task. If not provided, the name is inferred from the function name.                                                                                                                       |
-| `description`         | An optional string description for the task. If not provided, the description is pulled from the docstring for the decorated function.                                                                             |
-| `tags`                | An optional set of tags associated with runs of this task. These tags are combined with any tags defined by a `prefect.tags` context at task runtime.                                                             |
-| `timeout_seconds`     | An optional number of seconds indicating a maximum runtime for the task. If the task exceeds this runtime, it will be marked as failed. |
-| `cache_key_fn`        | An optional callable that, given the task run context and call parameters, generates a string key. If the key matches a previous completed state, that state result is restored instead of running the task again. |
-| `cache_policy`        | An optional policy that determines what information is used to generate cache keys. Available policies include `INPUTS`, `TASK_SOURCE`, `RUN_ID`, `FLOW_PARAMETERS`, and `NO_CACHE`. Can be combined using the + operator. |
-| `cache_expiration`    | An optional amount of time indicating how long cached states for this task are restorable; if not provided, cached states will never expire. |
-| `retries`             | An optional number of times to retry on task run failure. |
-| `retry_delay_seconds` | An optional number of seconds to wait before retrying the task after failure. This is only applicable if `retries` is nonzero.                                                                                          |
-| `log_prints`|An optional boolean indicating whether to log print statements. |
+| `name`                | タスクの名前（オプション）。指定されていない場合は、関数名から推測されます。           |
+| `description`         | タスクの説明（オプション）文字列。指定されていない場合は、デコレートされた関数のドキュメント文字列から説明が取得されます。     |
+| `tags`                | このタスクの実行に関連付けられたタグのオプションセット。これらのタグは、タスク実行時に `prefect.tags` コンテキストで定義されたタグと組み合わせられます。   |
+| `timeout_seconds`     | タスクの最大実行時間（秒数）（オプション）です。タスクがこの実行時間を超えると、失敗としてマークされます。 |
+| `cache_key_fn`        | タスクの実行コンテキストと呼び出しパラメータを指定して文字列キーを生成する、オプションの呼び出し可能オブジェクトです。キーが以前の完了状態と一致する場合、タスクを再度実行するのではなく、その状態の結果が復元されます。 |
+| `cache_policy`        | キャッシュキーの生成に使用する情報を決定するオプションのポリシーです。使用可能なポリシーは、`INPUTS`、`TASK_SOURCE`、`RUN_ID`、`FLOW_PARAMETERS`、`NO_CACHE` です。+ 演算子を使用して組み合わせることができます。 |
+| `cache_expiration`    | このタスクのキャッシュされた状態を復元できる期間を示すオプションの時間。指定しない場合は、キャッシュされた状態は期限切れになりません。 |
+| `retries`             | タスク実行が失敗した場合に再試行する回数（オプション）。 |
+| `retry_delay_seconds` | タスクが失敗した後に再試行するまでの待機時間（秒数）（オプション）。これは、`retries` が 0 以外の場合にのみ適用されます。                     |
+| `log_prints`| printステートメントをログに記録するかどうかを示すオプションのブール値。 |
 
-See all possible options in the [Python SDK docs](https://reference.prefect.io/prefect/tasks/#prefect.tasks.task).
+使用可能なすべてのオプションについては、[Python SDK ドキュメント](https://reference.prefect.io/prefect/tasks/#prefect.tasks.task) を参照してください。
 
-For example, provide optional `name` and `description` arguments to a task:
+例えば、タスクにオプションの `name` 引数と `description` 引数を指定します:
 
 ```python 
 @task(name="hello-task", description="This task says hello.")
@@ -395,7 +394,7 @@ if __name__ == "__main__":
     my_flow()
 ```
 
-Additionally, this setting accepts a function that returns a string for the task run name:
+さらに、この設定では、タスク実行名の文字列を返す関数も受け入れます:
 
 ```python
 import datetime
@@ -424,7 +423,7 @@ if __name__ == "__main__":
     my_flow()  
 ```
 
-If you need access to information about the task, use the `prefect.runtime` module. For example:
+タスクに関する情報にアクセスする必要がある場合は、`prefect.runtime` モジュールを使用してください。例:
 
 ```python
 from prefect import flow
@@ -455,15 +454,15 @@ def my_flow(name: str):
     my_task(name="marvin")
 ```
 
-## Tags
+## タグ
 
-Tags are optional string labels that enable you to identify and group tasks other than by name or flow. 
-Tags are useful to:
+タグは、タスクを名前やフロー以外の方法で識別およびグループ化するためのオプションの文字列ラベルです。
+タグは次の場合に便利です。
 
-- Filter task runs by tag in the UI and through the [Prefect REST API](/v3/api-ref/rest-api/#filtering).
-- Set [concurrency limits](#task-run-concurrency-limits) on task runs by tag.
+- UI および [Prefect REST API](/v3/api-ref/rest-api/#filtering) を通じて、タグでタスク実行をフィルタリングする。
+- タグでタスク実行の [同時実行制限](#task-run-concurrency-limits) を設定する。
 
-You may specify tags as a keyword argument on the [task decorator](https://reference.prefect.io/prefect/tasks/#prefect.tasks.task).
+[タスク デコレータ](https://reference.prefect.io/prefect/tasks/#prefect.tasks.task) のキーワード引数としてタグを指定できます。
 
 ```python 
 @task(name="hello-task", tags=["test"])
@@ -471,7 +470,7 @@ def my_task():
     print("Hello, I'm a task")
 ```
 
-Alternatively, specify tags when the task is called rather than in its definition with a [`tags` context manager](https://reference.prefect.io/prefect/context/#prefect.context.tags), .
+あるいは、[`tags` コンテキスト マネージャー](https://reference.prefect.io/prefect/context/#prefect.context.tags) を使用して、タスクの定義時ではなくタスクの呼び出し時にタグを指定します。
 
 ```python 
 from prefect import flow, task
@@ -493,14 +492,13 @@ if __name__ == "__main__":
     my_flow()
 ```
 
-## Timeouts
+## タイムアウト
 
-Task timeouts prevent unintentional long-running tasks. When the duration of execution for a 
-task exceeds the duration specified in the timeout, a timeout exception is raised and the task is  
-marked as failed. In the UI, the task is visibly designated as `TimedOut`. From the perspective of the 
-flow, the timed-out task is treated like any other failed task.
+タスクタイムアウトは、タスクが意図せず長時間実行されるのを防ぎます。
+タスクの実行時間がタイムアウトで指定された時間を超えると、タイムアウト例外が発生し、タスクは失敗としてマークされます。
+UIでは、タスクは「TimedOut」と表示されます。フローの観点からは、タイムアウトしたタスクは他の失敗したタスクと同様に扱われます。
 
-Specify timeout durations with the `timeout_seconds` keyword argument:
+タイムアウト時間は、キーワード引数「timeout_seconds」で指定します。
 
 ```python 
 from prefect import task
@@ -514,23 +512,20 @@ def show_timeouts():
     print("I will not execute")
 ```
 
-## Retries
+## 再試行
 
-Prefect can automatically retry task runs on failure. 
-A task run _fails_ if its Python function raises an exception.
+Prefect は、失敗したタスク実行を自動的に再試行できます。
+タスク実行は、Python 関数が例外を生成した場合、_失敗_ となります。
 
-To enable retries, pass `retries` and `retry_delay_seconds` arguments to your
-task. 
-If the task run fails, Prefect will retry it up to `retries` times, waiting
-`retry_delay_seconds` seconds between each attempt. 
-If the task fails on the final retry, Prefect marks the task as _failed_.
+再試行を有効にするには、タスクに `retries` 引数と `retry_delay_seconds` 引数を渡します。
+タスク実行が失敗した場合、Prefect は `retries` 回まで再試行し、各試行の間に `retry_delay_seconds` 秒待機します。
+最後の再試行でタスクが失敗した場合、Prefect はタスクを _失敗_ としてマークします。
 
-A new task run is not created when a task is retried. 
-Instead, a new state is added to the state history of the original task run.
+タスクが再試行されても、新しいタスク実行は作成されません。
+代わりに、元のタスク実行の状態履歴に新しい状態が追加されます。
 
-Retries are often useful in cases that depend upon external systems, such as making an API request. 
-The example below uses the [`httpx`](https://www.python-httpx.org/) library to make an HTTP
-request.
+再試行は、API リクエストの作成など、外部システムに依存する場合によく役立ちます。
+以下の例では、[`httpx`](https://www.python-httpx.org/) ライブラリを使用して HTTP リクエストを作成しています。
 
 ```python
 import httpx
@@ -560,14 +555,12 @@ if __name__ == "__main__":
     get_data_flow()
 ```
 
-In this task, if the HTTP request to the brittle API receives any status code
-other than a 2xx (200, 201, etc.), Prefect will retry the task a maximum of two
-times, waiting five seconds in between retries.
+このタスクでは、脆弱な API への HTTP 要求が 2xx (200、201 など) 以外のステータス コードを受信すると、Prefect はタスクを最大 2 回再試行し、再試行の間に 5 秒間待機します。
 
-### Custom retry behavior
+### カスタム再試行動作
 
-The `retry_delay_seconds` option accepts a list of integers for customized retry behavior. 
-The following task will wait for successively increasing intervals of 1, 10, and 100 seconds, respectively, before the next attempt starts:
+`retry_delay_seconds` オプションは、再試行動作をカスタマイズするための整数のリストを受け入れます。
+次のタスクは、次の試行を開始する前に、それぞれ 1 秒、10 秒、100 秒と連続して増加する間隔で待機します。
 
 ```python
 from prefect import task
@@ -578,11 +571,11 @@ def some_task_with_manual_backoff_retries():
    (rest of code follows)
 ```
 
-The `retry_condition_fn` argument accepts a callable that returns a boolean. 
-If the callable returns `True`, the task will be retried. 
-If the callable returns `False`, the task will not be retried. 
-The callable accepts three arguments: the task, the task run, and the state of the task run. 
-The following task will retry on HTTP status codes other than 401 or 404:
+`retry_condition_fn` 引数には、ブール値を返す呼び出し可能オブジェクトを指定します。
+呼び出し可能オブジェクトが `True` を返す場合、タスクは再試行されます。
+呼び出し可能オブジェクトが `False` を返す場合、タスクは再試行されません。
+呼び出し可能オブジェクトは、タスク、実行されるタスク、および実行されるタスクの状態という 3 つの引数を指定します。
+次のタスクは、401 または 404 以外の HTTP ステータスコードで再試行します:
 
 ```python
 import httpx
@@ -622,9 +615,9 @@ if __name__ == "__main__":
     get_data_flow(url="https://httpbin.org/status/503")
 ```
 
-Additionally, you can pass a callable that accepts the number of retries as an argument and returns a list. 
-Prefect includes an [`exponential_backoff`](https://reference.prefect.io/prefect/tasks/#prefect.tasks.exponential_backoff) utility that will automatically generate a list of retry delays that correspond to an exponential backoff retry strategy. 
-The following flow will wait for 10, 20, then 40 seconds before each retry.
+さらに、再試行回数を引数として受け取り、リストを返す呼び出し可能オブジェクトを渡すこともできます。
+Prefect には、[`exponential_backoff`](https://reference.prefect.io/prefect/tasks/#prefect.tasks.exponential_backoff) ユーティリティが含まれており、指数バックオフ再試行戦略に対応する再試行遅延のリストを自動的に生成します。
+次のフローは、各再試行の前に 10 秒、20 秒、そして 40 秒待機します。
 
 ```python
 from prefect import task
@@ -636,15 +629,15 @@ def some_task_with_exponential_backoff_retries():
    (rest of code follows)
 ```
 
-#### Add "jitter" to avoid thundering herds
+#### ジッターを追加して「サンダーリング・ハーズ」を回避
 
-You can add _jitter_ to retry delay times. 
-Jitter is a random amount of time added to retry periods that helps prevent "thundering herd" scenarios, which is when many tasks retry at the same time, potentially overwhelming systems.
+再試行遅延時間に _jitter_ を追加できます。
+ジッターとは、再試行期間に追加されるランダムな時間量で、「サンダーリング・ハーズ」シナリオ（多数のタスクが同時に再試行し、システムに過負荷をかける可能性のある状態）を防ぐのに役立ちます。
 
-The `retry_jitter_factor` option can be used to add variance to the base delay. 
-For example, a retry delay of 10 seconds with a `retry_jitter_factor` of 0.5 will allow a delay up to 15 seconds. 
-Large values of `retry_jitter_factor` provide more protection against "thundering herds," while keeping the average retry delay time constant. 
-For example, the following task adds jitter to its exponential backoff so the retry delays will vary up to a maximum delay time of 20, 40, and 80 seconds respectively.
+`retry_jitter_factor` オプションを使用すると、基本遅延に変動を加えることができます。
+例えば、再試行遅延を 10 秒に設定し、`retry_jitter_factor` を 0.5 に設定すると、最大 15 秒の遅延が可能になります。
+`retry_jitter_factor` の値を大きくすると、「サンダーリング・ハーズ」に対する保護が強化され、平均再試行遅延時間は一定に保たれます。
+例えば、次のタスクは指数バックオフにジッターを追加することで、再試行遅延がそれぞれ最大 20 秒、40 秒、80 秒まで変動します。
 
 ```python
 from prefect import task
@@ -662,10 +655,10 @@ def some_task_with_exponential_backoff_retries():
    (rest of code follows)
 ```
 
-#### Configure retry behavior globally
+#### 再試行動作をグローバルに設定する
 
-Set default retries and retry delays globally through settings. 
-These settings will not override the `retries` or `retry_delay_seconds` that are set in the task decorator.
+デフォルトの再試行回数と再試行遅延時間を設定を通じてグローバルに設定します。
+これらの設定は、タスクデコレータで設定された `retries` または `retry_delay_seconds` を上書きしません。
 
 ```
 prefect config set PREFECT_TASK_DEFAULT_RETRIES=2
@@ -673,9 +666,9 @@ prefect config set PREFECT_TASK_DEFAULT_RETRY_DELAY_SECONDS = [1, 10, 100]
 ```
 
 
-## Decorator syntax
+## デコレータ構文
 
-Though it is typically recommended to use `@task` decorators to define tasks:
+タスクを定義するには、通常は `@task` デコレータを使用することをお勧めします:
 
 ```python
 from prefect import task
@@ -684,7 +677,8 @@ from prefect import task
 def my_static_task(): ...
 ```
 
-if needed you can use the `task` decorator inline with any callable to create tasks on the fly:
+必要に応じて、呼び出し可能オブジェクトにインラインで `task` デコレータを使用して、タスクを即座に作成できます:
+
 ```python
 from prefect import flow, task
 
@@ -695,4 +689,4 @@ def dynamic_flow() -> list[int]:
 assert dynamic_flow() == [2, 3, 4]
 ```
 
-See a more realistic example of this pattern in the [Task Runners](/v3/develop/task-runners/#nested-mapped-tasks) guide.
+このパターンのより現実的な例については、[タスク ランナー](/v3/develop/task-runners/#nested-mapped-tasks) ガイドを参照してください。

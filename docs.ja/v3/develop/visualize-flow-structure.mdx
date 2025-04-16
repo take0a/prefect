@@ -1,24 +1,21 @@
 ---
-title: Visualize flow structure
-description: Learn how to view the overall structure of your flow.
+title: フロー構造を視覚化する
+description: フローの全体的な構造を表示する方法を学習します。
 ---
 
-Quickly view the structure of your flow using its `visualize()` method. 
-Calling this method attempts to produce a schematic diagram of your flow and tasks without 
-actually running your flow code.
+`visualize()` メソッドを使用して、フローの構造を素早く表示します。
+このメソッドを呼び出すと、フローコードを実際に実行せずに、フローとタスクの概略図を作成しようとします。
 
 <Warning>
-Functions and code outside of flows or tasks will still be run when calling 
-`visualize()`. This may have unintended consequences. Place your code into tasks to 
-avoid unintended 
-execution.
+`visualize()` を呼び出すと、フローまたはタスク外の関数やコードも実行されます。
+これにより、意図しない結果が生じる可能性があります。意図しない実行を避けるため、コードをタスク内に配置してください。
 </Warning>
 
-To use the `visualize()` method, you must havae Graphviz installed and on your PATH. 
-Please install Graphviz from [http://www.graphviz.org/download/](http://www.graphviz.org/download/). 
+`visualize()`メソッドを使用するには、Graphvizがインストールされ、PATHが設定されている必要があります。
+Graphvizは[http://www.graphviz.org/download/](http://www.graphviz.org/download/)からインストールしてください。
 
 <Note>
-Just installing the `graphviz` python package is not sufficient.
+`graphviz` Python パッケージをインストールするだけでは不十分です。
 </Note>
 
 ```python
@@ -47,9 +44,8 @@ if __name__ == "__main__":
 
 ![A simple flow visualized with the .visualize() method](/v3/img/orchestration/hello-flow-viz.png)
 
-Prefect cannot automatically produce a schematic for dynamic workflows, such as those with loops or 
-if/else control flow.
-In this case, you can provide tasks with mock return values for use in the `visualize()` call.
+Prefect は、ループや if/else 制御フローなどの動的なワークフローの Schematic を自動的に生成することはできません。
+この場合、`visualize()` 呼び出しで使用するための模擬戻り値をタスクに提供できます。
 
 ```python
 from prefect import flow, task

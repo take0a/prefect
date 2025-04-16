@@ -1,66 +1,73 @@
 ---
-title: Integrate with cloud storage and data warehouses
-description: Build an ETL pipeline that stores data in S3 and MotherDuck. 
+title: クラウドストレージおよびデータウェアハウスとの統合
+description: S3 と MotherDuck にデータを保存する ETL パイプラインを構築します。
 ---
 import { Arcade } from '/snippets/arcade.mdx'
 
-In this tutorial, you'll create an ETL pipeline which processes and stores Major League Baseball (MLB) game data in S3 and MotherDuck.
+このチュートリアルでは、メジャーリーグベースボール (MLB) のゲームデータを S3 と MotherDuck で処理して保存する ETL パイプラインを作成します。
 
-## Prerequisites
+## 前提条件
 
-* A free [Prefect Cloud account](https://app.prefect.cloud/)
-* A free [MotherDuck account](https://motherduck.com/)
-* An [AWS account](https://aws.amazon.com/free/)
+* 無料の [Prefect Cloud アカウント](https://app.prefect.cloud/)
+* 無料の [MotherDuck アカウント](https://motherduck.com/)
+* [AWS アカウント](https://aws.amazon.com/free/)
 
-### Setup the environment
+### 環境設定
 
-The code example for the tutorial can be found in the [dev-day-zoom-out repository](https://github.com/PrefectHQ/dev-day-zoom-out).
+チュートリアルのコードサンプルは、[dev-day-zoom-out リポジトリ](https://github.com/PrefectHQ/dev-day-zoom-out) にあります。
 
-To kick things off, clone the `dev-day-zoom-out` repository by running the following command:
+まず、以下のコマンドを実行して `dev-day-zoom-out` リポジトリをクローンします:
 
 ```bash
 git clone https://github.com/PrefectHQ/dev-day-zoom-out.git
 ```
-Follow along with the `README.md` file at the root of the repository to set up your environment.
-After setting up your environment, navigate to the directory where all the code for this tutorial is located.
+
+リポジトリのルートにある `README.md` ファイルに従って環境を設定してください。
+環境を設定したら、このチュートリアルのすべてのコードが配置されているディレクトリに移動します。
 
 ```bash
 cd dev-day-zoom-out/track_1_build_workflows/session_2_resilent_workflows/1_starting_flow
 ```
 
-You're more than welcome to work off the existing example, but if you'd like to start fresh, follow the tutorial end-to-end to build your very own pipeline!
+既存の例を参考にして作業していただいても結構ですが、最初からやり直したい場合は、チュートリアルを最初から最後まで実行して、独自のパイプラインを構築してください。
 
-## Set up S3 and MotherDuck resources
-Before building your pipeline, you'll need to set up the necessary resources in AWS, MotherDuck, and Prefect Cloud.
-If you're a seasoned AWS user and already have an IAM User and S3 bucket ready to go, you can skip to the [Create a Prefect AWS Credentials block](#create-a-prefect-aws-credentials-block) section.
+## S3 と MotherDuck のリソースを設定する
 
-### Create AWS resources and Prefect blocks
-The following steps will help you set up the AWS resources and Prefect blocks for your workflow.
-Sign in to the [AWS Console](https://aws.amazon.com/console/) to create an AWS IAM User and an AWS S3 bucket.
-Sign in to [Prefect Cloud](https://app.prefect.cloud/) to create a Prefect AWS credentials block and an S3 bucket block.
+パイプラインを構築する前に、AWS、MotherDuck、Prefect Cloud で必要なリソースを設定する必要があります。
+AWS の経験豊富なユーザーで、IAM ユーザーと S3 バケットを既に用意している場合は、[Prefect AWS 認証情報ブロックの作成](#create-a-prefect-aws-credentials-block) セクションに進んでください。
 
-#### Configure an AWS IAM User
-Follow the [AWS documentation](https://docs.aws.amazon.com/IAM/latest/UserGuide/id_users_create.html) to create an IAM User with `AmazonS3FullAccess` permissions.
+### AWS リソースと Prefect ブロックを作成する
 
-<Tip>
-Save the **Access Key ID** and **Secret Access Key** - you'll need these to create a Prefect AWS credentials block.
-</Tip>
+以下の手順に従って、ワークフローに必要な AWS リソースと Prefect ブロックを設定してください。
+[AWS コンソール](https://aws.amazon.com/console/) にサインインし、AWS IAM ユーザーと AWS S3 バケットを作成します。
+[Prefect Cloud](https://app.prefect.cloud/) にサインインし、Prefect AWS 認証情報ブロックと S3 バケットブロックを作成します。
 
-#### Create an AWS S3 bucket
-Follow the [AWS documentation](https://docs.aws.amazon.com/AmazonS3/latest/userguide/create-bucket-overview.html) to create an AWS S3 bucket.
+#### AWS IAM ユーザーの設定
+
+[AWS ドキュメント](https://docs.aws.amazon.com/IAM/latest/UserGuide/id_users_create.html) に従って、`AmazonS3FullAccess` 権限を持つ IAM ユーザーを作成してください。
 
 <Tip>
-Save the bucket name - you'll need this to create a Prefect S3 bucket block.
+**アクセス キー ID** と **シークレット アクセス キー** を保存します。これらは、Prefect AWS 認証情報ブロックを作成するために必要になります。
 </Tip>
 
-#### Create a Prefect AWS Credentials block
-The Access Key ID and Secret Access Key from the IAM User can be stored in a Prefect AWS Credentials block. 
-This Prefect block allows your flows and tasks to connect to your AWS resources.
-You can create this block by using the Python SDK, or through the Prefect Cloud UI.
+#### AWS S3 バケットを作成する
+
+[AWS ドキュメント](https://docs.aws.amazon.com/AmazonS3/latest/userguide/create-bucket-overview.html) に従って、AWS S3 バケットを作成します。
+
+<Tip>
+バケット名を保存します。Prefect S3 バケット ブロックを作成するときに必要になります。
+</Tip>
+
+#### Prefect AWS 認証情報ブロックを作成します
+
+IAM ユーザーのアクセスキー ID とシークレットアクセスキーは、Prefect AWS 認証情報ブロックに保存できます。
+この Prefect ブロックにより、フローとタスクが AWS リソースに接続できるようになります。
+このブロックは、Python SDK または Prefect Cloud UI を使用して作成できます。
 
 <Tabs>
   <Tab title="Python SDK method">
-    Create a new python file in your project directory and add the following code:
+    プロジェクト ディレクトリに新しい Python ファイルを作成し、次のコードを追加します:
+
 {/* pmd-metadata: notest */}
 ```python
 from prefect_aws import AwsCredentials
@@ -74,7 +81,7 @@ AwsCredentials(
 
 ```
 <Tip>
-Make sure you have `prefect-aws` installed in your environment before running the script.
+スクリプトを実行する前に、環境に `prefect-aws` がインストールされていることを確認してください。
 </Tip>
 
   </Tab>
@@ -87,15 +94,17 @@ Make sure you have `prefect-aws` installed in your environment before running th
 
 
 
-#### Create a Prefect S3 bucket block
-S3 bucket blocks are used to store your S3 bucket configuration.
-Your flows and tasks use this block to connect to your S3 bucket.
-Similarly to the AWS credentials block, you can create this block by using the Python SDK or Prefect Cloud UI.
+#### Prefect S3 バケットブロックを作成する
+
+S3 バケットブロックは、S3 バケットの設定を保存するために使用されます。
+フローとタスクは、このブロックを使用して S3 バケットに接続します。
+AWS 認証情報ブロックと同様に、このブロックも Python SDK または Prefect Cloud UI を使用して作成できます。
 
 
 <Tabs>
   <Tab title="Python SDK method">
-    Create a new python file in your project directory and add the following code:
+    プロジェクト ディレクトリに新しい Python ファイルを作成し、次のコードを追加します:
+
 {/* pmd-metadata: notest */}
 ```python
 from prefect_aws import S3Bucket, AwsCredentials
@@ -108,7 +117,7 @@ S3Bucket(
 ).save("BLOCK-NAME-PLACEHOLDER") #Replace this with a descriptive block name.
 ```
 <Tip>
-Important: Make sure you have `prefect-aws` installed in your environment before running the script.
+重要: スクリプトを実行する前に、環境に `prefect-aws` がインストールされていることを確認してください。
 </Tip>
 
   </Tab>
@@ -118,24 +127,28 @@ Important: Make sure you have `prefect-aws` installed in your environment before
   </Tab>
 </Tabs>
 
-### Create a MotherDuck access token and secret block
-This section will guide you through the process of creating a MotherDuck access token and a Prefect secret block to store the token.
+### MotherDuck アクセストークンとシークレットブロックを作成する
 
-#### Create a MotherDuck Access Token
-Follow the [MotherDuck documentation](https://motherduck.com/docs/key-tasks/authenticating-and-connecting-to-motherduck/authenticating-to-motherduck/#authentication-using-an-access-token) to create an access token.
+このセクションでは、MotherDuck アクセストークンと、トークンを保存するための Prefect シークレットブロックを作成する手順を説明します。
+
+#### MotherDuck アクセストークンを作成する
+
+[MotherDuck のドキュメント](https://motherduck.com/docs/key-tasks/authenticating-and-connecting-to-motherduck/authenticating-to-motherduck/#authentication-using-an-access-token) に従ってアクセストークンを作成してください。
 
 <Tip>
-Save the token&mdash;you'll need this to create a Prefect Secret block.
+トークンを保存します。これは、Prefect Secret ブロックを作成するときに必要になります。
 </Tip>
 
-#### Create a Prefect Secret block
-Prefect secret blocks are used to store sensitive information, such as your MotherDuck access token. 
-This secret block will allow your flows and tasks to connect to your MotherDuck database.
-You can create a secret block by using the Python SDK or Prefect Cloud UI.
+#### Prefect シークレットブロックを作成する
+
+Prefect シークレットブロックは、MotherDuck アクセストークンなどの機密情報を保存するために使用されます。
+このシークレットブロックにより、フローとタスクが MotherDuck データベースに接続できるようになります。
+シークレットブロックは、Python SDK または Prefect Cloud UI を使用して作成できます。
 
 <Tabs>
   <Tab title="Python SDK method">
-    Create a new python file in your project directory and add the following code:
+    プロジェクト ディレクトリに新しい Python ファイルを作成し、次のコードを追加します:
+
 {/* pmd-metadata: notest */}
 ```python
 from prefect_secrets import Secret
@@ -153,13 +166,15 @@ Secret(
   </Tab>
 </Tabs>
 
-## Set up your project
+## プロジェクトをセットアップする
 
-Now that you have your Prefect blocks ready to go, it's time to create a new project directory and build your pipeline.
+Prefectブロックの準備ができたので、新しいプロジェクトディレクトリを作成し、パイプラインを構築しましょう。
 
-### Create a new project directory 
-Create a new directory on your computer to store your project files. 
-Within the root of the directory, create three subfolders for storing the pre- and post-processed game data, and a python file for your Prefect flow:
+### 新しいプロジェクトディレクトリを作成します
+
+プロジェクトファイルを保存するための新しいディレクトリをコンピューター上に作成します。
+ディレクトリのルートに、ゲームデータの前処理と後処理、そしてPrefectフロー用のPythonファイルを保存する3つのサブフォルダを作成します。
+
 ```
 .
 └── mlb-data-project/
@@ -169,7 +184,8 @@ Within the root of the directory, create three subfolders for storing the pre- a
     └── boxscore_analysis
 ```
 
-Run the following commands to create the project directory and files:
+次のコマンドを実行して、プロジェクト ディレクトリとファイルを作成します:
+
 ```bash
 mkdir mlb-data-project
 cd mlb-data-project
@@ -179,12 +195,14 @@ mkdir boxscore_analysis
 touch mlb_flow.py
 ```
 
-### Build the MLB pipeline
-Once the project directory is set up, you can get to the fun part, building the MLB ETL pipeline!
+### MLB パイプラインの構築
 
-#### Fetch the game data
-First, import the necessary packages, and then create three tasks that fetch game data by using the [statsapi package](https://github.com/toddrob99/MLB-StatsAPI/tree/master?tab=readme-ov-file).
-You'll also create a flow that calls these tasks and defines the dependencies between them.
+プロジェクトディレクトリの設定が完了したら、いよいよ MLB ETL パイプラインの構築という楽しい作業に取り掛かります。
+
+#### ゲームデータを取得する
+
+まず、必要なパッケージをインポートし、[statsapi パッケージ](https://github.com/toddrob99/MLB-StatsAPI/tree/master?tab=readme-ov-file) を使用してゲームデータを取得する3つのタスクを作成します。
+また、これらのタスクを呼び出し、タスク間の依存関係を定義するフローも作成します。
 
 <Expandable title="data ingestion tasks">
 {/* pmd-metadata: notest */}
@@ -260,12 +278,13 @@ if __name__ == "__main__":
 ```
 </Expandable>
 
-If you run this flow, you'll see the raw data saved to the `raw_data` folder in your project directory.
+このフローを実行すると、プロジェクト ディレクトリの `raw_data` フォルダーに保存された生データが表示されます。
 
-#### Loading data to S3
-For the next two tasks, you'll upload the raw data file to s3, and pull it back down for further processing.
-You'll need to add these new tasks to your flow function as well.
-Copy and paste the following code into your `mlb_flow.py` file.
+#### S3 へのデータのロード
+
+次の 2 つのタスクでは、生データファイルを S3 にアップロードし、さらに処理するために S3 に戻します。
+これらの新しいタスクもフロー関数に追加する必要があります。
+次のコードを `mlb_flow.py` ファイルにコピーして貼り付けます。
 
 <Expandable title="S3 tasks">
 {/* pmd-metadata: notest */}
@@ -295,7 +314,7 @@ def download_raw_data_from_s3(s3_file_path):
 ```
 </Expandable>
 
-Update the `mlb_flow` function to include the new tasks.
+新しいタスクを含めるように `mlb_flow` 関数を更新します。
 
 <Expandable title="updated flow function">
 {/* pmd-metadata: notest */}
@@ -329,11 +348,12 @@ if __name__ == "__main__":
 ```
 </Expandable>
 
-Once you have your flow function updated, you can run the the script to see the data file arrive in your S3 bucket.
+フロー関数を更新したら、スクリプトを実行して、データ ファイルが S3 バケットに到着することを確認できます。
 
-#### Define data processing and MotherDuck tasks
-Create a set of functions that clean up the raw data, run some basic statistics, and save the results to a MotherDuck database.
-Copy and paste the following code into your `mlb_flow.py` file.
+#### データ処理とMotherDuckタスクの定義
+
+生データをクリーンアップし、基本的な統計を実行し、結果をMotherDuckデータベースに保存する一連の関数を作成します。
+以下のコードをコピーして、`mlb_flow.py`ファイルに貼り付けます。
 
 <Expandable title="data processing and MotherDuck tasks">
 {/* pmd-metadata: notest */}
@@ -461,7 +481,7 @@ def load_parquet_to_duckdb(parquet_file_path, team_name):
 ```
 </Expandable>
 
-Update the `mlb_flow` function to include the new tasks.
+新しいタスクを含めるように `mlb_flow` 関数を更新します。
 
 <Expandable title="updated flow function">
 {/* pmd-metadata: notest */}
@@ -509,12 +529,13 @@ if __name__ == "__main__":
 </Expandable>
 
 
-Once you have your flow function updated, you can run the the script to see the processed data arrive in your MotherDuck database.
+フロー関数を更新したら、スクリプトを実行して、処理済みのデータがMotherDuckデータベースに到着するのを確認できます。
 
-#### Add a markdown artifact
-As a last step, add some visibility into the results of your flow.
-You can add a task that creates a markdown artifact to view the results in the Prefect Cloud UI.
-Copy and paste the following code into your `mlb_flow.py` file.
+#### Markdownアーティファクトを追加する
+
+最後のステップとして、フローの結果を可視化します。
+Prefect Cloud UIで結果を表示するために、Markdownアーティファクトを作成するタスクを追加できます。
+以下のコードを`mlb_flow.py`ファイルにコピー＆ペーストしてください。
 
 <Expandable title="markdown Artifact task">
 {/* pmd-metadata: notest */}
@@ -561,7 +582,7 @@ Correlation between game time and score differential: {game_analysis['time_diffe
 ```
 </Expandable>
 
-Update the `mlb_flow` function to include the new tasks.
+新しいタスクを含めるように `mlb_flow` 関数を更新します。
 
 <Expandable title="updated flow function">
 {/* pmd-metadata: notest */}
@@ -611,11 +632,12 @@ if __name__ == "__main__":
 ```
 </Expandable>
 
-After adding the new code, run the updated flow to see the markdown artifact!
+新しいコードを追加したら、更新されたフローを実行して、マークダウン成果物を確認します。
+
 <Arcade src={"https://demo.arcade.software/LHzqGzfl1r3AF3Nbcwvp"} title={"MLB Flow Run with Artifact"} />
 
-## Next steps
+## 次のステップ
 
-Now that you have a complete ETL pipeline, you can outfit it with some failure handling and data quality checks to make it more resilient.
-You might even consider deploying it to serverless infrastructure, so that you don't have to keep your laptop running 24/7!
-Jump to the next tutorial to learn how you can use Prefect to do just that: [Deploy resilient pipelines to serverless infrastructure](/v3/tutorials/resilience-and-deployment)
+ETLパイプラインが完成したので、障害処理とデータ品質チェックを追加して、より耐障害性を高めることができます。
+ノートパソコンを24時間365日稼働させておく必要がないように、サーバーレスインフラストラクチャへのデプロイも検討してみてください。
+Prefectを使って実際にそれを実現する方法については、次のチュートリアルをご覧ください。[耐障害性の高いパイプラインをサーバーレスインフラストラクチャにデプロイする](/v3/tutorials/resilience-and-deployment)

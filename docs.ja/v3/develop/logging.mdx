@@ -1,38 +1,35 @@
 ---
-title: Configure logging
-description: Configure logging on flows and tasks for monitoring, troubleshooting, and auditing.
+title: ログ記録を構成する
+description: 監視、トラブルシューティング、監査のためにフローとタスクのログ記録を構成します。
 ---
 
-When you run a flow or a task, Prefect automatically emits a standard set of logs that you can inspect in the UI, in the CLI, or 
-through the API. 
-Additionally, you can emit custom log messages during flow and task runs to capture specific events or information important to your workflow.
+フローまたはタスクを実行すると、Prefect は標準のログセットを自動的に出力します。これらのログは、UI、CLI、または API を通じて確認できます。
+さらに、フローやタスクの実行中にカスタムログメッセージを出力して、ワークフローにとって重要な特定のイベントや情報を取得することもできます。
 
-Prefect logging is configured automatically anytime you execute a flow or a task.
-The standard set of logs include:
-- information about when runs are created or renamed
-- information about run state changes
-- the tracebacks of any errors that arise during execution
+Prefect のログは、フローまたはタスクを実行するたびに自動的に設定されます。
+標準のログセットには、次のものが含まれます。
+- 実行の作成日時または名前変更日時に関する情報
+- 実行状態の変化に関する情報
+- 実行中に発生したエラーのトレースバック
 
+## Prefect ロガー
 
-## Prefect loggers
-
-Prefect exposes a set of loggers that you can use to emit your own custom logs.
-To use a Prefect logger, import `get_run_logger` from the `prefect.logging` module. 
-This function returns a logger instance that is aware of the current flow or task run context, allowing for more detailed and contextual logging.
-This allows you to explore logs in the UI or API based on relevant run information such as run ID and run name.
+Prefect は、独自のカスタムログを出力できるロガーのセットを公開しています。
+Prefect ロガーを使用するには、`prefect.logging` モジュールから `get_run_logger` をインポートします。
+この関数は、現在のフローまたはタスクの実行コンテキストを認識するロガーインスタンスを返すため、より詳細でコンテキストに基づいたログ出力が可能になります。
+これにより、実行 ID や実行名などの関連する実行情報に基づいて、UI または API でログを調べることができます。
 
 <Warning>
-`get_run_logger()` can only be used in the context of a flow or task.
+`get_run_logger()` は、フローまたはタスクのコンテキストでのみ使用できます。
 
-To use a normal Python logger anywhere with your same configuration, use `get_logger()` from `prefect.logging`.
+同じ設定で通常の Python ロガーをどこでも使用するには、`prefect.logging` の `get_logger()` を使用してください。
 
-The logger retrieved with `get_logger()` will **not** send log records to the Prefect API.
+`get_logger()` で取得したロガーは、ログレコードを Prefect API に送信しません。
 </ Warning>
 
-### Logging in flows and tasks
+### フローとタスクでのログ記録
 
-To log from a flow or a task, retrieve a logger instance with `get_run_logger()`, then call the standard Python 
-[logging methods](https://docs.python.org/3/library/logging.html):
+フローまたはタスクからログを記録するには、`get_run_logger()` でロガーインスタンスを取得し、標準の Python [ログ記録メソッド](https://docs.python.org/3/library/logging.html) を呼び出します。
 
 ```python
 from prefect import flow, task
@@ -61,15 +58,13 @@ def logger_flow():
     logger_task()
 ```
 
-### Logging print statements
+### print ステートメントのログ記録
 
-Prefect provides the `log_prints` option on both flows and tasks to enable the automatic logging of `print` statements. 
-When `log_prints=True` for a given task or flow, the Python built-in `print` is patched to redirect to the Prefect 
-logger for the scope of that task or flow.
-These logs are emitted at the `INFO` level.
+Prefect は、フローとタスクの両方に `log_prints` オプションを提供しており、`print` ステートメントの自動ログ記録を有効にできます。
+特定のタスクまたはフローで `log_prints=True` が指定されている場合、Python 組み込みの `print` はパッチ適用され、そのタスクまたはフローのスコープの Prefect ロガーにリダイレクトされます。
+これらのログは `INFO` レベルで出力されます。
 
-By default, task runs and nested flow runs inherit the `log_prints` setting from their parent flow run, unless opted out with their 
-own explicit `log_prints` setting.
+デフォルトでは、タスク実行とネストされたフロー実行は、明示的に `log_prints` 設定でオプトアウトしない限り、親フロー実行の `log_prints` 設定を継承します。
 
 ```python
 from prefect import task, flow
@@ -84,7 +79,7 @@ def my_flow():
     my_task()
 ```
 
-Outputs:
+出力:
 
 
 ```bash
@@ -108,7 +103,7 @@ def my_flow():
     my_task()
 ```
 
-Using `log_prints=False` at the task level outputs:
+タスク レベルで `log_prints=False` を使用すると、次のように出力されます:
 
 
 ```bash
@@ -119,75 +114,71 @@ Using `log_prints=False` at the task level outputs:
 not logging print statements in this task
 ```
 
-You can configure this behavior as the default for all Prefect flow and task runs through the 
-`PREFECT_LOGGING_LOG_PRINTS` setting:
+この動作を、`PREFECT_LOGGING_LOG_PRINTS` 設定を通じてすべての Prefect フローおよびタスク実行のデフォルトとして構成できます:
 
 
 ```bash
 prefect config set PREFECT_LOGGING_LOG_PRINTS=True
 ```
 
-## Logging configuration
+## ログ設定
 
-Prefect relies on [the standard Python implementation of logging configuration](https://docs.python.org/3/library/logging.config.html).
-The full specification of the default logging configuration for any version of Prefect can always be inspected [here](https://github.com/PrefectHQ/prefect/blob/main/src/prefect/logging/logging.yml).
-The default logging level is `INFO`.
+Prefect は [ログ設定の標準 Python 実装](https://docs.python.org/3/library/logging.config.html) に依存しています。
+Prefect のどのバージョンでも、デフォルトのログ設定の完全な仕様は [こちら](https://github.com/PrefectHQ/prefect/blob/main/src/prefect/logging/logging.yml) でいつでも確認できます。
+デフォルトのログレベルは `INFO` です。
 
-### Customize logging configuration
+### ログ設定のカスタマイズ
 
-Prefect provides several settings to configure the logging level and individual loggers.
+Prefect には、ログレベルと個々のロガーを設定するための設定がいくつか用意されています。
 
-Any value in [Prefect's logging configuration file](https://github.com/PrefectHQ/prefect/blob/main/src/prefect/logging/logging.yml) can be overridden through 
-a Prefect setting of the form `PREFECT_LOGGING_[PATH]_[TO]_[KEY]=value` corresponding to the nested address of the field you are configuring.
+[Prefect のログ設定ファイル](https://github.com/PrefectHQ/prefect/blob/main/src/prefect/logging/logging.yml) 内の値は、設定するフィールドのネストされたアドレスに対応する `PREFECT_LOGGING_[PATH]_[TO]_[KEY]=value` 形式の Prefect 設定によって上書きできます。
 
-For example, to change the default logging level for flow runs but not task runs, update your profile with:
+例えば、フロー実行のデフォルトのログレベルを変更し、タスク実行のログレベルは変更しない場合は、プロファイルを次のように更新します:
+
 ```bash
 prefect config set PREFECT_LOGGING_LOGGERS_PREFECT_FLOW_RUNS_LEVEL="ERROR"
 ```
-or set the corresponding environment variable:
+または対応する環境変数を設定します:
 ```bash
 export PREFECT_LOGGING_LOGGERS_PREFECT_FLOW_RUNS_LEVEL="ERROR"
 ```
 
-You can also configure the "root" Python logger. The root logger receives logs from all loggers unless they 
-explicitly opt out by disabling propagation. By default, the root logger is configured to output `WARNING` level logs 
-to the console. As with other logging settings, you can override this from the environment or in the logging configuration 
-file. For example, you can change the level with the `PREFECT_LOGGING_ROOT_LEVEL` environment variable.
+「ルート」Pythonロガーを設定することもできます。
+ルートロガーは、明示的に伝播を無効にしない限り、すべてのロガーからログを受信します。
+デフォルトでは、ルートロガーはコンソールに `WARNING` レベルのログを出力するように設定されています。
+他のログ設定と同様に、この設定は環境設定またはログ設定ファイルで上書きできます。
+例えば、`PREFECT_LOGGING_ROOT_LEVEL` 環境変数を使用してレベルを変更できます。
 
-In some situations you may want to completely overhaul the Prefect logging configuration by providing your own `logging.yml` file.
-You can create your own version of `logging.yml` in one of two ways:
+状況によっては、独自の `logging.yml` ファイルを用意して、Prefect のログ設定を完全に変更したい場合があります。
+独自の `logging.yml` を作成するには、次の2つの方法があります。
 
-1. Create a `logging.yml` file in your `PREFECT_HOME` directory (default is `~/.prefect`).
-2. Specify a custom path to your `logging.yml` file using the `PREFECT_LOGGING_SETTINGS_PATH` setting.
+1. `PREFECT_HOME` ディレクトリ（デフォルトは `~/.prefect`）に `logging.yml` ファイルを作成します。
+2. `PREFECT_LOGGING_SETTINGS_PATH` 設定を使用して、`logging.yml` ファイルへのカスタムパスを指定します。
 
-If Prefect cannot find the `logging.yml` file at the specified location, it will fall back to using the default logging configuration.
+指定された場所で Prefect が `logging.yml` ファイルを見つけられない場合は、デフォルトのログ設定が使用されます。
 
-See the Python [Logging configuration](https://docs.python.org/3/library/logging.config.html#logging.config.dictConfig) 
-documentation for more information about the configuration options and syntax used by `logging.yml`.
+`logging.yml` で使用される設定オプションと構文の詳細については、Python の [ログ設定](https://docs.python.org/3/library/logging.config.html#logging.config.dictConfig) ドキュメントを参照してください。
 
 <Note>
-As with all Prefect settings, logging settings are loaded at runtime.
-This means that to customize Prefect logging in a remote environment requires setting the appropriate environment variables and/or profile in that environment.
+すべての Prefect 設定と同様に、ログ設定は実行時に読み込まれます。
+つまり、リモート環境で Prefect のログをカスタマイズするには、その環境で適切な環境変数やプロファイルを設定する必要があります。
 </ Note>
 
-### Formatters
+### フォーマッタ
 
-Prefect log formatters specify the format of log messages. 
-The default formatting for task and flow run records is 
-`"%(asctime)s.%(msecs)03d | %(levelname)-7s | Task run %(task_run_name)r - %(message)s"` for tasks and
-similarly `"%(asctime)s.%(msecs)03d | %(levelname)-7s | Flow run %(flow_run_name)r - %(message)s"` for flows.
+Prefect ログフォーマッタは、ログメッセージのフォーマットを指定します。
+タスクおよびフロー実行レコードのデフォルトのフォーマットは、タスクの場合は `"%(asctime)s.%(msecs)03d | %(levelname)-7s | Task run %(task_run_name)r - %(message)s"`、フローの場合は `"%(asctime)s.%(msecs)03d | %(levelname)-7s | Flow run %(flow_run_name)r - %(message)s"` です。
 
-The variables available to interpolate in log messages vary by logger. 
-In addition to the run context, message string, 
-and any keyword arguments, flow and task run loggers have access to additional variables.
+ログメッセージに挿入できる変数は、ロガーによって異なります。
+実行コンテキスト、メッセージ文字列、およびキーワード引数に加えて、フローおよびタスク実行ロガーは追加の変数にアクセスできます。
 
-The flow run logger has the following variables available for formatting:
+フロー実行ロガーには、フォーマットに使用できる次の変数があります:
 
 - `flow_run_name`
 - `flow_run_id`
 - `flow_name`
 
-The task run logger has the following variables available for formatting:
+タスク実行ロガーには、フォーマットに使用できる次の変数があります:
 
 - `task_run_id`
 - `flow_run_id`
@@ -196,16 +187,15 @@ The task run logger has the following variables available for formatting:
 - `flow_run_name`
 - `flow_name`
 
-You can specify custom formatting by setting the relevant environment variable or by modifying the formatter in a custom `logging.yml` file as
-described earlier. 
-For example, the following changes the formatting for the flow runs formatter:
+関連する環境変数を設定するか、前述のようにカスタム `logging.yml` ファイル内のフォーマッタを変更することで、カスタムフォーマットを指定できます。
+たとえば、次のコードはフロー実行フォーマッタのフォーマットを変更します:
 
 
 ```bash
 PREFECT_LOGGING_FORMATTERS_STANDARD_FLOW_RUN_FMT="%(asctime)s.%(msecs)03d | %(levelname)-7s | %(flow_run_id)s - %(message)s"
 ```
 
-The resulting messages, using the flow run ID instead of name, look like this:
+名前の代わりにフロー実行 ID を使用した結果のメッセージは次のようになります:
 
 
 ```bash
@@ -213,28 +203,26 @@ The resulting messages, using the flow run ID instead of name, look like this:
 'othertask-1c085beb-3' for task 'othertask'
 ```
 
-### Styles
+### スタイル
 
-By default, Prefect highlights specific keywords in the console logs with a variety of colors.
-You can toggle highlighting on/off with the `PREFECT_LOGGING_COLORS` setting:
+デフォルトでは、Prefect はコンソールログ内の特定のキーワードを様々な色で強調表示します。
+`PREFECT_LOGGING_COLORS` 設定で、強調表示のオン/オフを切り替えることができます。
 
 
 ```bash
 PREFECT_LOGGING_COLORS=False
 ```
 
-You can also change what gets highlighted and even adjust the colors by updating the styles - see the `styles`
-section of [the Prefect logging configuration file](https://github.com/PrefectHQ/prefect/blob/main/src/prefect/logging/logging.yml) for available keys.
+スタイルを更新することで、強調表示される内容を変更したり、色を調整したりすることもできます。使用可能なキーについては、[Prefect ログ構成ファイル](https://github.com/PrefectHQ/prefect/blob/main/src/prefect/logging/logging.yml) の `styles` セクションを参照してください。
 
 <Note>
-Note that these style settings only impact the display within a terminal, not the Prefect UI.
+これらのスタイル設定はターミナル内の表示にのみ影響し、Prefect UI には影響しないことに注意してください。
 </ Note>
 
-You can even build your own handler with a [custom highlighter](https://rich.readthedocs.io/en/stable/highlighting.html#custom-highlighters). 
-For example, to additionally highlight emails:
+[カスタムハイライター](https://rich.readthedocs.io/en/stable/highlighting.html#custom-highlighters)を使用して独自のハンドラーを構築することもできます。
+例えば、メールをさらにハイライト表示するには、次のようにします。
 
-1. Copy and paste the following code into  `my_package_or_module.py` (rename as needed) in the same directory as the flow run 
-script; or ideally as part of a Python package so it's available in `site-packages` and accessible anywhere within your environment.
+1. 次のコードを、フロー実行スクリプトと同じディレクトリにある `my_package_or_module.py` (必要に応じて名前を変更してください) にコピー＆ペーストします。理想的には、`site-packages` で利用できるように Python パッケージの一部として、環境内のどこからでもアクセスできるようにします。
 
 ```python
 import logging
@@ -262,8 +250,7 @@ class CustomConsoleHandler(PrefectConsoleHandler):
         super().__init__(highlighter=highlighter, styles=styles, level=level)
 ```
 
-2. Update `~/.prefect/logging.yml` to use `my_package_or_module.CustomConsoleHandler` and additionally reference the 
-base_style and named expression: `log.email`.
+2. `my_package_or_module.CustomConsoleHandler` を使用するように `~/.prefect/logging.yml` を更新し、さらに base_style と名前付き式 `log.email` を参照します。
 
 ```yaml
     console_flow_runs:
@@ -276,8 +263,7 @@ base_style and named expression: `log.email`.
             # log.completed_state: green
 ```
 
-3. On your next flow run, text that looks like an email is highlighted. For example, `my@email.com` is colored in 
-magenta below:
+3. 次回のフロー実行時に、メールと思われるテキストがハイライト表示されます。例えば、以下の例では「my@email.com」がマゼンタ色で表示されています:
 
 ```python
 from prefect import flow
@@ -291,17 +277,16 @@ def log_email_flow():
 log_email_flow()
 ```
 
-### Apply markup in logs
+### ログにマークアップを適用する
 
-To use [Rich's markup](https://rich.readthedocs.io/en/stable/markup.html#console-markup) in Prefect logs, first 
-configure `PREFECT_LOGGING_MARKUP`:
+Prefect ログで [Rich のマークアップ](https://rich.readthedocs.io/en/stable/markup.html#console-markup) を使用するには、まず `PREFECT_LOGGING_MARKUP` を設定します:
 
 
 ```bash
 PREFECT_LOGGING_MARKUP=True
 ```
 
-The following will highlight "fancy" in red:
+次の例では、「fancy」が赤で強調表示されます:
 
 ```python
 from prefect import flow
@@ -315,37 +300,34 @@ def my_flow():
 my_flow()
 ```
 <Warning>
-**Inaccurate logs could result**
+**ログが不正確になる可能性があります**
 
-If enabled, strings that contain square brackets may be 
-inaccurately interpreted and lead to incomplete output. For example, `DROP TABLE [dbo].[SomeTable];"` outputs 
-`DROP TABLE .[SomeTable];`.
+有効にすると、角括弧を含む文字列が不正確に解釈され、出力が不完全になる可能性があります。
+たとえば、「DROP TABLE [dbo].[SomeTable];」は「DROP TABLE .[SomeTable];」と出力されます。
 </Warning>
 
-## Include logs from other libraries
+## 他のライブラリからのログを含める
 
-By default, Prefect won't capture log statements from libraries that your flows
-and tasks use. You can tell Prefect to include logs from these libraries with
-the `PREFECT_LOGGING_EXTRA_LOGGERS` setting.
+デフォルトでは、Prefect はフローやタスクが使用するライブラリからのログステートメントをキャプチャしません。
+`PREFECT_LOGGING_EXTRA_LOGGERS` 設定を使用することで、これらのライブラリからのログを Prefect に含めるように指定できます。
 
-To use this setting, specify one or more Python library names to include,
-separated by commas. For example, if you want Prefect to capture Dask
-and SciPy logging statements with your flow and task run logs, use:
+この設定を使用するには、含める Python ライブラリ名を 1 つ以上、カンマで区切って指定します。
+例えば、Prefect でフローやタスクの実行ログと共に Dask および SciPy のログステートメントもキャプチャする場合は、次のように指定します。
 
 `PREFECT_LOGGING_EXTRA_LOGGERS=dask,scipy`
 
-Configure this setting as an environment variable or in a profile. See
-[Settings](/v3/develop/settings-and-profiles/) for more details about how to use settings.
+この設定は、環境変数またはプロファイルで設定します。
+設定の使用方法の詳細については、[設定](/v3/develop/settings-and-profiles/) を参照してください。
 
-## Access logs from the command line
+## コマンドラインからログにアクセスする
 
-You can retrieve logs for a specific flow run ID using Prefect's CLI:
+Prefect の CLI を使用して、特定のフロー実行 ID のログを取得できます:
 
 ```bash
 prefect flow-run logs MY-FLOW-RUN-ID
 ```
 
-This can be particularly helpful if you want to access the logs as a local file:
+これは、ログにローカル ファイルとしてアクセスする場合に特に役立ちます:
 
 ```bash
 prefect flow-run logs  MY-FLOW-RUN-ID > flow.log

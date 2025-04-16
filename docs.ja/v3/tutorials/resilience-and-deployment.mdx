@@ -1,13 +1,13 @@
 ---
-title: Deploy resilient pipelines to serverless infrastructure
-description: Learn how to handle pipeline failures and deploy to serverless infrastructure. 
+title: サーバーレス インフラストラクチャに回復力のあるパイプラインを展開する
+description: パイプラインの障害を処理し、サーバーレス インフラストラクチャにデプロイする方法を学びます。
 ---
 import { Arcade } from '/snippets/arcade.mdx'
 
-This tutorial builds off the Major League Baseball (MLB) flow created [in the S3 and MotherDuck tutorial](/docs/v3/tutorials/s3-motherduck).
-Here you'll experiment with adding failure handling and data quality checks to the flow, and deploy it with Prefect Cloud's [Managed Execution work pool](/v3/deploy/infrastructure-examples/managed#run-flows-on-prefect-managed-infrastructure).
+このチュートリアルは、[S3 と MotherDuck のチュートリアル](/docs/v3/tutorials/s3-motherduck)で作成されたメジャーリーグベースボール (MLB) フローをベースに構築されています。
+ここでは、フローに障害処理とデータ品質チェックを追加し、Prefect Cloud の [マネージド実行ワークプール](/v3/deploy/infrastructure-examples/managed#run-flows-on-prefect-managed-infrastructure) を使用してデプロイする方法について説明します。
 
-Feel free to follow along with this YouTube video as you work through the different sections.
+各セクションの作業を進める際には、この YouTube 動画をご覧ください。
 
 <iframe 
 width="560" 
@@ -20,56 +20,59 @@ referrerpolicy="strict-origin-when-cross-origin"
 allowfullscreen>
 </iframe>
 
-## Prerequisites
+## 前提条件
 
-The pipeline in this tutorial uses S3 and MotherDuck for storing data.
-MotherDuck is a serverless, cloud-optimized analytics platform built around DuckDB.
-To run the pipeline, you'll need:
+このチュートリアルのパイプラインは、データの保存に S3 と MotherDuck を使用します。
+MotherDuck は、DuckDB をベースに構築された、サーバーレスでクラウドに最適化された分析プラットフォームです。
+パイプラインを実行するには、以下のものが必要です。
 
-* A free [Prefect Cloud account](https://app.prefect.cloud/)
-* A free [MotherDuck account](https://motherduck.com/), including:
-    * A MotherDuck token
-    * A Secret block in Prefect Cloud that contains the MotherDuck token
-* An [AWS account](https://aws.amazon.com/free/), including:
-    * An IAM user with "AmazonS3FullAccess" permissions
-    * An S3 bucket
-    * An S3 block in Prefect Cloud
+* 無料の [Prefect Cloud アカウント](https://app.prefect.cloud/)
+* 無料の [MotherDuck アカウント](https://motherduck.com/)。以下のものが必要です。
+    * MotherDuck トークン
+    * MotherDuck トークンを含む Prefect Cloud の Secret ブロック
+* [AWS アカウント](https://aws.amazon.com/free/)。以下のものが必要です。
+    * 「AmazonS3FullAccess」権限を持つ IAM ユーザー
+    * S3 バケット
+    * Prefect Cloud の S3 ブロック
 
-If you're missing any of the AWS and MotherDuck resources, you can create them by following the steps in the [S3 and MotherDuck tutorial](/v3/tutorials/s3-motherduck).
+AWS および MotherDuck のリソースが不足している場合は、[S3 と MotherDuck のチュートリアル](/v3/tutorials/s3-motherduck) の手順に従って作成できます。
 
-### Setup the environment
+### 環境設定
 
-Complete code examples can be found in the [dev-day-zoom-out repository](https://github.com/PrefectHQ/dev-day-zoom-out).
+完全なコード例は、[dev-day-zoom-out リポジトリ](https://github.com/PrefectHQ/dev-day-zoom-out) にあります。
 
-To kick things off, start by cloning the `dev-day-zoom-out` repository by running the following command:
+まず、以下のコマンドを実行して `dev-day-zoom-out` リポジトリをクローンします:
 
 ```bash
 git clone https://github.com/PrefectHQ/dev-day-zoom-out.git
 ```
-Follow along with the README.md file at the root of the repository to set up your environment.
-After you're done, navigate to the directory where all the code for this tutorial is located.
+
+リポジトリのルートにある README.md ファイルに従って環境を設定してください。
+完了したら、このチュートリアルのすべてのコードが配置されているディレクトリに移動します。
 
 ```bash
 cd dev-day-zoom-out/track_1_build_workflows/session_2_resilent_workflows/
 ```
 
-## Failure handling
+## 失敗処理
 
-Prefect offers a variety of ways to handle failures in your pipelines.
-In this section, you'll have the opportunity to explore a few different retry strategies.
-To see each of these retry modes in action, you can copy each code snippet and replace the original `get_recent_games` task in the MLB pipeline.
+Prefect は、パイプラインの失敗を処理するためのさまざまな方法を提供しています。
+このセクションでは、いくつかの異なる再試行戦略を検討します。
+これらの再試行モードの動作を確認するには、各コードスニペットをコピーし、MLB パイプラインの元の `get_recent_games` タスクを置き換えてください。
 
-Run the following command to navigate to the directory containing the pipeline that you'll modify.
+次のコマンドを実行して、変更するパイプラインを含むディレクトリに移動します。
+
 ```bash
 cd dev-day-zoom-out/track_1_build_workflows/session_2_resilent_workflows/1_starting_flow
 ```
 
-The following code snippets show how to apply a different retries to the `get_recent_games` task located in the `mlb_flow.py` file.
-The task itself has a few modifications to simulate random API failures. 
+次のコードスニペットは、`mlb_flow.py` ファイルにある `get_recent_games` タスクに異なる再試行を適用する方法を示しています。
+タスク自体には、ランダムな API 障害をシミュレートするためにいくつかの変更が加えられています。
 
-### Implement a simple retry
-This example shows how to use the `@task` decorator to apply a simple retry strategy.
-Replace the existing `get_recent_games` task with the following.
+### シンプルな再試行を実装する
+
+この例では、`@task` デコレータを使用してシンプルな再試行戦略を適用する方法を示します。
+既存の `get_recent_games` タスクを以下のコードに置き換えます。
 
 {/* pmd-metadata: notest */}
 ```python
@@ -91,10 +94,11 @@ def get_recent_games(team_name, start_date, end_date):
 ```
 
 
-### Implement a delayed retry
-A delayed retry in Prefect is a mechanism that automatically retries a task or flow run after a specified delay when it fails. 
-This feature is particularly useful for handling transient errors or temporary issues with external systems, like rate limiting or network issues.
-To implement this retry strategy, add a `retry_delay_seconds` utility to the `get_recent_games` task's `@task` decorator.
+### 遅延再試行を実装する
+
+Prefect の遅延再試行は、タスクまたはフローの実行が失敗した場合に、指定された遅延時間後に自動的に再試行するメカニズムです。
+この機能は、一時的なエラーや、レート制限やネットワークの問題など、外部システムの一時的な問題を処理する場合に特に便利です。
+この再試行戦略を実装するには、`get_recent_games` タスクの `@task` デコレータに `retry_delay_seconds` ユーティリティを追加します。
 
 {/* pmd-metadata: notest */}
 ```python
@@ -116,10 +120,11 @@ def get_recent_games(team_name, start_date, end_date):
 ```
 
 
-### Implement an exponential retry
-Exponential backoff is a retry strategy where the delay between retry attempts increases, well, exponentially!
-This means that each subsequent retry attempt waits longer than the previous one.
-In Prefect, this can be implemented by adding the `exponential_backoff` utility to the `get_recent_games` task's `@task` decorator.
+### 指数関数的な再試行を実装する
+
+指数関数的なバックオフとは、再試行間の遅延が指数関数的に増加する再試行戦略です。
+これは、後続の再試行の待機時間が前回よりも長くなることを意味します。
+Prefect では、`get_recent_games` タスクの `@task` デコレータに `exponential_backoff` ユーティリティを追加することでこれを実装できます。
 
 {/* pmd-metadata: notest */}
 ```python
@@ -140,13 +145,14 @@ def get_recent_games(team_name, start_date, end_date):
 ```
 
 
-### Implement a retry handler
-A retry handler in Prefect is a custom function that determines whether a task should be retried based on specific conditions. 
-This is useful for more complex retry logic, like retrying only when a specific exception is raised.
-To implement a retry handler, you'll need to define a separate function that Prefect will use to determine whether to retry a task.
-This function will take three arguments: `task`, `task_run`, and `state`.
-It will return a boolean value indicating whether to retry the task.
-Add the following code snippet to the `mlb_flow.py` file.
+### 再試行ハンドラを実装する
+
+Prefect の再試行ハンドラは、特定の条件に基づいてタスクを再試行するかどうかを決定するカスタム関数です。
+これは、特定の例外が発生した場合にのみ再試行するなど、より複雑な再試行ロジックに役立ちます。
+再試行ハンドラを実装するには、タスクを再試行するかどうかを決定するために Prefect が使用する別の関数を定義する必要があります。
+この関数は、`task`、`task_run`、`state` の 3 つの引数を取ります。
+タスクを再試行するかどうかを示すブール値を返します。
+`mlb_flow.py` ファイルに次のコードスニペットを追加します。
 
 {/* pmd-metadata: notest */}
 ```python
@@ -167,8 +173,8 @@ def retry_handler(task, task_run, state) -> bool:
 ```
 
 
-After defining the handler, you can add it to the `@task` decorator using the `retry_condition_fn` parameter.
-Replace the existing `get_recent_games` task with the following.
+ハンドラーを定義したら、`retry_condition_fn` パラメータを使用して `@task` デコレータに追加できます。
+既存の `get_recent_games` タスクを以下のものに置き換えます。
 
 {/* pmd-metadata: notest */}
 ```python
@@ -195,24 +201,26 @@ def get_recent_games(team_name, start_date, end_date):
 ```
 
 
-If you'd like to see the complete examples for all of the retry options, run the following command:
+すべての再試行オプションの完全な例を確認するには、次のコマンドを実行します:
 
 ```bash
 cd dev-day-zoom-out/track_1_build_workflows/session_2_resilent_workflows/2_retries
 ```
 
-## Add a Data Quality Check
-Prefect's [transactional interface](/v3/develop/transactions#write-transactions) is a powerful feature that enhances the resilience and idempotency of workflows.
-It contributes to improved runtime performance and autonomous task execution.
-Transactions also allow you to leverage on-commit and on-rollback hooks to handle side effects and failures.
-For this section, you'll use the transactional interface to implement a data quality check for the raw game data.
+## データ品質チェックの追加
 
-Run the following command to navigate to the directory containing the pipeline that you'll modify.
+Prefect の [トランザクション インターフェース](/v3/develop/transactions#write-transactions) は、ワークフローの回復力と冪等性を高める強力な機能です。
+これは、実行時パフォーマンスの向上とタスクの自律実行に貢献します。
+また、トランザクションを使用すると、on-commit フックと on-rollback フックを利用して、副作用や障害に対処することもできます。
+このセクションでは、トランザクション インターフェースを使用して、生のゲームデータのデータ品質チェックを実装します。
+
+以下のコマンドを実行して、変更するパイプラインを含むディレクトリに移動します。
+
 ```bash
 cd dev-day-zoom-out/track_1_build_workflows/session_2_resilent_workflows/1_starting_flow
 ```
 
-First, you'll need to import the `transaction` utility from the `prefect.transactions` module.
+まず、`prefect.transactions` モジュールから `transaction` ユーティリティをインポートする必要があります。
 
 {/* pmd-metadata: notest */}
 <Expandable title="Necessary Imports">
@@ -222,9 +230,9 @@ from prefect.transactions import transaction
 ```
 </Expandable>
 
-The following code snippet can be added to the portion of script where the rest of the tasks are defined. 
-There is an `on_rollback` hook that is designed to delete the file if the data quality check fails.
-If less than 5 entries are found in the file, the data quality check will fail, triggering the rollback.
+以下のコードスニペットは、スクリプトの残りのタスクが定義されている部分に追加できます。
+データ品質チェックが失敗した場合にファイルを削除するように設計された `on_rollback` フックがあります。
+ファイル内に5件未満のエントリが見つかった場合、データ品質チェックは失敗し、ロールバックがトリガーされます。
 
 <Expandable title="Data Quality Check and Rollback">
 {/* pmd-metadata: notest */}
@@ -249,8 +257,8 @@ def quality_test(file_path):
 ```
 </Expandable>
 
-In your flow function, you'll add a transaction block that will run the data quality check against the file containing the raw game data. 
-Replace the existing `mlb_flow` function with the following.
+フロー関数に、生のゲームデータを含むファイルに対してデータ品質チェックを実行するトランザクションブロックを追加します。
+既存の `mlb_flow` 関数を以下のものに置き換えます。
 
 <Expandable title="Flow with Transaction Block">
 {/* pmd-metadata: notest */}
@@ -308,41 +316,43 @@ if __name__ == "__main__":
 ```
 </Expandable>
 
-To show the on-rollback hook in action, you can run the flow using a date range that will yield less game data than is required by the quality check. 
-With the 10 second buffer that happens before the rollback is executed, you'll see the raw data file spawn in and out of the raw_data folder, as it gets deleted by the hook.
+on-rollback フックの動作を確認するには、品質チェックに必要なデータよりも少ないゲームデータを生成する日付範囲を使用してフローを実行します。
+ロールバック実行前に発生する 10 秒間のバッファにより、フックによって削除される生データファイルが raw_data フォルダに生成され、そこから出ていく様子を確認できます。
 
-If you'd like to see the complete code for this section, navigate to the directory by running the following command:
+このセクションの完全なコードを確認するには、次のコマンドを実行してディレクトリに移動してください:
 
 ```bash
 cd dev-day-zoom-out/track_1_build_workflows/session_2_resilent_workflows/3_rollbacks
 ```
 
-## Deploy With Managed Execution
-In this section, you'll deploy the MLB flow to serverless infrastructure.
-That way you don't have to keep your laptop on 24/7 if you'd like to run this flow on a schedule.
-Specifically, you'll deploy the flow to Prefect's Managed Execution work pool.
-Managed Execution enables you to run flows on Prefect Cloud's infrastructure without needing to configure your own cloud provider infrastructure to run your work remotely. 
+## マネージド実行によるデプロイ
 
-### Create a Managed work pool
+このセクションでは、MLBフローをサーバーレスインフラストラクチャにデプロイします。
+これにより、このフローをスケジュールに従って実行する場合、ラップトップを24時間365日オンにしておく必要がなくなります。
+具体的には、フローをPrefectのマネージド実行ワークプールにデプロイします。
+マネージド実行を使用すると、リモートで作業を実行するために独自のクラウドプロバイダーインフラストラクチャを構成することなく、Prefect Cloudのインフラストラクチャ上でフローを実行できます。
 
-If you're authenticated to Prefect Cloud from your terminal, you can run the following command to create a new work pool.
+### マネージドワークプールを作成する
+
+ターミナルからPrefect Cloudに認証されている場合は、次のコマンドを実行して新しいワークプールを作成できます。
 
 ```bash
 prefect work-pool create managed-pool --type prefect:managed
 ```
 
 <Tip>
-You can create a new work pool in the Prefect Cloud UI by navigating to the **Work Pools** page.
+Prefect Cloud UI で **Work Pools** ページに移動すると、新しいワーク プールを作成できます。
 </Tip>
 
-### Run the deployment script
+### デプロイメントスクリプトを実行します
 
-Use this command to navigate to the directory containing the deployment script.
+このコマンドを使用して、デプロイメントスクリプトが格納されているディレクトリに移動します。
+
 ```bash
 cd dev-day-zoom-out/track_1_build_workflows/session_2_resilent_workflows/4_deploy_and_schedule
 ```
 
-The following code snippet shows the contents of the `mlb_flow_deploy.py` script, which uses the `from_source()` and `deploy()` methods.
+次のコード スニペットは、`from_source()` メソッドと `deploy()` メソッドを使用する `mlb_flow_deploy.py` スクリプトの内容を示しています。
 
 {/* pmd-metadata: notest */}
 ```python
@@ -370,34 +380,37 @@ if __name__ == "__main__":
 
 ```
 
-The `from_source()` method specifies the location of flow code when creating deployments.
-It's particularly useful when you want to pull flow code from a remote storage location at runtime, rather than having it baked into a Docker image.
-You can see that it takes two arguments: A URL to a git repository or a storage object, and the path to the file containing the flow and the function name, separated by a colon.
+`from_source()` メソッドは、デプロイメントを作成する際にフローコードの場所を指定します。
+これは、Docker イメージにフローコードを組み込むのではなく、実行時にリモートストレージからフローコードを取得する場合に特に便利です。
+このメソッドは 2 つの引数を取ります。Git リポジトリまたはストレージオブジェクトへの URL、フローと関数名を含むファイルへのパス（コロンで区切る）です。
 
-The `.deploy()` method enables you to define a deployment programmatically in Python code.
-It takes a name for the deployment, the work pool to submit work to, and a dictionary of parameters to pass to the flow.
-There is also a `job_variables` parameter, which accepts a list of packages to install in the flow's execution environment.
+`.deploy()` メソッドを使用すると、Python コードでプログラム的にデプロイメントを定義できます。
+このメソッドは、デプロイメントの名前、作業を送信するワークプール、フローに渡すパラメータのディクショナリを受け取ります。
+また、フローの実行環境にインストールするパッケージのリストを受け入れる `job_variables` パラメータもあります。
 
-The package list is generated by the `read_requirements` helper function.
-The function reads the `requirements.txt` file in the directory containing the deployment script, and returns a list of packages to install in the flow's execution environment.
+パッケージリストは `read_requirements` ヘルパー関数によって生成されます。
+この関数は、デプロイメントスクリプトを含むディレクトリ内の `requirements.txt` ファイルを読み取り、フローの実行環境にインストールするパッケージのリストを返します。
 
-To see the deployment script in action, you can run it using the following command.
+デプロイメントスクリプトの動作を確認するには、次のコマンドを使用して実行します。
+
 ```bash
 python mlb_flow_deploy.py
 ```
 
-You now have a new deployment in Prefect Cloud!
-You can find it by navigating to the **Deployments** page in the Prefect Cloud UI.
-To kick off a new flow run, click the **Quick run** button.
+Prefect Cloud に新しいデプロイメントが作成されました。
+Prefect Cloud UI の **Deployments** ページに移動すると、新しいデプロイメントが表示されます。
+新しいフロー実行を開始するには、**Quick run** ボタンをクリックします。
 
-### Add scheduling
-Nice work! You just deployed the MLB flow to serverless infrastructure.
-You can now add a schedule to the deployment so that it runs on a regular basis.
+### スケジュールを追加
 
-#### Schedule with the Python SDK
-[Cron schedules](/v3/automate/add-schedules#cron) are commonly used to run workflows at specific times, days, or months.
-The following example shows how to add a cron schedule to the deployment so that the flow will run every day at 12:00 AM.
-Try it out for yourself by making the changes to the mlb_flow_deploy.py file and running it again.
+お疲れ様でした！MLBフローをサーバーレスインフラストラクチャにデプロイしました。
+デプロイにスケジュールを追加して、定期的に実行できるようになりました。
+
+#### Python SDK を使用したスケジュール設定
+
+[Cron スケジュール](/v3/automate/add-schedules#cron) は、特定の時間、曜日、または月にワークフローを実行するためによく使用されます。
+次の例は、フローが毎日午前 0 時に実行されるように、デプロイメントに cron スケジュールを追加する方法を示しています。
+mlb_flow_deploy.py ファイルに変更を加えて再度実行し、実際に試してみてください。
 
 {/* pmd-metadata: notest */}
 ```python
@@ -426,11 +439,11 @@ if __name__ == "__main__":
 ```
 
 
-After running the updated script, you'll see that the deployment has a new schedule in the Prefect Cloud UI.
-Prefect also supports `interval` and `rrule` schedule types.
+更新されたスクリプトを実行すると、Prefect Cloud UI でデプロイメントに新しいスケジュールが追加されていることを確認できます。
+Prefect は `interval` および `rrule` スケジュールタイプもサポートしています。
 
-[Interval schedules](/v3/automate/add-schedules#interval) are useful for running flows at specific intervals.
-For example, you can run a flow every 10 minutes.
+[間隔スケジュール](/v3/automate/add-schedules#interval) は、特定の間隔でフローを実行する場合に便利です。
+例えば、10分ごとにフローを実行できます。
 
 {/* pmd-metadata: notest */}
 ```python
@@ -438,8 +451,8 @@ For example, you can run a flow every 10 minutes.
 interval=timedelta(minutes=10)
 ```
 
-For more complex recurrence patterns, Prefect supports [RRule schedules](/v3/automate/add-schedules#rrule). 
-For example, running workflows every Monday, Wednesday, and Friday of the month at 4:00 PM.
+より複雑な繰り返しパターンを実現するために、Prefect は [RRule スケジュール](/v3/automate/add-schedules#rrule) をサポートしています。
+例えば、毎月月曜日、水曜日、金曜日の午後 4 時にワークフローを実行するなどです。
 
 {/* pmd-metadata: notest */}
 ```python
@@ -447,17 +460,19 @@ For example, running workflows every Monday, Wednesday, and Friday of the month 
 rrule="FREQ=WEEKLY;BYDAY=MO,TU,WE,TH,FR;BYHOUR=16;BYMINUTE=0"
 ```
 
-#### Add a schedule with the Prefect Cloud UI
-If you'd like to add a schedule to a deployment using the Prefect Cloud UI, navigate to the deployment and click **+ Schedule**.
+#### Prefect Cloud UI でスケジュールを追加する
+
+Prefect Cloud UI を使用してデプロイメントにスケジュールを追加する場合は、デプロイメントに移動し、**+ Schedule** をクリックします。
 
 <Arcade src={"https://demo.arcade.software/XYwssAx9RdPJ1EcPcsCd"} title={"Mastering Deployment Scheduling for Optimal Performance"} />
 
-## Next steps
-In this tutorial, you learned how to:
-* Handle pipeline failures and retries
-* Implement data quality checks and rollbacks
-* Deploy a flow to serverless infrastructure
-* Add a schedule to a deployment
+## 次のステップ
 
-You can continue your exploration of Prefect by checking out the different [work pool types](/v3/deploy/infrastructure-concepts/work-pools) to deploy your flows to Docker, Kubernetes, or your favorite cloud provider.
-If you're interested in building more workflows, check out [Train a machine learning model](/v3/tutorials/ml) to learn how to build a machine learning pipeline.
+このチュートリアルでは、以下の方法を学習しました。
+* パイプラインの失敗と再試行の処理
+* データ品質チェックとロールバックの実装
+* サーバーレス インフラストラクチャへのフローのデプロイ
+* デプロイメントへのスケジュールの追加
+
+Prefect のさまざまな [ワークプール タイプ](/v3/deploy/infrastructure-concepts/work-pools) を確認し、Docker、Kubernetes、またはお好みのクラウドプロバイダーにフローをデプロイすることで、Prefect をさらに活用できます。
+さらにワークフローを構築したい場合は、[機械学習モデルのトレーニング](/v3/tutorials/ml) で機械学習パイプラインの構築方法を学習してください。

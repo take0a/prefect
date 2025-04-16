@@ -1,59 +1,59 @@
 ---
-title: Send alerts on failure
-description: Learn how to use automations to notify your team when a flow fails.
+title: 失敗時にアラートを送信する
+description: フローが失敗したときに自動化を使用してチームに通知する方法を学びます。
 ---
 
-In the [Debug a data pipeline](/v3/tutorials/debug) tutorial, you learned how to troubleshoot failed flow runs.
-In this tutorial, you'll learn how to set up an email alert that proactively notifies your team about failures.
-Alerts let team members engage with the troubleshooting process, even if they don't typically log into Prefect Cloud.
+[データパイプラインのデバッグ](/v3/tutorials/debug)チュートリアルでは、失敗したフロー実行のトラブルシューティング方法を学習しました。
+このチュートリアルでは、チームに障害を事前に通知するメールアラートを設定する方法を学習します。
+アラートにより、チームメンバーは普段Prefect Cloudにログインしていなくても、トラブルシューティングプロセスに参加できます。
 
 <Info>
-This tutorial starts where the [Set up a platform for data pipelines](/v3/tutorials/platform) tutorial leaves off, so complete that one first.
-You will need a paid Prefect Cloud account.
+このチュートリアルは、[データパイプライン用のプラットフォームの設定](/v3/tutorials/platform)チュートリアルの続きから始まりますので、まずはそのチュートリアルを完了してください。
+有料のPrefect Cloudアカウントが必要です。
 </Info>
 
-## Set up an automation
+## 自動化の設定
 
-Automations are used to set up alerts in Prefect.
-First, you need to create a new automation.
+自動化は、Prefect でアラートを設定するために使用されます。
+まず、新しい自動化を作成する必要があります。
 
-1. Sign in to Prefect Cloud, and use the workspace switcher to open the `staging` workspace.
-1. Go to **Automations** and then click **Add Automation**.
+1. Prefect Cloud にサインインし、ワークスペーススイッチャーを使用して「ステージング」ワークスペースを開きます。
+1. **Automations** に移動し、**Add Automation** をクリックします。
 
-### Specify the trigger
+### トリガーを指定します
 
-An automation triggers whenever a specified condition is met.
+指定された条件が満たされるたびに、オートメーションがトリガーされます。
 
-1. Select the **Flow run state** trigger type.
-1. Trigger whenever the `data-pipeline` flow has flow runs that enter the **Failed** or **Crashed** states.
-1. Click **Next** to go to the next step.
+1. トリガータイプとして **Flow run state** を選択します。
+1. `data-pipeline` フローに、**Failed** または **Crashed** 状態になるフロー実行があるたびにトリガーされます。
+1. **Next** をクリックして次のステップに進みます。
 
-### Specify the action
+### アクションを指定します
 
-Once an automation triggers, it can perform one or more actions.
+自動化がトリガーされると、1つ以上のアクションを実行できます。
 
-1. Choose the **Send a notification** action type
-1. In order to send an email notification, you need to create a block.
-Blocks store configuration and provide an interface for external systems.
-    1. Under **Block**, click **Add**.
-    1. Find the **Email** block, and then click **Create**.
-    1. Specify `email-alerts` as the block name, and provide a JSON list of email addresses to send notifications to (e.g. `["you@example.com"]`).
-    1. Click **Create** to save the block.
-1. Click **Next** to go to the next step.
+1. アクションタイプとして「**通知を送信**」を選択します。
+1. メール通知を送信するには、ブロックを作成する必要があります。
+ブロックは設定を保存し、外部システムへのインターフェースを提供します。
+    1. **Block** で **Add** をクリックします。
+    1. **Email** ブロックを見つけて、**Create** をクリックします。
+    1. ブロック名として「email-alerts」を指定し、通知を送信するメールアドレスのJSONリストを入力します（例：`["you@example.com"]`）。
+    1. **Create**をクリックしてブロックを保存します。
+1. **Next** をクリックして次のステップに進みます。
 
-### Save the automation
+### オートメーションを保存します
 
-Give the automation a name and description so that you can identify its purpose later.
+後で目的を識別できるように、オートメーションに名前と説明を入力します。
 
-1. Name: `email-alert`
-2. Description: `Send an email when the 'data-pipeline' flow fails`
-3. Click **Save**.
+1. 名前: `email-alert`
+2. 説明: `data-pipeline` フローが失敗したときにメールを送信する
+3. **Save** をクリックします。
 
-You've now created an automation that sends an email whenever the `data-pipeline` flow in the `staging` workspace has a failed run.
+これで、`staging` ワークスペースの `data-pipeline` フローの実行が失敗するたびにメールを送信するオートメーションが作成されました。
 
-## Test the alert
+## アラートをテストする
 
-To test the alert, you need to trigger a flow run failure in the `staging` workspace.
+アラートをテストするには、`staging` ワークスペースでフロー実行の失敗をトリガーする必要があります。
 
 ```bash
 # Switch to the staging workspace (if not already in it)
@@ -63,8 +63,8 @@ prefect cloud workspace set --workspace "<account handle>/staging"
 python simulate_failures.py --fail-at-run 1 --runs 1
 ```
 
-After the script finishes, you should receive an email with details about the failed flow run.
-The email should look similar to the following:
+スクリプトが終了すると、失敗したフロー実行の詳細が記載されたメールが届きます。
+メールの内容は次のようになります:
 
 ```
 Subject: Prefect flow run notification
@@ -76,21 +76,21 @@ Flow run URL: https://app.prefect.cloud/account/9b649228-0419-40e1-9e0d-44954b5c
 State message: Flow run encountered an exception: Exception: Run failed
 ```
 
-You can open the URL to view the flow run in Prefect Cloud.
+URL を開いて、Prefect Cloud で実行されたフローを表示できます。
 
-## Next steps
+## 次のステップ
 
 import { TF } from "/snippets/resource-management/terraform.mdx"
 import { automations } from "/snippets/resource-management/vars.mdx"
 
-In this tutorial, you used Prefect Cloud automations to set up an email alert.
+このチュートリアルでは、Prefect Cloud の自動化機能を使用してメールアラートを設定しました。
 
-To learn more about automations:
+自動化について詳しくは、以下をご覧ください。
 
-* Read [Trigger actions on events](/v3/automate/events/automations-triggers) to become an automations expert.
-* See [Python](https://github.com/PrefectHQ/examples/blob/main/scripts/create-automation.py) for an example of creating an automation programmatically.
+* 自動化のエキスパートになるには、[イベントでアクションをトリガー](/v3/automate/events/automations-triggers) をお読みください。
+* プログラムで自動化を作成する例については、[Python](https://github.com/PrefectHQ/examples/blob/main/scripts/create-automation.py) をご覧ください。
 * <TF name="automation" href={automations.tf} />
 
 <Tip>
-Need help? [Book a meeting](https://calendly.com/prefect-experts/prefect-product-advocates?utm_campaign=prefect_docs_cloud&utm_content=prefect_docs&utm_medium=docs&utm_source=docs) with a Prefect Product Advocate to get your questions answered.
+サポートが必要ですか? Prefect 製品アドボケートとの[ミーティングを予約](https://calendly.com/prefect-experts/prefect-product-advocates?utm_campaign=prefect_docs_cloud&utm_content=prefect_docs&utm_medium=docs&utm_source=docs)して、ご質問にお答えします。
 </Tip>

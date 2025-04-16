@@ -1,52 +1,53 @@
 ---
-title: Debug a data pipeline
-description: Learn how to troubleshoot flow runs that fail.
+title: データパイプラインをデバッグする
+description: 失敗したフロー実行のトラブルシューティング方法を学習します。
 ---
 
-In the [Set up a platform for data pipelines](/v3/tutorials/platform) tutorial, you used Prefect Cloud to set up a platform for data pipelines.
-In this tutorial, you'll learn what to do when those data pipelines fail.
+[データ パイプライン用のプラットフォームをセットアップする](/v3/tutorials/platform)チュートリアルでは、Prefect Cloud を使用してデータ パイプライン用のプラットフォームをセットアップしました。
+このチュートリアルでは、データ パイプラインに障害が発生した場合の対処方法を学習します。
 
 <Info>
-This tutorial starts where the [previous tutorial](/v3/tutorials/platform) leaves off, so complete that one first.
-You will need a paid Prefect Cloud account.
+このチュートリアルは[前回のチュートリアル](/v3/tutorials/platform)の続きから始まりますので、まずは前回のチュートリアルを完了してください。
+有料のPrefect Cloudアカウントが必要です。
 </Info>
 
-## Find failures
+## 失敗を見つける
 
-You can use the Prefect Cloud dashboard to find failures.
+Prefect Cloud ダッシュボードを使用して、失敗を見つけることができます。
 
-1. Sign in to Prefect Cloud
-1. Use the workspace switcher to open the `staging` workspace that you created in the last tutorial.
-1. Go to **Home**, and look for red bars in the **Flow Runs** section, these indicate failed flow runs.
-1. Hover over a red bar to see more details about the flow run: name, deployment, duration, timestamp, and tags.
+1. Prefect Cloud にサインインします。
+1. ワークスペーススイッチャーを使用して、前回のチュートリアルで作成した「ステージング」ワークスペースを開きます。
+1. **Home** に移動し、**Flow Runs** セクションで赤いバーを探します。これは失敗したフロー実行を示しています。
+1. 赤いバーにマウスポインターを合わせると、フロー実行の詳細（名前、デプロイメント、期間、タイムスタンプ、タグ）が表示されます。
 
 <Note>
-You can filter by a specific tag (e.g. `team-a`) if you're only interested in a specific set of flows.
+特定のフローのセットのみに関心がある場合は、特定のタグ (例: `team-a`) でフィルタリングできます。
 </Note>
 
-## Debug a failure
+## 障害のデバッグ
 
-A single flow might experience failures on several runs.
-When this happens, it can be helpful to inspect the first failure in the series.
+1 つのフローが複数回実行されても失敗することがあります。
+このような場合は、一連の実行の中で最初の失敗を調べることが有効です。
 
-1. In the **Flow Runs** section on the **Home** page, expand the `data-pipeline` flow.
-1. You will see a list of failing `data-pipeline` flow runs, in reverse chronological order.
-1. Use the pagination controls to navigate to the last failure in the list, this is the first failure that occurred.
-1. Click the name of the flow run to go to its detail page.
-1. From the flow run detail page, scroll down to the **Logs** section in the right panel.
-1. Look for an error message similar to the following:
+1. **Home** ページの **Flow Runs** セクションで、`data-pipeline` フローを展開します。
+1. 失敗した `data-pipeline` フロー実行のリストが、新しい順に表示されています。
+1. ページネーション コントロールを使用して、リストの最後の失敗（最初に発生した失敗）に移動します。
+1. フロー実行の名前をクリックして、詳細ページに移動します。
+1. フロー実行の詳細ページで、右側のパネルの **Logs** セクションまで下にスクロールします。
+1. 次のようなエラー メッセージを探します。
+
 +
 ```
 File "/opt/prefect/demos/simulate_failures.py", line 12, in process_data
     raise Exception(f"Run failed")
 ```
 
-It looks like there's an error in the `simulate_failures.py` file.
-Now that you've found the failure, the next step is to fix the underlying code.
+`simulate_failures.py` ファイルにエラーがあるようです。
+障害の原因がわかったので、次のステップは基礎となるコードを修正することです。
 
-## Update the code
+## コードを更新します
 
-Open the `simulate_failures.py` file and look at line 12.
+`simulate_failures.py` ファイルを開き、12 行目を確認します。
 
 ```python simulate_failures.py {12}
 import argparse
@@ -70,10 +71,10 @@ def process_data(run: int, fail_at_run: Optional[int] = None) -> bool:
 # ...
 ```
 
-The `if` statement is the problem.
-If you specify the `--fail_at_run` flag, once the flow runs more than `fail_at_run` times, the flow fails with an exception.
-Remove the `if` statement to fix this failure.
-We added this statement to give you something to fix. :) 
+問題は `if` 文です。
+`--fail_at_run` フラグを指定すると、フローが `fail_at_run` 回以上実行されると、例外が発生して失敗します。
+この問題を修正するには、`if` 文を削除してください。
+この文を追加したのは、修正の根拠を示すためです。 :)
 
 ```python simulate_failures.py
 import argparse
@@ -91,17 +92,17 @@ def process_data(run: int, fail_at_run: Optional[int] = None) -> bool:
 # ...
 ```
 
-Now, all flow runs succeed in spite of the `--fail-at-run` flag.
-Deploy the fix to the staging workspace to confirm this new behavior.
+これで、`--fail-at-run` フラグの有無にかかわらず、すべてのフロー実行が成功するようになりました。
+この新しい動作を確認するには、ステージングワークスペースに修正をデプロイしてください。
 
 ```bash
 prefect cloud workspace set --workspace "<account handle>/staging"
 python simulate_failures.py --fail-at-run 3
 ```
 
-After the script finishes, open the **Home** page in Prefect Cloud to verify that the flow run is no longer failing.
+スクリプトが完了したら、Prefect Cloud の **Home** ページを開いて、フロー実行が失敗しなくなったことを確認してください。
 
-You can now switch workspaces to update the code used in the production workspace as well.
+これでワークスペースを切り替えて、本番環境のワークスペースで使用されているコードも更新できるようになりました。
 
 ```bash
 prefect cloud workspace set --workspace "<account handle>/production"
@@ -109,13 +110,13 @@ python simulate_failures.py
 ```
 
 
-## Next steps
+## 次のステップ
 
-In this tutorial, you successfully used Prefect Cloud to fix a failing data pipeline.
-To learn more about the different states that can occur during the flow run lifecycle, see [Manage states](/v3/develop/manage-states).
+このチュートリアルでは、Prefect Cloud を使用して、障害が発生したデータパイプラインを修正しました。
+フロー実行ライフサイクル中に発生する可能性のあるさまざまな状態の詳細については、[状態の管理](/v3/develop/manage-states) を参照してください。
 
-Next, learn how to [alert your team](/v3/tutorials/alerts) when failures occur.
+次に、障害が発生したときに[チームにアラートを送信する](/v3/tutorials/alerts) 方法を学習します。
 
 <Tip>
-Need help? [Book a meeting](https://calendly.com/prefect-experts/prefect-product-advocates?utm_campaign=prefect_docs_cloud&utm_content=prefect_docs&utm_medium=docs&utm_source=docs) with a Prefect Product Advocate to get your questions answered.
+サポートが必要ですか? Prefect 製品アドボケートとの[ミーティングを予約](https://calendly.com/prefect-experts/prefect-product-advocates?utm_campaign=prefect_docs_cloud&utm_content=prefect_docs&utm_medium=docs&utm_source=docs)して、ご質問にお答えします。
 </Tip>

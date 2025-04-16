@@ -1,45 +1,45 @@
 ---
-title: Schedule a flow
-description: Deploy flows and run them on a schedule with Prefect.
+title: フローをスケジュールする
+description: Prefect を使用してフローを展開し、スケジュールに従って実行します。
 ---
 
-In the [Quickstart](/v3/get-started/quickstart), you learned how to convert a Python script to a Prefect flow.
+[クイックスタート](/v3/get-started/quickstart)では、Python スクリプトを Prefect フローに変換する方法を学習しました。
 
-In this tutorial, you'll learn how to get that flow off of your local machine and run it on a schedule with Prefect.
+このチュートリアルでは、そのフローをローカル マシンから取得し、Prefect を使用してスケジュールに従って実行する方法を学びます。
 
-## Publish your code to a remote repository
+## コードをリモートリポジトリに公開する
 
-First, you need to take the code from your local machine and publish it to a remote repository.
-We've already published the code to GitHub that you need for this tutorial:
+まず、ローカルマシンからコードを取得し、リモートリポジトリに公開する必要があります。
+このチュートリアルに必要なコードは、すでにGitHubに公開されています:
 
 ```
 https://github.com/prefecthq/demos.git
 ```
 
-## Create a work pool
+## 作業プールを作成する
 
-Running a flow locally is a good start, but most use cases require a remote execution environment.
-A [work pool](/v3/deploy/infrastructure-concepts/work-pools/) is the most common interface for deploying flows to remote infrastructure.
+フローをローカルで実行するのは良いスタートですが、ほとんどのユースケースではリモート実行環境が必要です。
+[ワークプール](/v3/deploy/infrastructure-concepts/work-pools/)は、フローをリモートインフラストラクチャにデプロイするための最も一般的なインターフェースです。
 
 <Tabs>
-  <Tab title="Self-hosted">
+  <Tab title="セルフホスト">
 
-Deploy your flow to a self-hosted Prefect server instance using a `Process` work pool.
-All flow runs submitted to this work pool will run in a local subprocess (the creation mechanics are similar for other work pool types that run on remote infrastructure).
+`Process` ワークプールを使用して、セルフホスト型 Prefect サーバーインスタンスにフローをデプロイします。
+このワークプールに送信されたすべてのフロー実行は、ローカルサブプロセスで実行されます（作成方法は、リモートインフラストラクチャで実行される他の種類のワークプールと同様です）。
 
-1. Create a `Process` work pool:
+1. `Process` ワークプールを作成します:
 
    ```bash
    prefect work-pool create --type process my-work-pool
    ```
 
-1. Verify that the work pool exists:
+1. 作業プールが存在することを確認します:
 
    ```bash
    prefect work-pool ls
    ```
 
-1. Start a worker to poll the work pool:
+1. ワーカーを起動してワークプールをポーリングします:
 
    ```bash
    prefect worker start --pool my-work-pool
@@ -47,29 +47,29 @@ All flow runs submitted to this work pool will run in a local subprocess (the cr
 
   </Tab>
   <Tab title="Prefect Cloud">
-Deploy your flow to Prefect Cloud using a managed work pool.
+管理された作業プールを使用して、フローを Prefect Cloud にデプロイします。
 
-1. Create a [managed work pool](/v3/deploy/infrastructure-concepts/work-pools):
+1. [マネージド ワーク プール](/v3/deploy/infrastructure-concepts/work-pools) を作成します:
 
    ```bash
    prefect work-pool create my-work-pool --type prefect:managed
    ```
 
-1. View your new work pool on the **Work Pools** page of the UI.
+1. UI の **Work Pools** ページで新しい作業プールを表示します。
   </Tab>
 </Tabs>
   
 <Tip>
-You can also choose from other [work pool types](/v3/deploy/infrastructure-concepts/work-pools#work-pool-types).
+他の [作業プール タイプ](/v3/deploy/infrastructure-concepts/work-pools#work-pool-types) を選択することもできます。
 </Tip>
 
-## Deploy and schedule your flow
+## フローを展開してスケジュールする
 
-A [deployment](/v3/deploy/infrastructure-examples/docker/) is used to determine when, where, and how a flow should run.
-Deployments elevate flows to remotely configurable entities that have their own API.
-To set a flow to run on a schedule, you need to create a deployment.
+[デプロイメント](/v3/deploy/infrastructure-examples/docker/) は、フローをいつ、どこで、どのように実行するかを決定するために使用されます。
+デプロイメントは、フローを、独自の API を持つリモートで設定可能なエンティティに昇格させます。
+フローをスケジュールに従って実行するように設定するには、デプロイメントを作成する必要があります。
 
-1. Create a deployment in code:
+1. コードでデプロイメントを作成します:
 
    ```python create_deployment.py
    from prefect import flow
@@ -96,17 +96,17 @@ To set a flow to run on a schedule, you need to create a deployment.
    ```
 
    <Tip>
-   You can store your flow code in nearly any location as long as Prefect can access it.
-   See [Where to store your flow code](/v3/deploy/infrastructure-concepts/store-flow-code) for more details.
+   Prefect がアクセスできる場所であれば、フローコードはほぼどこにでも保存できます。
+   詳細については、[フローコードの保存場所](/v3/deploy/infrastructure-concepts/store-flow-code) を参照してください。
    </Tip>
 
-1. Run the script to create the deployment:
+1. スクリプトを実行してデプロイメントを作成します:
 
    ```bash
    python create_deployment.py
    ```
 
-   Check the logs to ensure your deployment was created:
+   ログをチェックして、デプロイメントが作成されたことを確認します:
 
    ```bash
    Successfully created/updated all deployments!
@@ -119,21 +119,21 @@ To set a flow to run on a schedule, you need to create a deployment.
    _______________________________________________________
    ```
 
-1. Schedule a run for the deployment:
+1. デプロイメントの実行をスケジュールします:
 
    ```bash
    prefect deployment run 'show-stars/my-first-deployment'
    ```
 
-   Soon you should see the flow run graph and logs on the **Flow Run** page in the UI.
-   Logs are also streamed to the terminal.
+   まもなく、UI の **Flow Run** ページにフロー実行グラフとログが表示されます。
+   ログはターミナルにもストリーミングされます。
 
 ## Next steps
 
-In this tutorial, you successfully deployed your flow to remote infrastructure and scheduled it to run automatically.
+このチュートリアルでは、フローをリモートインフラストラクチャにデプロイし、自動実行するようにスケジュール設定しました。
 
-Next, learn how to build a [resilient and performant data pipeline](/v3/tutorials/pipelines) with retries, concurrent tasks, concurrency limits, and caching.
+次に、再試行、同時実行タスク、同時実行制限、キャッシュ機能を備えた[回復力とパフォーマンスに優れたデータパイプライン](/v3/tutorials/pipelines)を構築する方法を学習します。
 
 <Tip>
-Need help? [Book a meeting](https://calendly.com/prefect-experts/prefect-product-advocates?utm_campaign=prefect_docs_cloud&utm_content=prefect_docs&utm_medium=docs&utm_source=docs) with a Prefect Product Advocate to get your questions answered.
+サポートが必要ですか? Prefect 製品アドボケートとの[ミーティングを予約](https://calendly.com/prefect-experts/prefect-product-advocates?utm_campaign=prefect_docs_cloud&utm_content=prefect_docs&utm_medium=docs&utm_source=docs)して、ご質問にお答えします。
 </Tip>

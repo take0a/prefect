@@ -1,21 +1,21 @@
 ---
-title: Extract data from websites
-description: Use Prefect to fetch and analyze large amounts of data
+title: ウェブサイトからデータを抽出する
+description: Prefectを使用して大量のデータを取得して分析する
 ---
 
-In the [Build a data pipeline](/v3/tutorials/pipelines) tutorial, you learned how to create resilient and performant data pipelines.
-Now you'll learn how to handle data dependencies and ingest large amounts of data by building a GitHub issue analysis pipeline.
+[データパイプラインの構築](/v3/tutorials/pipelines)チュートリアルでは、回復力とパフォーマンスに優れたデータパイプラインの作成方法を学習しました。
+ここでは、GitHub の問題分析パイプラインを構築することで、データ依存関係を処理し、大量のデータを取り込む方法を学習します。
 
-The real world can present additional challenges when dealing with web data:
+現実の世界では、Web データを扱う際に、次のような追加の課題が生じる可能性があります。
 
-- API requests can fail or give a response with missing or malformed data.
-- You need to make multiple dependent API calls.
-- You need to ingest data when you don't know in advance how much data is available.
+- API リクエストが失敗したり、データが欠落していたり​​、形式が不正なレスポンスが返されたりすることがあります。
+- 複数の依存関係のある API 呼び出しを行う必要があります。
+- 利用可能なデータ量が事前にわからない状態でデータを取り込む必要があります。
 
-## Set up error handling
+## エラー処理を設定する
 
-Throw and catch errors to handle them gracefully.
-For example, if you don't get a 2xx response from an API, throw an exception and log the error.
+エラーを適切に処理するには、例外をスローしてキャッチします。
+たとえば、API から 2xx レスポンスが返されない場合は、例外をスローしてエラーをログに記録します。
 
 ```python
 from typing import Optional
@@ -38,7 +38,7 @@ def fetch_page_of_issues(repo: str, page: int = 1) -> Optional[dict]:
 ```
 
 <Expandable title="full example">
-Run the following code to see error handling in action:
+エラー処理の動作を確認するには、次のコードを実行します:
 
 ```python
 from typing import List, Optional
@@ -80,9 +80,9 @@ if __name__ == "__main__":
 ```
 </Expandable>
 
-## Ingest large amounts of data
+## 大量のデータを取り込む
 
-Use pagination to fetch large amounts of data and run tasks concurrently to analyze the data efficiently:
+ページネーションを使用して大量のデータを取得し、複数のタスクを同時実行することで、データを効率的に分析します:
 
 ```python
 from typing import List
@@ -112,7 +112,7 @@ def analyze_repo_health(repos: List[str]):
 ```
 
 <Expandable title="full example">
-Run the following code to see pagination and concurrent tasks in action:
+次のコードを実行して、ページ区切りと同時タスクの動作を確認します:
 
 ```python
 from typing import List, Optional
@@ -190,14 +190,14 @@ if __name__ == "__main__":
 ```
 </Expandable>
 
-## Structure your code with dependent nested flows and tasks
+## 依存関係のあるネストされたフローとタスクを使用してコードを構造化します。
 
-Use nested flows and tasks to help distribute tasks more efficiently and aid with debugging.
+ネストされたフローとタスクを使用すると、タスクをより効率的に分散し、デバッグを容易にすることができます。
 
-* Use nested flows for more complex operations that involve multiple steps.
-* Use tasks for simpler, atomic operations.
+* 複数のステップを含む複雑な操作には、ネストされたフローを使用します。
+* より単純でアトミックな操作には、タスクを使用します。
 
-Here's an example of how to use nested flows and tasks:
+ネストされたフローとタスクの使用方法の例を以下に示します。
 
 ```python
 from typing import List
@@ -233,7 +233,7 @@ def calculate_resolution_rate(issues: List[dict]) -> float:
 ```
 
 <Expandable title="full example">
-Run the following code to see metrics calculation in action:
+メトリックの計算を実際に確認するには、次のコードを実行します:
 
 ```python
 from typing import List, Optional
@@ -325,10 +325,10 @@ if __name__ == "__main__":
 ```
 </Expandable>
 
-## Put it all together
+## すべてをまとめると
 
-Here's the complete flow that combines all of these components.
-We'll also add retries, caching, and rate limiting to make the workflow more robust.
+これらすべてのコンポーネントを組み合わせた完全なフローは次のとおりです。
+また、再試行、キャッシュ、レート制限を追加して、ワークフローをより堅牢にします。
 
 ```python repo_analysis.py
 from datetime import timedelta, datetime
@@ -462,20 +462,20 @@ if __name__ == "__main__":
     ])
 ```
 
-Before running this code, make sure to set up the GitHub API rate limit:
+このコードを実行する前に、GitHub API レート制限を必ず設定してください:
 
 ```bash
 # GitHub has a rate limit of 60 unauthenticated requests per hour (~0.016 requests per second)
 prefect gcl create github-api --limit 60 --slot-decay-per-second 0.016
 ```
 
-Run your analysis:
+分析を実行します:
 
 ```bash
 python repo_analysis.py
 ```
 
-The output should look something like this:
+出力は次のようになります:
 
 ```bash
 10:59:13.933 | INFO    | prefect.engine - Created flow run 'robust-kangaroo' for flow 'analyze-repo-health'
@@ -495,16 +495,16 @@ The output should look something like this:
 10:59:54.240 | INFO    | Flow run 'robust-kangaroo' - Finished in state Completed()
 ```
 
-## Next steps
+## 次のステップ
 
-In this tutorial, you built a complex data extraction pipeline which uses the following new techniques:
+このチュートリアルでは、以下の新しい手法を用いた複雑なデータ抽出パイプラインを構築しました。
 
-- Error recovery with try/catch blocks
-- Modularized workflows with dependent [nested flows and tasks](/v3/develop/write-flows#nest-flows)
-- Efficient ingestion and processing of large data with pagination and [concurrent tasks](/v3/develop/task-runners)
+- try/catch ブロックによるエラーリカバリ
+- 依存関係にある [ネストされたフローとタスク](/v3/develop/write-flows#nest-flows) を使用したモジュール化されたワークフロー
+- ページネーションと [同時実行タスク](/v3/develop/task-runners) を使用した大規模データの効率的な取り込みと処理
 
-Next, learn how to use data to [train a machine learning model](/v3/tutorials/ml).
+次に、データを使用して [機械学習モデルをトレーニング](/v3/tutorials/ml) する方法を学習します。
 
 <Tip>
-Need help? [Book a meeting](https://calendly.com/prefect-experts/prefect-product-advocates?utm_campaign=prefect_docs_cloud&utm_content=prefect_docs&utm_medium=docs&utm_source=docs) with a Prefect Product Advocate to get your questions answered.
+サポートが必要ですか? Prefect 製品アドボケートとの[ミーティングを予約](https://calendly.com/prefect-experts/prefect-product-advocates?utm_campaign=prefect_docs_cloud&utm_content=prefect_docs&utm_medium=docs&utm_source=docs)して、ご質問にお答えします。
 </Tip>

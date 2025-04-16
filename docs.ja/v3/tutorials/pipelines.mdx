@@ -1,25 +1,26 @@
 ---
-title: Build a data pipeline
-description: Learn how to build resilient and performant data pipelines with Prefect.
+title: データパイプラインを構築する
+description: Prefect を使用して、回復力とパフォーマンスに優れたデータ パイプラインを構築する方法を学びます。
 ---
 
-In the [Quickstart](/v3/get-started/quickstart), you created a Prefect flow to get stars for a list of GitHub repositories.
-And in [Schedule a flow](/v3/tutorials/schedule), you learned how to schedule runs of that flow on remote infrastructure.
+[クイックスタート](/v3/get-started/quickstart)では、GitHubリポジトリのリストにスターを付与するPrefectフローを作成しました。
+[フローのスケジュール設定](/v3/tutorials/schedule)では、リモートインフラストラクチャ上でそのフローの実行をスケジュールする方法を学びました。
 
-In this tutorial, you'll learn how to turn this flow into a resilient and performant data pipeline.
-The real world is messy, and Prefect is designed to handle that messiness.
+このチュートリアルでは、このフローを回復力とパフォーマンスに優れたデータパイプラインに変える方法を学習します。
 
-- Your API requests can fail.
-- Your API requests run too slowly.
-- Your API requests run too quickly and you get rate limited.
-- You waste time and money running the same tasks multiple times.
+現実世界は複雑で、Prefectはそうした複雑性に対応できるように設計されています。
 
-Instead of solving these problems in the business logic itself, use Prefect's built-in features to handle them.
+- APIリクエストが失敗する可能性があります。
+- APIリクエストの実行速度が遅すぎる。
+- APIリクエストの実行速度が速すぎて、レート制限が発生する。
+- 同じタスクを複数回実行することで、時間とコストが無駄になります。
 
-## Retry on failure
+これらの問題をビジネスロジック自体で解決するのではなく、Prefectの組み込み機能を使用して対処しましょう。
 
-The first improvement you can make is to add retries to your flow.
-Whenever an HTTP request fails, you can retry it a few times before giving up.
+## 失敗した場合は再試行する
+
+最初に実行できる改善は、フローに再試行機能を追加することです。
+HTTP リクエストが失敗した場合、諦める前に数回再試行することができます。
 
 ```python
 from typing import Any
@@ -38,7 +39,7 @@ def fetch_stats(github_repo: str) -> dict[str, Any]:
 ```
 
 <Expandable title="full example">
-Run the following code to see retries in action:
+再試行の動作を確認するには、次のコードを実行します:
 
 ```python
 from typing import Any
@@ -88,10 +89,10 @@ if __name__ == "__main__":
 ```
 </Expandable>
 
-## Concurrent execution of slow tasks
+## 低速タスクの同時実行
 
-If individual API requests are slow, you can speed them up in aggregate by making multiple requests concurrently.
-When you call the `map` method on a task, you submit a list of arguments to the task runner to run concurrently (alternatively, you could [`.submit()` each argument individually](/v3/develop/task-runners#access-results-from-submitted-tasks)).
+個々のAPIリクエストが遅い場合は、複数のリクエストを同時に実行することで、全体として高速化できます。
+タスクで`map`メソッドを呼び出すと、タスクランナーに引数のリストが送信され、同時に実行されます（または、[各引数を個別に`.submit()`](/v3/develop/task-runners#access-results-from-submitted-tasks)を実行することもできます）。
 
 ```python
 from prefect import flow
@@ -112,7 +113,7 @@ def show_stars(github_repos: list[str]) -> None:
 ```
 
 <Expandable title="full example">
-Run the following code to see concurrent tasks in action:
+同時タスクの動作を確認するには、次のコードを実行します:
 
 ```python
 from typing import Any
@@ -162,23 +163,23 @@ if __name__ == "__main__":
 </Expandable>
 
 <Tip>
-Calling `.result()` on the list of futures returned by `.map()` will block until all tasks are complete.
+`.map()` によって返された Future のリストに対して `.result()` を呼び出すと、すべてのタスクが完了するまでブロックされます。
 
-Read more in the [`.map()` documentation](/v3/develop/task-runners#mapping-over-iterables).
+詳しくは [`.map()` のドキュメント](/v3/develop/task-runners#mapping-over-iterables) をご覧ください。
 </Tip>
 
 
-## Avoid getting rate limited
+## レート制限を回避する
 
-One consequence of running tasks concurrently is that you're more likely to hit the rate limits of whatever API you're using.
-To avoid this, use Prefect to set a global concurrency limit.
+タスクを同時実行する場合、使用しているAPIのレート制限に達する可能性が高くなります。
+これを回避するには、Prefectを使用してグローバルな同時実行制限を設定します。
 
 ```bash
 # GitHub has a rate limit of 60 unauthenticated requests per hour (~0.016 requests per second)
 prefect gcl create github-api --limit 60 --slot-decay-per-second 0.016
 ```
 
-Now, you can use this global concurrency limit in your code to rate limit your API requests.
+これで、コード内でこのグローバル同時実行制限を使用して、API リクエストのレートを制限できるようになりました。
 
 ```python
 from typing import Any
@@ -193,7 +194,7 @@ def fetch_stats(github_repo: str) -> dict[str, Any]:
 ```
 
 <Expandable title="full example">
-Run the following code to see concurrency limits in action:
+同時実行制限の動作を確認するには、次のコードを実行します:
 
 ```python
 from typing import Any
@@ -240,10 +241,10 @@ if __name__ == "__main__":
 ```
 </Expandable>
 
-## Cache the results of a task
+## タスクの結果をキャッシュする
 
-For efficiency, you can skip tasks that have already run.
-For example, if you don't want to fetch the number of stars for a given repository more than once per day, you can cache those results for a day.
+効率性を高めるため、すでに実行済みのタスクをスキップできます。
+例えば、特定のリポジトリのスター数を1日に2回以上取得したくない場合は、その結果を1日分キャッシュしておくことができます。
 
 ```python
 from typing import Any
@@ -259,7 +260,7 @@ def fetch_stats(github_repo: str) -> dict[str, Any]:
 ```
 
 <Expandable title="full example">
-Run the following code to see caching in action:
+キャッシュの動作を確認するには、次のコードを実行します:
 
 ```python
 from typing import Any
@@ -312,9 +313,9 @@ if __name__ == "__main__":
 ```
 </Expandable>
 
-## Run your improved flow
+## 改善したフローを実行します
 
-This is what your flow looks like after applying all of these improvements:
+これらの改善をすべて適用した後のフローは次のようになります:
 
 ```python my_data_pipeline.py
 from typing import Any
@@ -366,7 +367,7 @@ if __name__ == "__main__":
     ])
 ```
 
-Run your flow twice: once to run the tasks and cache the result, again to retrieve the results from the cache.
+フローを 2 回実行します。1 回目はタスクを実行して結果をキャッシュし、もう 1 回目はキャッシュから結果を取得します。
 
 ```bash
 # Run the tasks and cache the results
@@ -376,7 +377,7 @@ python my_data_pipeline.py
 python my_data_pipeline.py
 ```
 
-The terminal output from the second flow run should look like this:
+2 回目のフロー実行からのターミナル出力は次のようになります:
 
 ```bash
 20:03:04.398 | INFO | prefect.engine - Created flow run 'laughing-nightingale' for flow 'show-stars'
@@ -392,18 +393,18 @@ The terminal output from the second flow run should look like this:
 20:03:05.339 | INFO | Flow run 'laughing-nightingale' - Finished in state Completed()
 ```
 
-## Next steps
+## 次のステップ
 
-In this tutorial, you built a resilient and performant data pipeline which uses the following techniques:
+このチュートリアルでは、以下の手法を用いた、回復力とパフォーマンスに優れたデータパイプラインを構築しました。
 
-- [Retries](/v3/develop/write-tasks#retries) to handle transient errors
-- [Concurrency](/v3/develop/task-runners) to speed up slow tasks
-- [Concurrency limits](/v3/develop/global-concurrency-limits) to avoid hitting the rate limits of your APIs
-- [Caching](/v3/develop/task-caching) to skip repeated tasks
+- [再試行](/v3/develop/write-tasks#retries)：一時的なエラーへの対処
+- [同時実行](/v3/develop/task-runners)：低速タスクの高速化
+- [同時実行制限](/v3/develop/global-concurrency-limits)：APIのレート制限への到達回避
+- [キャッシュ](/v3/develop/task-caching)：繰り返しタスクのスキップ
 
-Next, learn how to [handle data dependencies and ingest large amounts of data](/v3/tutorials/scraping).
-You'll use error handling, pagination, and nested flows to scrape data from GitHub.
+次に、[データ依存関係の処理と大量データの取り込み](/v3/tutorials/scraping)の方法を学びます。
+エラー処理、ページ区切り、ネストされたフローを使用して、GitHubからデータをスクレイピングします。
 
 <Tip>
-Need help? [Book a meeting](https://calendly.com/prefect-experts/prefect-product-advocates?utm_campaign=prefect_docs_cloud&utm_content=prefect_docs&utm_medium=docs&utm_source=docs) with a Prefect Product Advocate to get your questions answered.
+サポートが必要ですか? Prefect 製品アドボケートとの[ミーティングを予約](https://calendly.com/prefect-experts/prefect-product-advocates?utm_campaign=prefect_docs_cloud&utm_content=prefect_docs&utm_medium=docs&utm_source=docs)して、ご質問にお答えします。
 </Tip>

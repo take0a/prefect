@@ -1,11 +1,11 @@
 ---
-title: Train a machine learning model
-description: Use webhooks to trigger an ML training flow on SageMaker
+title: 機械学習モデルをトレーニングする
+description: SageMaker で Webhook を使用して ML トレーニング フローをトリガーする
 ---
 
-In the [Extract data from websites](/v3/tutorials/scraping) tutorial, you learned how to handle data dependencies and ingest large amounts of data.
-Now, you'll learn how to train a machine learning model using your data.
-Here's the pipeline that you'll construct:
+[ウェブサイトからデータを抽出する](/v3/tutorials/scraping)チュートリアルでは、データの依存関係を処理し、大量のデータを取り込む方法を学習しました。
+次は、データを使用して機械学習モデルをトレーニングする方法を学習します。
+構築するパイプラインは次のとおりです。
 
 ```mermaid
 sequenceDiagram
@@ -31,57 +31,57 @@ sequenceDiagram
     Data Engineer-->>Prefect Cloud: View predictions in logs
 ```
 
-## Prerequisites
+## 前提条件
 
-* A free [Prefect Cloud account](https://app.prefect.cloud) and an API key
-* The [Prefect SDK](/v3/get-started/install)
-* An AWS account, including:
-  * The ability to create an `ml.g4dn.xlarge` instance with SageMaker.
-  * An access key with full access to S3 and SageMaker.
-* Optional: [Terraform](https://developer.hashicorp.com/terraform/install)
+* 無料の [Prefect Cloud アカウント](https://app.prefect.cloud) と API キー
+* [Prefect SDK](/v3/get-started/install)
+* 以下のものを含む AWS アカウント
+    * SageMaker を使用して `ml.g4dn.xlarge` インスタンスを作成する権限。
+    * S3 と SageMaker へのフルアクセス権を持つアクセスキー。
+* オプション: [Terraform](https://developer.hashicorp.com/terraform/install)
 
-## Log in to Prefect Cloud
+## Prefect Cloud にログイン
 
-If needed, log in to your Prefect Cloud account.
+必要に応じて、Prefect Cloud アカウントにログインしてください。
 
 ```bash
 prefect cloud login
 ```
 
-## Create a work pool
+## ワークプールを作成する
 
-Create a new Process work pool named `my-work-pool` in Prefect Cloud.
+Prefect Cloud に「my-work-pool」という名前の新しいプロセスワークプールを作成します。
 
 ```bash
 prefect work-pool create my-work-pool --type process
 ```
 
-Now, in a separate terminal, start a worker in that work pool.
+次に、別のターミナルで、その作業プール内のワーカーを起動します。
 
 ```bash
 prefect worker start --pool my-work-pool
 ```
 
-Leave this worker running for the rest of the tutorial.
+チュートリアルの残りの間、このワーカーを実行したままにしておきます。
 
-## Create deployments
+## デプロイメントの作成
 
-Clone the repository with the flow code you'll be deploying to Prefect Cloud.
+Prefect Cloud にデプロイするフローコードを含むリポジトリをクローンします。
 
 ```bash
 git clone https://github.com/PrefectHQ/demos.git
 cd demos/
 ```
 
-Now deploy the `model-training` flow to Prefect Cloud.
-This flow trains an [XGBoost model](https://github.com/dmlc/xgboost) on the [Iris dataset](https://archive.ics.uci.edu/dataset/53/iris) using SageMaker.
+次に、`model-training` フローを Prefect Cloud にデプロイします。
+このフローは、SageMaker を使用して [Iris データセット](https://archive.ics.uci.edu/dataset/53/iris) 上の [XGBoost モデル](https://github.com/dmlc/xgboost) をトレーニングします。
 
 ```bash
 python model_training.py
 ```
 
 <Expandable title="model training flow">
-This is the flow that you just deployed to Prefect Cloud.
+これは、Prefect Cloud にデプロイしたフローです。
 
 {/* pmd-metadata: notest */}
 ```python
@@ -186,7 +186,7 @@ def train_model(data_bucket: Union[str, None] = None, model_bucket: Union[str, N
 </Expandable>
 
 <Expandable title="SageMaker script template">
-And this is the template for the script that SageMaker uses to train the model.
+これは、SageMaker がモデルをトレーニングするために使用するスクリプトのテンプレートです。
 
 {/* pmd-metadata: notest */}
 ```python
@@ -294,15 +294,15 @@ if __name__ == "__main__":
 ```
 </Expandable>
 
-Next, deploy the `model-inference` flow to Prefect Cloud.
-This flow calculates performance metrics using the fitted model from S3.
+次に、Prefect Cloud に `model-inference` フローをデプロイします。
+このフローは、S3 から適合されたモデルを使用してパフォーマンスメトリクスを計算します。
 
 ```bash
 python model_inference.py
 ```
 
 <Expandable title="model inference flow">
-This is the flow that you just deployed to Prefect Cloud.
+これは、Prefect Cloud にデプロイしたフローです。
 
 {/* pmd-metadata: notest */}
 ```python
@@ -365,14 +365,14 @@ def run_inference(samples: Union[list[list[float]], None] = None) -> None:
 ```
 </Expandable>
 
-## Provision cloud resources
+## クラウドリソースのプロビジョニング
 
 import { home } from "/snippets/resource-management/vars.mdx"
 
-This tutorial uses AWS S3 and EventBridge to store data and emit events, and Prefect webhooks and automations to trigger your flows.
-We'll use <a href={home.tf}>Terraform</a> so you don't have to provision these resources manually.
+このチュートリアルでは、AWS S3 と EventBridge を使用してデータを保存し、イベントを発行します。また、Prefect の Webhook と自動化を使用してフローをトリガーします。
+<a href={home.tf}>Terraform</a> を使用するため、これらのリソースを手動でプロビジョニングする必要はありません。
 
-Set the following environment variables:
+以下の環境変数を設定します。
 
 ```bash
 # Prefect auth
@@ -392,13 +392,13 @@ export TF_VAR_model_training_deployment_id=<Your model-training deployment ID>
 export TF_VAR_model_inference_deployment_id=<Your model-inference deployment ID>
 ```
 
-Switch to the `infra/` directory.
+`infra/` ディレクトリに切り替えます。
 
 ```bash
 cd infra/
 ```
 
-Provision these resources with Terraform.
+これらのリソースを Terraform でプロビジョニングします。
 
 ```bash
 terraform init
@@ -406,20 +406,22 @@ terraform apply
 ```
 
 <Note>
-When you're ready to permanently delete these resources, empty the `prefect-ml-data` and `prefect-model` buckets and then run `terraform destroy` in your terminal.
+これらのリソースを完全に削除する準備ができたら、`prefect-ml-data` バケットと `prefect-model` バケットを空にして、ターミナルで `terraform destroy` を実行します。
 </Note>
 
-### Alternative: manual provisioning
+### 代替案：手動プロビジョニング
 
-If you don't want to use Terraform, you can create the resources manually.
+Terraform を使用しない場合は、リソースを手動で作成できます。
 
 <Expandable title="manual instructions">
-#### Create a webhook for model training
 
-In Prefect Cloud, create a webhook named `model-training`:
+#### モデルトレーニング用のWebhookを作成します。
 
-* Create a new service account named `s3` to enforce webhook authentication (save the API key somewhere safe)
-* Use the following static template:  
+Prefect Cloudで、「model-training」という名前のWebhookを作成します。
+
+* Webhook認証を強制するために、「s3」という名前の新しいサービスアカウントを作成します（APIキーは安全な場所に保存してください）。
+* 以下の静的テンプレートを使用します。
+
 ```json
 {
     "event": "webhook.called",
@@ -429,14 +431,15 @@ In Prefect Cloud, create a webhook named `model-training`:
 }
 ```
 
-Note the URL for this webhook, as you'll need it later.
+この Webhook の URL は後で必要になるのでメモしておいてください。
 
-#### Create a webhook for model inference
+#### モデル推論用のWebhookを作成します。
 
-In Prefect Cloud, create a webhook named `model-inference`:
+Prefect Cloudで、「model-inference」という名前のWebhookを作成します。
 
-* You can use the same service account that you created for the model training webhook.
-* Use the following static template:  
+* モデルトレーニング用のWebhook用に作成したものと同じサービスアカウントを使用できます。
+* 以下の静的テンプレートを使用します。
+
 ```json
 {
     "event": "webhook.called",
@@ -446,47 +449,48 @@ In Prefect Cloud, create a webhook named `model-inference`:
 }
 ```
 
-Note the URL for this webhook, as you'll need it later.
+この Webhook の URL は後で必要になるのでメモしておいてください。
 
-#### Create an automation for model training
+#### モデルトレーニング用の自動化を作成します。
 
-In Prefect Cloud, create an automation with a **custom** trigger type:
+Prefect Cloud で、**カスタム** トリガータイプの自動化を作成します。
 
-* Trigger on any event matching `webhook.called` from the `model-training` webhook.
-Since the webhook is a related resource, you must go to the **JSON** tab and move the `prefect.resource.id` section from the `match` to the `match_related` array.
-* Trigger whenever you see that event 1 time within 1 minute (this ensures your model will train only once when a batch of files are uploaded).
-* Run the `train-model > model-training` deployment whenever this automation is triggered.
-  * You only need to change the `data_bucket` and `model_bucket` parameters if you use different bucket names than those used in this tutorial.
-* Name this automation `train-model`.
+* `model-training` Webhook から `webhook.called` に一致するイベントが発生した場合にトリガーします。
+Webhook は関連リソースであるため、**JSON** タブに移動し、`prefect.resource.id` セクションを `match` 配列から `match_related` 配列に移動する必要があります。
+* 1 分以内にそのイベントが 1 回発生した場合にトリガーします（これにより、ファイルのバッチがアップロードされたときにモデルのトレーニングが 1 回だけ実行されます）。
+* この自動化がトリガーされるたびに、`train-model > model-training` デプロイメントを実行します。
+    * このチュートリアルで使用されているものとは異なるバケット名を使用する場合のみ、`data_bucket` および `model_bucket` パラメータを変更します。
+* この自動化の名前を `train-model` にします。
 
-#### Create an automation for model inference
+#### モデル推論の自動化を作成します。
 
-In Prefect Cloud, create an automation with a **custom** trigger type:
+Prefect Cloud で、**カスタム** トリガータイプの自動化を作成します。
 
-* Trigger on any event matching `webhook.called` from the `model-inference` webhook.
-As before, you must move the `prefect.resource.id` section from the `match` to the `match_related` array, using the **JSON** tab.
-* Trigger whenever you see that event 1 time within 1 minute (this ensures your model will train only once when a batch of files are uploaded).
-* Run the `run-inference > model-inference` deployment whenever this automation is triggered.
-* Name this automation `run-inference`.
+* `model-inference` Webhook から `webhook.called` に一致するイベントが発生した場合にトリガーします。
+前と同様に、**JSON** タブを使用して、`prefect.resource.id` セクションを `match` 配列から `match_related` 配列に移動する必要があります。
+* 1 分以内にそのイベントが 1 回発生した場合にトリガーします（これにより、ファイルのバッチがアップロードされたときにモデルのトレーニングが 1 回だけ実行されます）。
+* この自動化がトリガーされるたびに、`run-inference > model-inference` デプロイメントを実行します。
+* この自動化に `run-inference` という名前を付けます。
 
-#### Create S3 buckets
+#### S3 バケットの作成
 
-Your data and model will be stored in S3.
-Create the following buckets in AWS:
+データとモデルは S3 に保存されます。
+AWS に以下のバケットを作成します。
 
-* Create a `prefect-ml-data` bucket to store training and test data.
-* Create a `prefect-model` bucket to store the trained model.
-* Turn on EventBridge notifications for all events in these buckets.
+* トレーニングデータとテストデータを保存するための `prefect-ml-data` バケットを作成します。
+* トレーニング済みモデルを保存するための `prefect-model` バケットを作成します。
+* これらのバケット内のすべてのイベントに対して EventBridge 通知を有効にします。
 
 <Note>
-You may need to choose different S3 bucket names if they're already in use.
+すでに使用されている場合は、別の S3 バケット名を選択する必要がある場合があります。
 </Note>
 
-#### Create an EventBridge rule for training
+#### トレーニング用の EventBridge ルールを作成する
 
-In AWS, create an EventBridge rule named `training-data-changed` to trigger model training whenever a new object is uploaded to the `prefect-ml-data` bucket.
+AWS で、「training-data-changed」という名前の EventBridge ルールを作成し、新しいオブジェクトが「prefect-ml-data」バケットにアップロードされるたびにモデルのトレーニングをトリガーします。
 
-* Event pattern:  
+* イベントパターン：
+
 ```json
 {
   "source": ["aws.s3"],
@@ -498,19 +502,21 @@ In AWS, create an EventBridge rule named `training-data-changed` to trigger mode
   }
 }
 ```
-* Target:  
-An EventBridge API destination named `model-training-webhook`, set to the endpoint for the `model-training` webhook that you created in Prefect Cloud.
-  * Use an HTTP POST method.
-  * To authenticate with the webhook, create a new Connection named `prefect-webhooks`, configure its authorization to use **API Key**, and set the **API key name** to `Authorization` and the **Value** to `Bearer <service-account-api-key>`.  
+
+* ターゲット:
+`model-training-webhook` という名前の EventBridge API 宛先。Prefect Cloud で作成した `model-training` Webhook のエンドポイントに設定します。
+    * HTTP POST メソッドを使用します。
+    * Webhook で認証するには、`prefect-webhooks` という名前の新しい接続を作成し、**API キー** を使用するように認証を構成し、**API キー名** を `Authorization`、**値** を `Bearer <service-account-api-key>` に設定します。
     <Note>
-    The service account API key is the API key you created for the `s3` service account in Prefect Cloud.
+    サービス アカウント API キーは、Prefect Cloud の `s3` サービス アカウント用に作成した API キーです。
     </Note>
 
-#### Create an EventBridge rule for inference
+#### 推論用の EventBridge ルールを作成する
 
-In AWS, create an EventBridge rule named `model-changed` to trigger model inference whenever a new object is uploaded to the `prefect-model` bucket.
+AWS で、`prefect-model` バケットに新しいオブジェクトがアップロードされるたびにモデル推論をトリガーする `model-changed` という EventBridge ルールを作成します。
 
-* Event pattern:  
+* イベントパターン:
+
 ```json
 {
   "source": ["aws.s3"],
@@ -522,41 +528,41 @@ In AWS, create an EventBridge rule named `model-changed` to trigger model infere
   }
 }
 ```
-* Target:  
-Create an EventBridge API destination named `model-inference-webhook`, set to the endpoint of the `model-inference` webhook that you created earlier.
-You can reuse the connection that you created for the `training-data-changed` rule.
+* ターゲット:
+`model-inference-webhook` という名前の EventBridge API 宛先を作成し、先ほど作成した `model-inference` Webhook のエンドポイントに設定します。
+`training-data-changed` ルール用に作成した接続を再利用できます。
 
-#### Create an IAM role for S3 and SageMaker
+#### S3 と SageMaker 用の IAM ロールを作成します。
 
-Your Prefect flows need access to the AWS resources that you created.
-Create an IAM role named `prefect-tutorial` with the `Amazon SageMaker Full Access` and `Amazon S3 Full Access` policies.
-Note the role ARN, as you'll need this later.
+Prefect フローは、作成した AWS リソースにアクセスする必要があります。
+`Amazon SageMaker Full Access` ポリシーと `Amazon S3 Full Access` ポリシーを含む「prefect-tutorial」という名前の IAM ロールを作成します。
+ロールの ARN は後で必要になるので、メモしておいてください。
 </Expandable>
 
-## Grant access to AWS resources
+## AWS リソースへのアクセスを許可
 
-Your Prefect flows need access to the AWS resources that you just provisioned.
-Create the following blocks in Prefect Cloud:
+Prefect フローは、プロビジョニングした AWS リソースにアクセスする必要があります。
+Prefect Cloud で以下のブロックを作成します。
 
-* An **AWS Credentials** block named `aws-credentials`.
-Set the `AWS Access Key ID` and `AWS Access Key Secret` fields to the values from the access key you created earlier.
-* An **S3 Bucket** block named `s3-bucket-block`, set to the name of your model bucket (`prefect-model` by default).
-This block can use the `aws-credentials` block you created earlier.
-* A **Secret** block named `sagemaker-role-arn`.
-This block stores the IAM role ARN for SageMaker that you created earlier.
+* `aws-credentials` という名前の **AWS Credentials** ブロック。
+`AWS Access Key ID` フィールドと `AWS Access Key Secret` フィールドを、先ほど作成したアクセスキーの値に設定します。
+* `s3-bucket-block` という名前の **S3 Bucket** ブロック。モデルバケットの名前（デフォルトでは `prefect-model`）に設定します。
+このブロックでは、先ほど作成した `aws-credentials` ブロックを使用できます。
+* `sagemaker-role-arn` という名前の **Secret** ブロック。
+このブロックには、先ほど作成した SageMaker の IAM ロール ARN が格納されます。
 
-Now, when you run your flows in Prefect Cloud, they can use these blocks to authenticate with AWS.
+これで、Prefect Cloud でフローを実行する際に、これらのブロックを使用して AWS で認証できるようになります。
 
-## Test the ML pipeline
+## MLパイプラインのテスト
 
-Use the AWS Console to upload the following files to the `prefect-ml-data` bucket:
+AWSコンソールを使用して、以下のファイルを`prefect-ml-data`バケットにアップロードします。
 
 * [train.csv](https://raw.githubusercontent.com/PrefectHQ/demos/refs/heads/main/datasets/train.csv)
 * [test.csv](https://raw.githubusercontent.com/PrefectHQ/demos/refs/heads/main/datasets/test.csv)
 
-After the files are uploaded, the `train-model` flow will automatically run.
-Open the flow run details in Prefect Cloud to see the model training logs.
-Training will take a few minutes.
+ファイルのアップロード後、`train-model`フローが自動的に実行されます。
+Prefect Cloudでフロー実行の詳細を開き、モデルのトレーニングログを確認してください。
+トレーニングには数分かかります。
 
 ```
 ...
@@ -575,8 +581,8 @@ Memory usage post-training: total - 17179869184, percent - 78.2%
 Finished in state Completed()
 ```
 
-After training is complete, the model will be uploaded to the `prefect-model` bucket, which will trigger the `run-inference` flow.
-Inference will take a few seconds to complete, after which you can see the predictions in the flow logs:
+トレーニングが完了すると、モデルは「prefect-model」バケットにアップロードされ、「run-inference」フローがトリガーされます。
+推論は完了するまで数秒かかり、完了後、フローログで予測結果を確認できます。
 
 ```
 ...
@@ -586,17 +592,17 @@ Prediction for sample [7.2, 3.6, 6.1, 2.5]: 2.0
 Finished in state Completed()
 ```
 
-## Next steps
+## 次のステップ
 
-In this tutorial, you learned how to publish data to S3 and train a machine learning model whenever that data changes.
-You're well on your way to becoming a Prefect expert!
+このチュートリアルでは、S3 にデータをパブリッシュし、データが変更されるたびに機械学習モデルをトレーニングする方法を学習しました。
+Prefect のエキスパートへの道を着実に歩み始めています！
 
-Now that you've finished this tutorial series, continue your learning journey by going deep on the following topics:
+このチュートリアルシリーズを終えたら、以下のトピックを深く掘り下げて学習を続けましょう。
 
-- Write [flows](/v3/develop/write-flows) and [tasks](/v3/develop/write-tasks)
-- Manage [Prefect Cloud and server instances](/v3/manage)
-- Run workflows on [work pools](/v3/deploy/infrastructure-concepts/work-pools) using Kubernetes, Docker, and serverless infrastructure.
+- [フロー](/v3/develop/write-flows) と [タスク](/v3/develop/write-tasks) を作成する
+- [Prefect Cloud とサーバーインスタンス](/v3/manage) を管理する
+- Kubernetes、Docker、サーバーレスインフラストラクチャを使用して、[ワークプール](/v3/deploy/infrastructure-concepts/work-pools) でワークフローを実行する
 
 <Tip>
-Need help? [Book a meeting](https://calendly.com/prefect-experts/prefect-product-advocates?utm_campaign=prefect_docs_cloud&utm_content=prefect_docs&utm_medium=docs&utm_source=docs) with a Prefect Product Advocate to get your questions answered.
+サポートが必要ですか? Prefect 製品アドボケートとの[ミーティングを予約](https://calendly.com/prefect-experts/prefect-product-advocates?utm_campaign=prefect_docs_cloud&utm_content=prefect_docs&utm_medium=docs&utm_source=docs)して、ご質問にお答えします。
 </Tip>
