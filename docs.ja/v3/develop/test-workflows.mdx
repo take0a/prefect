@@ -1,9 +1,9 @@
 ---
-title: Test workflows
-description: Learn about writing tests for Prefect flows and tasks.
+title: ワークフローのテスト
+description: Prefect フローおよびタスクのテストの記述について学習します。
 ---
 
-Prefect provides a simple context manager for unit tests that allows you to run flows and tasks against a temporary local SQLite database.
+Prefect は、一時的なローカル SQLite データベースに対してフローとタスクを実行できる、ユニット テスト用のシンプルなコンテキスト マネージャーを提供します。
 
 ```python
 from prefect import flow
@@ -19,7 +19,8 @@ def test_my_favorite_flow():
       assert my_favorite_flow() == 42
 ```
 
-For more extensive testing, use `prefect_test_harness` as a fixture in your unit testing framework. For example, when using `pytest`:
+より広範なテストを行うには、ユニットテストフレームワークのフィクスチャとして `prefect_test_harness` を使用します。
+例えば、 `pytest` を使用する場合：
 
 ```python
 from prefect import flow
@@ -40,13 +41,17 @@ def test_my_favorite_flow():
 ```
 
 <Note>
-**Session scoped fixture**
+**セッションスコープのフィクスチャ**
 
-In this example, the fixture is scoped to run once for the entire test session. In most cases, you do not need a clean database for each test. Just isolate your test runs to a test database. Creating a new test database per test creates significant overhead, so we recommend scoping the fixture to the session. If you need to isolate some tests fully, use the test harness again to create a fresh database.
+この例では、フィクスチャのスコープはテストセッション全体で1回だけ実行されるように設定されています。
+ほとんどの場合、テストごとにクリーンなデータベースは必要ありません。テスト実行をテストデータベースに分離するだけで済みます。
+テストごとに新しいテストデータベースを作成すると、大きなオーバーヘッドが発生するため、フィクスチャのスコープをセッションに設定することをお勧めします。
+一部のテストを完全に分離する必要がある場合は、テストハーネスを再度使用して新しいデータベースを作成してください。
 </Note>
-## Unit testing tasks
 
-To test an individual task, access the original function using `.fn`:
+## ユニットテストタスク
+
+個々のタスクをテストするには、`.fn` を使用して元の関数にアクセスします:
 
 ```python
 from prefect import flow, task
@@ -65,9 +70,9 @@ def test_my_favorite_task():
 ```
 
 <Tip>
-**Disable logger**
+**ロガーを無効にする**
 
-If your task uses a logger, you can disable the logger to avoid the `RuntimeError` raised from a missing flow context.
+タスクでロガーを使用している場合は、フローコンテキストの不足により発生する `RuntimeError` エラーを回避するために、ロガーを無効にすることができます。
     ```python
     from prefect.logging import disable_run_logger
 

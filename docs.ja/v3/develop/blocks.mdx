@@ -1,39 +1,38 @@
 ---
-title: Securely store typed configuration
-description: Prefect blocks allow you to manage configuration schemas, infrastructure, and secrets for use with deployments or flow scripts.
+title: 型付けされた構成を安全に保存する
+description: Prefect ブロックを使用すると、デプロイメントまたはフロー スクリプトで使用する構成スキーマ、インフラストラクチャ、およびシークレットを管理できます。
 ---
 
-Prefect blocks store typed configuration that can be used across workflows and deployments.
-The most common use case for blocks is storing credentials used to access external systems such as AWS or GCP.
-Prefect supports [a large number of common blocks](#pre-registered-blocks) and it's also easy to create your own!
+Prefect ブロックは、ワークフローやデプロイメント全体で使用できる型付き構成を保存します。
+ブロックの最も一般的なユースケースは、AWS や GCP などの外部システムへのアクセスに使用する認証情報の保存です。
+Prefect は [多数の一般的なブロック](#pre-registered-blocks) をサポートしており、独自のブロックを作成することも簡単です。
 
 <Tip>
-**Blocks and parameters**
+**ブロックとパラメータ**
 
-Blocks are useful for sharing configuration across flow runs and between flows.
+ブロックは、フロー実行間およびフロー間で設定を共有するのに便利です。
 
-For configuration that will change between flow runs, we recommend using [parameters](/v3/develop/write-flows/#parameters).
+フロー実行間で変更される設定については、[パラメータ](/v3/develop/write-flows/#parameters) の使用をお勧めします。
 </Tip>
 
-## How blocks work
+## ブロックの仕組み
 
-To get the most out of blocks it's important to understand how they work. 
+ブロックを最大限に活用するには、その仕組みを理解することが重要です。
 
-There are three layers to a block: its _type_, a _document_, and a Python _class_. 
+ブロックには3つのレイヤーがあります。_type_、_document_、そしてPython _class_ です。
 
-### Block type
+### ブロックタイプ
 
-A block _type_ is essentially a schema registered with the Prefect API. This schema can be inspected and discovered in the UI on the **Blocks** page.
+ブロック _type_ は、基本的に Prefect API に登録されたスキーマです。このスキーマは、UI の **Blocks** ページで確認および確認できます。
 
-To see block types available for configuration, use `prefect block type ls` 
-from the CLI or navigate to the **Blocks** page in the UI and click **+**.
+設定可能なブロックタイプを確認するには、CLI から `prefect block type ls` を実行するか、UI の **Blocks** ページに移動して **+** をクリックします。
 
 ![The block catalogue in the UI](/v3/img/ui/block-library.png)
 
-These types separate blocks from [Prefect variables](/v3/develop/variables/), which are unstructured JSON documents.
-In addition, block schemas allow for fields of `SecretStr` type which are stored with additional encryption and not displayed by default in the UI.
+これらのタイプは、非構造化JSONドキュメントである[Prefect変数](/v3/develop/variables/)からブロックを分離します。
+さらに、ブロックスキーマでは、追加の暗号化が施されて保存され、デフォルトではUIに表示されない「SecretStr」タイプのフィールドを使用できます。
 
-Block types are identified by a _slug_ that is not configurable.
+ブロックタイプは、設定できない_slug_によって識別されます。
 
 ```python
 from prefect.blocks.core import Block
@@ -48,14 +47,14 @@ Cube.register_type_and_schema()
 ```
 
 <Note>
-Users should rarely need to register types in this way - saving a block document will also automatically register its type.
+ユーザーがこのように型を登録する必要はほとんどありません。ブロック ドキュメントを保存すると、その型も自動的に登録されます。
 </Note>
 
-### Block document
+### ブロックドキュメント
 
-A block _document_ is an instantiation of the schema, or block type. A document contains _specific_ values for each field defined in the schema.
+ブロック _document_ は、スキーマ（ブロックタイプ）のインスタンス化です。ドキュメントには、スキーマで定義された各フィールドの特定の値が含まれます。
 
-All block types allow for the creation of as many documents as you wish. Building on our example above:
+すべてのブロックタイプで、必要な数のドキュメントを作成できます。上記の例を基にして、以下の手順を実行します。
 
 ```python
 from prefect.blocks.core import Block
@@ -78,16 +77,17 @@ tiny_cube = Cube(edge_length_inches=0.001)
 tiny_cube.save("tiny")
 ```
 
-Block documents can also be created and updated in the UI or API for easy change management. 
-This allows you to work with slowly changing configuration without having to redeploy all workflows that rely on it; for example, you may use this to rotate credentials on a regular basis without touching your deployments.
+ブロックドキュメントはUIまたはAPIで作成・更新できるため、変更管理が容易になります。
+これにより、構成に依存するすべてのワークフローを再デプロイすることなく、緩やかに変化する構成を扱うことができます。たとえば、デプロイメントを変更することなく、定期的に認証情報をローテーションできます。
 
-### Block class
+### ブロッククラス
 
-A block _class_ is the primary user-facing object; it is a Python class whose attributes are loaded from a block document. Most Prefect blocks encapsulate additional functionality built on top of the block document. 
+ブロック _class_ は、ユーザーに直接表示される主要なオブジェクトです。これは、ブロックドキュメントから属性が読み込まれる Python _class_ です。
+ほとんどの Prefect ブロックは、ブロックドキュメント上に構築された追加機能をカプセル化します。
 
-For example, an `S3Bucket` block contains methods for downloading data from, or upload data to, an S3 bucket; a `SnowflakeConnector` block contains methods for querying Snowflake databases.
+例えば、`S3Bucket` ブロックには、S3 バケットからデータをダウンロードしたり、S3 バケットにデータをアップロードしたりするためのメソッドが含まれています。`SnowflakeConnector` ブロックには、Snowflake データベースにクエリを実行するためのメソッドが含まれています。
 
-Returning to our `Cube` example from above:
+上記の `Cube` の例に戻ります。
 
 ```python
 from prefect.blocks.core import Block
@@ -107,16 +107,16 @@ rubiks_cube.get_volume() # 11.390625
 ```
 
 <Warning>
-The class itself is _not_ stored server-side when registering block types and block documents. 
-For this reason, we highly recommend loading block documents by first importing the block class and then calling its `load` method with the relevant document name.
+ブロックタイプとブロックドキュメントを登録する際に、クラス自体はサーバー側に保存されません。
+そのため、ブロックドキュメントを読み込む際は、まずブロッククラスをインポートし、関連するドキュメント名を指定して `load` メソッドを呼び出すことを強くお勧めします。
 </Warning>
 
-## Using blocks
+## ブロックの使用
 
-Using existing or built-in Prefect blocks is as simple as importing the relevant class and calling its `save` and `load` methods.
-Note that many Prefect blocks are packaged into one of [Prefect's integration libraries](#blocks-in-prefect-integration-libraries).
+既存または組み込みのPrefectブロックを使用するのは、関連するクラスをインポートし、`save`メソッドと`load`メソッドを呼び出すだけです。
+多くのPrefectブロックは、[Prefectの統合ライブラリ](#blocks-in-prefect-integration-libraries)のいずれかにパッケージ化されていることに注意してください。
 
-To instantiate a block document that stores an S3 bucket value, use the `S3Bucket` block:
+S3バケット値を保存するブロックドキュメントをインスタンス化するには、`S3Bucket`ブロックを使用します。
 
 ```python
 from prefect_aws.s3 import S3Bucket
@@ -125,19 +125,19 @@ from prefect_aws.s3 import S3Bucket
 bucket_block = S3Bucket(bucket_name="data-bucket")
 ```
 
-To store this block document for future use, use the `.save()` method:
+このブロック ドキュメントを将来使用するために保存するには、`.save()` メソッドを使用します:
 
 ```python
 bucket_block.save(name="my-data-bucket-block")
 ```
 
-To update a previously saved block document, overwrite the existing document by passing `overwrite=True`:
+以前に保存したブロック ドキュメントを更新するには、`overwrite=True` を渡して既存のドキュメントを上書きします:
 
 ```python
 bucket_block.save(overwrite=True)
 ```
 
-You can now use the block document name to load the block:
+ブロック ドキュメント名を使用してブロックを読み込むことができるようになりました:
 
 ```python
 from prefect import flow
@@ -152,9 +152,9 @@ if __name__ == "__main__":
     what_is_the_bucket() # data-bucket
 ```
 
-Alternatively, load a block with the unique slug that is a combination of the block type slug and the block name.
+または、ブロックタイプのスラッグとブロック名を組み合わせた一意のスラッグを持つブロックをロードします。
 
-To load the `S3Bucket` block from above, run the following:
+上記の `S3Bucket` ブロックをロードするには、以下を実行します:
 
 ```python
 from prefect_aws.s3 import S3Bucket
@@ -164,11 +164,11 @@ print(s3_bucket.bucket_name) # data-bucket
 ```
 
 <Warning>
-When using the generic `Block.load` interface for block documents, the Python class that created the type _must_ be importable.
-For this reason, we highly recommend loading block documents by first importing the block class and then calling its `load` method with the relevant document name.
+ブロックドキュメントに汎用の `Block.load` インターフェースを使用する場合、その型を作成した Python クラスはインポート可能である必要があります。
+このため、ブロックドキュメントをロードする場合は、まずブロッククラスをインポートし、次にその `load` メソッドに関連するドキュメント名を指定して呼び出すことを強くお勧めします。
 </Warning>
 
-You can also delete a block document with the `.delete()` method:
+`.delete()` メソッドを使用してブロック ドキュメントを削除することもできます:
 
 ```python
 from prefect.blocks.core import Block
@@ -176,7 +176,7 @@ from prefect.blocks.core import Block
 Block.delete("s3-bucket/my-data-bucket-block")
 ```
 
-Alternatively, use the CLI to delete specific blocks with a given slug or id:
+あるいは、CLI を使用して、指定したスラッグまたは ID を持つ特定のブロックを削除します:
 
 ```bash
 prefect block delete s3-bucket/my-data-bucket-block
@@ -186,15 +186,15 @@ prefect block delete s3-bucket/my-data-bucket-block
 prefect block delete --id <my-id>
 ```
 
-### Nested blocks
+### ネストされたブロック
 
-Blocks are composable: a block can be used within other blocks.
-You can create a block type that uses capabilities from another block type by giving it the appropriate type.
+ブロックは組み合わせ可能です。つまり、あるブロックを他のブロック内で使用できます。
+適切なタイプを指定することで、別のブロックタイプの機能を利用するブロックタイプを作成できます。
 
-Nested blocks are loosely coupled, and configuration can be changed for each block independently. 
-This allows sharing configuration across multiple block documents.
+ネストされたブロックは疎結合であり、各ブロックの設定は個別に変更できます。
+これにより、複数のブロックドキュメント間で設定を共有できます。
 
-For example, we can expand our basic `S3Bucket` example above using the `AwsCredentials` block:
+例えば、上記の基本的な `S3Bucket` の例を `AwsCredentials` ブロックを使用して拡張できます。
 
 ```python
 from prefect_aws import AwsCredentials
@@ -207,10 +207,10 @@ my_bucket_block.save("my_s3_bucket")
 ```
 
 <Info>
-The `aws_secret_access_key` field is typed as `SecretStr`, meaning it will be stored and displayed securely.
+`aws_secret_access_key` フィールドは `SecretStr` として型指定されており、安全に保存および表示されることを意味します。
 </Info>
 
-Alternatively, we can also load previously saved credentials:
+あるいは、以前に保存した資格情報を読み込むこともできます:
 
 ```python
 my_bucket_block = S3Bucket(
@@ -221,15 +221,14 @@ my_bucket_block = S3Bucket(
 my_bucket_block.save("my_s3_bucket")
 ```
 
-Both of these create a reference from the `AwsCredentials` block document `my_aws_credentials` to the `S3Bucket` block document `my_s3_bucket`, 
-so that changes to the values in `my_aws_credentials` propagate to `my_s3_bucket`.
+どちらも、`AwsCredentials` ブロック ドキュメント `my_aws_credentials` から `S3Bucket` ブロック ドキュメント `my_s3_bucket` への参照を作成するので、`my_aws_credentials` の値の変更は `my_s3_bucket` に伝播されます。
 
-## Create a new block type
+## 新しいブロックタイプを作成する
 
-To create a custom block type, define a class that subclasses `Block`. The `Block` base class builds 
-on Pydantic's `BaseModel`, so you can declare custom fields just like a [Pydantic model](https://pydantic-docs.helpmanual.io/usage/models/#basic-model-usage).
+カスタムブロックタイプを作成するには、`Block` のサブクラスとなるクラスを定義します。
+`Block` 基本クラスは Pydantic の `BaseModel` をベースとしているため、[Pydantic モデル](https://pydantic-docs.helpmanual.io/usage/models/#basic-model-usage) と同様にカスタムフィールドを宣言できます。
 
-We've already seen an example of a `Cube` block that represents a cube and holds information about the length of each edge in inches:
+立方体を表し、各辺の長さ（インチ単位）の情報を保持する `Cube` ブロックの例は既に説明しました。
 
 ```python
 from prefect.blocks.core import Block
@@ -241,32 +240,31 @@ class Cube(Block):
 Cube.register_type_and_schema()
 ```
 
-### Register custom blocks
+### カスタムブロックの登録
 
-In addition to the `register_type_and_schema` method shown above, you can register blocks from a Python module with a CLI command:
+上記の `register_type_and_schema` メソッドに加えて、CLI コマンドを使用して Python モジュールからブロックを登録することもできます。
 
 ```bash
 prefect block register --module prefect_aws.credentials
 ```
 
-This command is useful for registering all blocks found within a module in a [Prefect Integration library](/integrations/).
+このコマンドは、[Prefect 統合ライブラリ](/integrations/) 内のモジュール内にあるすべてのブロックを登録するのに便利です。
 
-Alternatively, if a custom block was created in a `.py` file, you can register the block with the CLI command:
+あるいは、`.py` ファイル内にカスタムブロックを作成した場合は、以下の CLI コマンドを使用してブロックを登録できます。
 
 ```bash
 prefect block register --file my_block.py
 ```
 
-Block documents can now be created with the registered block schema.
+登録されたブロック スキーマを使用してブロック ドキュメントを作成できるようになりました。
 
-### Secret fields
+### シークレットフィールド
 
-All block values are encrypted before being stored.
-If you have values that you would not like visible in the UI or in logs, 
-use the `SecretStr` field type provided by Pydantic to automatically obfuscate those values.
-You can use this capability for fields that store credentials such as passwords and API tokens.
+すべてのブロック値は保存前に暗号化されます。
+UI やログに表示したくない値がある場合は、Pydantic が提供する `SecretStr` フィールドタイプを使用して、それらの値を自動的に難読化できます。
+この機能は、パスワードや API トークンなどの認証情報を保存するフィールドに使用できます。
 
-Here's an example of an `AwsCredentials` block that uses `SecretStr`:
+`SecretStr` を使用した `AwsCredentials` ブロックの例を次に示します。
 
 ```python
 from typing import Optional
@@ -282,8 +280,7 @@ class AwsCredentials(Block):
     region_name: Optional[str] = None
 ```
 
-Since `aws_secret_access_key` has the `SecretStr` type hint assigned to it, 
-the value of that field is not exposed if the object is logged:
+`aws_secret_access_key` には `SecretStr` 型ヒントが割り当てられているため、オブジェクトがログに記録されてもそのフィールドの値は公開されません。
 
 ```python
 aws_credentials_block = AwsCredentials(
@@ -295,11 +292,10 @@ print(aws_credentials_block)
 # aws_access_key_id='AKIAJKLJKLJKLJKLJKLJK' aws_secret_access_key=SecretStr('**********') aws_session_token=None profile_name=None region_name=None
 ```
 
-Prefect's `SecretDict` field type allows you to add a dictionary field to your block 
-that automatically obfuscates values at all levels in the UI or in logs.
-This capability is useful for blocks where typing or structure of secret fields is not known until configuration time.
+Prefect の `SecretDict` フィールドタイプを使用すると、ブロックに辞書フィールドを追加して、UI やログのあらゆるレベルで値を自動的に難読化できます。
+この機能は、設定時まで秘密フィールドの型や構造がわからないブロックに役立ちます。
 
-Here's an example of a block that uses `SecretDict`:
+`SecretDict` を使用したブロックの例を以下に示します:
 
 ```python
 from typing import Dict
@@ -326,7 +322,7 @@ system_configuration_block = SystemConfiguration(
 )
 ```
 
-`system_secrets` is obfuscated when `system_configuration_block` is displayed, but `system_variables` show up in plain-text:
+`system_secrets` は `system_configuration_block` が表示されるときに難読化されますが、`system_variables` はプレーンテキストで表示されます:
 
 ```python
 print(system_configuration_block)
@@ -336,26 +332,25 @@ print(system_configuration_block)
 # )
 ```
 
-### Customize a block's display
+### ブロックの表示をカスタマイズする
 
-You can set metadata fields on a block type's subclass to control how a block displays.
+ブロックタイプのサブクラスにメタデータフィールドを設定することで、ブロックの表示方法を制御できます。
 
-Available metadata fields include:
+利用可能なメタデータフィールドは次のとおりです:
 
 | Property          | Description                                                                                                                                  |
 | ----------------- | -------------------------------------------------------------------------------------------------------------------------------------------- |
-| `_block_type_name` | Display name of the block in the UI. Defaults to the class name.                                                                             |
-| `_block_type_slug` | Unique slug used to reference the block type in the API. Defaults to a lowercase, dash-delimited version of the block type name.             |
-| `_logo_url`        | URL pointing to an image that should be displayed for the block type in the UI. Default to `None`.                                           |
-| `_description`     | Short description of block type. Defaults to docstring, if provided.                                                                         |
-| `_code_example`    | Short code snippet shown in UI for how to load/use block type. Defaults to first example provided in the docstring of the class, if provided. |
+| `_block_type_name` | UI でのブロックの表示名。デフォルトはクラス名です。   |
+| `_block_type_slug` | API でブロックタイプを参照するために使用される一意のスラッグ。デフォルトでは、ブロックタイプ名を小文字でダッシュで区切ったバージョンになります。 |
+| `_logo_url`        |UI のブロックタイプに表示される画像を指す URL。デフォルトは `None` です。   |
+| `_description`     | ブロックタイプの簡単な説明。指定されている場合は、デフォルトで docstring になります。   |
+| `_code_example`    | ブロックタイプの読み込み/使用方法を説明するUIに表示される短いコードスニペットです。クラスのドキュメント文字列で指定された最初の例がデフォルトとなります（提供されている場合）。 |
 
-### Update custom `Block` types
+### カスタム `Block` タイプの更新
 
-Here's an example of how to add a `bucket_folder` field to your custom `S3Bucket` block; it represents the default path to 
-read and write objects from (this field exists on [our implementation](https://github.com/PrefectHQ/prefect-aws/blob/main/prefect_aws/s3.py#L292)).
+カスタム `S3Bucket` ブロックに `bucket_folder` フィールドを追加する方法の例を以下に示します。このフィールドは、オブジェクトの読み取りと書き込みを行うデフォルトのパスを表します (このフィールドは [弊社の実装](https://github.com/PrefectHQ/prefect-aws/blob/main/prefect_aws/s3.py#L292) に存在します)。
 
-Add the new field to the class definition:
+クラス定義に新しいフィールドを追加します:
 
 ```python
 class S3Bucket(Block):
@@ -365,10 +360,9 @@ class S3Bucket(Block):
     ...
 ```
 
-Then [register the updated block type](#register-blocks) with either your Prefect Cloud account or your self-hosted Prefect server instance.
+次に、[更新されたブロックタイプを登録](#register-blocks)し、Prefect Cloud アカウントまたはセルフホスト型 Prefect サーバーインスタンスに登録します。
 
-If you have any existing blocks of this type that were created before the update and 
-you'd prefer to not re-create them, migrate them to the new version of your block type by adding the missing values:
+更新前に作成されたこのタイプの既存のブロックがあり、再作成したくない場合は、不足している値を追加して、新しいバージョンのブロックタイプに移行してください。
 
 ```python
 # Bypass Pydantic validation to allow your local Block class to load the old block version
@@ -382,49 +376,49 @@ my_s3_bucket_block.save("my-s3-bucket", overwrite=True)
 ```
 
 
-## Pre-registered blocks
+## 事前登録ブロック
 
-### Built-in blocks
+### 組み込みブロック
 
-Commonly used block types come built-in with Prefect. 
-You can create and use these block types through the UI without installing any additional packages.
+よく使われるブロックタイプはPrefectに組み込まれています。
+追加のパッケージをインストールすることなく、UIからこれらのブロックタイプを作成して使用できます。
 
 | Block                                                                                                                | Slug                                                     | Description                                                                                                                             |
 | -------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------- |
-| Custom Webhook              | `custom-webhook`         | Call custom webhooks.                                                        |
-| Discord Webhook             | `discord-webhook`        | Call Discord webhooks.                                                       |
-| Local File System           | `local-file-system`       | Store data as a file on a local file system.                                   |
-| Mattermost Webhook          | `mattermost-webhook`     | Send notifications through a provided Mattermost webhook.                     |
-| Microsoft Teams Webhook     | `ms-teams-webhook`       | Send notifications through a provided Microsoft Teams webhook.                |
-| Opsgenie Webhook            | `opsgenie-webhook`       | Send notifications through a provided Opsgenie webhook.                       |
-| Pager Duty Webhook          | `pager-duty-webhook`     | Send notifications through a provided PagerDuty webhook.                      |
-| Remote File System          | `remote-file-system`      | Access files on a remote file system.                                          |
-| Secret                      | `secret`                 | Store a secret value. The value will be obfuscated when this block is logged or shown in the UI. |
-| Sendgrid Email              | `sendgrid-email`         | Send notifications through Sendgrid email.                                   |
-| Slack Webhook               | `slack-webhook`          | Send notifications through a provided Slack webhook.                         |
-| SMB                         | `smb`                    | Store data as a file on a SMB share.                                         |
-| Twilio SMS                  | `twilio-sms`             | Send notifications through Twilio SMS.                                       |
+| Custom Webhook              | `custom-webhook`         | カスタム Webhook を呼び出します。 |
+| Discord Webhook             | `discord-webhook`        | Discord Webhook を呼び出します。   |
+| Local File System           | `local-file-system`       | データをローカル ファイル システム上のファイルとして保存します。  |
+| Mattermost Webhook          | `mattermost-webhook`     | 提供された Mattermost Webhook を通じて通知を送信します。  |
+| Microsoft Teams Webhook     | `ms-teams-webhook`       | 提供された Microsoft Teams Webhook を通じて通知を送信します。   |
+| Opsgenie Webhook            | `opsgenie-webhook`       | 提供された Opsgenie Webhook を通じて通知を送信します。    |
+| Pager Duty Webhook          | `pager-duty-webhook`     | 提供された PagerDuty Webhook を通じて通知を送信します。    |
+| Remote File System          | `remote-file-system`      | リモート ファイル システム上のファイルにアクセスします。      |
+| Secret                      | `secret`                 | 秘密の値を保存します。このブロックがログに記録されるかUIに表示される際、値は難読化されます。 |
+| Sendgrid Email              | `sendgrid-email`         | Sendgrid メールを通じて通知を送信します。    |
+| Slack Webhook               | `slack-webhook`          | 提供された Slack Webhook を通じて通知を送信します。|
+| SMB                         | `smb`                    | データを SMB 共有上のファイルとして保存します。 |
+| Twilio SMS                  | `twilio-sms`             | Twilio SMS を通じて通知を送信します。  |
 
 <Note>
-Built-in blocks should be registered the first time you start a Prefect server. If the auto-registration fails, you can manually register the blocks using `prefect blocks register`. 
+Prefect サーバーを初めて起動する際には、組み込みブロックを登録する必要があります。
+自動登録が失敗した場合は、「prefect block register」コマンドを使用して手動でブロックを登録できます。
 
-For example, to register all built-in notification blocks, run `prefect block register -m prefect.blocks.notifications`.
+例えば、すべての組み込み通知ブロックを登録するには、「prefect block register -m prefect.blocks.notifications」コマンドを実行します。
 </Note>
 
 <Warning>
-The `S3`, `Azure`, `GCS`, and `GitHub` blocks are deprecated in favor of the corresponding `S3Bucket`, 
-`AzureBlobStorageCredentials`, `GCSBucket`, and `GitHubRepository` blocks found in the 
-[Prefect integration libraries](/integrations/).
-The JSON, DateTime, and String blocks are deprecated in favor of [Variables](/v3/develop/variables/).
+`S3`、`Azure`、`GCS`、`GitHub` ブロックは非推奨となり、代わりに [Prefect 統合ライブラリ](/integrations/) にある対応する `S3Bucket`、
+`AzureBlobStorageCredentials`、`GCSBucket`、`GitHubRepository` ブロックが推奨されます。
+JSON、DateTime、String ブロックは非推奨となり、代わりに [Variables](/v3/develop/variables/) が推奨されます。
 </Warning>
 
-### Blocks in Prefect integration libraries
+### Prefect 統合ライブラリのブロック
 
-Some block types that appear in the UI can be created immediately, with the corresponding integration library installed for use.
-For example, an AWS Secret block can be created, but not used until the [`prefect-aws` library](/integrations/prefect-aws/) is installed.
+UI に表示されるブロックタイプの中には、対応する統合ライブラリをインストールすればすぐに作成できるものもあります。
+例えば、AWS Secret ブロックは作成できますが、[`prefect-aws` ライブラリ](/integrations/prefect-aws/) がインストールされるまで使用できません。
 
-Find available block types in many of the published [Prefect integrations libraries](/integrations/).
-If a block type is not available in the UI, you can [register it](#register-blocks) through the CLI.
+公開されている多くの [Prefect 統合ライブラリ](/integrations/) で利用可能なブロックタイプを見つけることができます。
+UI にブロックタイプが表示されない場合は、CLI を使用して [登録](#register-blocks) できます。
 
 | Block                                                                                                                                                       | Slug                                   | Integration                                                             |
 | ----------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------- | ----------------------------------------------------------------------- |
@@ -471,7 +465,7 @@ If a block type is not available in the UI, you can [register it](#register-bloc
 | Database Credentials      | `database-credentials`                 | [prefect-sqlalchemy](/integrations/prefect-sqlalchemy/)   |
 | SQLAlchemy Connector              | `sqlalchemy-connector`                 | [prefect-sqlalchemy](/integrations/prefect-sqlalchemy/)   |
 
-Anyone can create a custom block type and, optionally, share it with the community.
+誰でもカスタム ブロック タイプを作成し、必要に応じてコミュニティと共有できます。
 
 ## Additional resources
 

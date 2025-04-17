@@ -1,82 +1,79 @@
 ---
-title: Set and get variables
-description: Prefect variables are dynamically-named, mutable string values.
+title: 変数の設定と取得
+description: Prefect 変数は動的に名前が付けられた変更可能な文字列値です。
 ---
 
-Variables enable you to store and reuse non-sensitive bits of data, such as configuration information. 
-They are:
+変数を使用すると、設定情報などの機密性が低いデータを保存し、再利用できます。
+変数の特徴は以下のとおりです。
 
-- named, mutable values of any JSON type
-- scoped to a self-hosted Prefect server instance or a single workspace in a Prefect Cloud account
-- meant for values with infrequent writes and frequent reads (but you can create or 
-modify variables at any time)
-- cacheable for quicker retrieval
-- most commonly loaded during flow runtime (but you can load them in other contexts to pass 
-configuration information to Prefect configuration files, such as deployment steps)
+- 任意のJSON型の名前付き可変値
+- セルフホスト型PrefectサーバーインスタンスまたはPrefect Cloudアカウント内の単一のワークスペースにスコープが設定されます
+- 書き込み頻度が低く、読み取り頻度が高い値を対象としています（ただし、変数はいつでも作成または変更できます）
+- キャッシュ可能なので、より迅速に取得できます
+- フロー実行時に最も頻繁に読み込まれます（ただし、デプロイメントステップなどのPrefect設定ファイルに設定情報を渡すために、他のコンテキストで読み込むこともできます）
 
 <Warning>
-**Variables are not Encrypted**
+**変数は暗号化されていません**
 
-We do not recommend using variables to store sensitive information. Instead, use 
-[Secret blocks](https://docs.prefect.io/develop/blocks/#prefect-built-in-blocks) to store and access 
-sensitive information.
+機密情報を変数に保存することは推奨されません。
+代わりに、[シークレットブロック](https://docs.prefect.io/develop/blocks/#prefect-built-in-blocks)を使用して機密情報を保存およびアクセスしてください。
 </Warning>
 
-## Manage variables
+## 変数の管理
 
-Create, read, edit, and delete variables through the Prefect UI, API, and CLI. 
-Names must adhere to these traditional variable naming conventions:
+Prefect UI、API、CLI を通じて、変数を作成、読み取り、編集、削除できます。
+名前は、以下の変数命名規則に従う必要があります。
 
-- Have no more than 255 characters
-- Only contain lowercase alphanumeric characters ([a-z], [0-9]) or underscores (_). Spaces are not allowed.
-- Be unique
+- 255文字以内
+- 小文字の英数字 ([a-z]、[0-9]) またはアンダースコア (_) のみを使用できます。スペースは使用できません。
+- 一意であること
 
-Values must have less than or equal to 5000 characters.
+値は5000文字以下である必要があります。
 
-Optionally, you can add tags to a variable.
+オプションで、変数にタグを追加できます。
 
-### Through the Prefect UI
+### Prefect UI 経由
 
-View all the variables in your self-hosted Prefect server instance or Prefect Cloud account workspace 
-in the **Variables** page of the Prefect UI. Both the name and value of all variables 
-are visible to anyone with access to the server or workspace.
+Prefect UI の **変数** ページで、セルフホスト型 Prefect サーバーインスタンスまたは Prefect Cloud アカウントワークスペース内のすべての変数を確認できます。
 
-To create a new variable:
-1. Select the **+** button next to the header of the **Variables** page. 
-1. Enter the name and value of the variable.
+すべての変数の名前と値は、サーバーまたはワークスペースにアクセスできるすべてのユーザーに表示されます。
 
-### Through the REST API
+新しい変数を作成するには:
+1. **変数** ページのヘッダーの横にある **+** ボタンを選択します。
+1. 変数の名前と値を入力します。
+
+### REST APIを通じて
 
 import { API } from "/snippets/resource-management/api.mdx"
 import { variables } from "/snippets/resource-management/vars.mdx"
 
 <API name="variables" href={variables.api} />
 
-### Through the CLI
+### CLI 経由
 
 import { CLI } from "/snippets/resource-management/cli.mdx"
 
 <CLI name="variables" href={variables.cli} />
 
-- `prefect variable set` creates or updates a variable.
-- `prefect variable get` retrieves a variable's value.
-- `prefect variable unset` deletes a variable.
-- `prefect variable ls` lists all variables.
-- `prefect variable inspect` shows a variable's details.
+- `prefect variables set` は変数を作成または更新します。
+- `prefect variables get` は変数の値を取得します。
+- `prefect variables unset` は変数を削除します。
+- `prefect variables ls` はすべての変数を一覧表示します。
+- `prefect variables inspect` は変数の詳細を表示します。
 
-### Through Terraform
+### Terraformを通じて
 
 import { TF } from "/snippets/resource-management/terraform.mdx"
 
 <TF name="variables" href={variables.tf} />
 
-## Access variables
+## 変数へのアクセス
 
-In addition to the UI and API, you can reference variables in code and in certain Prefect configuration files.
+UI と API に加えて、コード内や特定の Prefect 設定ファイル内でも変数を参照できます。
 
-### In Python code
+### Python コードの場合
 
-You can interact with variables through the Python SDK using the `get`, `set`, and `unset` methods. 
+Python SDK では、`get`、`set`、`unset` メソッドを使用して変数を操作できます。
 
 ```python
 from prefect.variables import Variable
@@ -92,13 +89,13 @@ assert Variable.unset("answer") is True
 assert Variable.get("answer", "fallback") == "fallback"
 ```
 
-You can use `overwrite=True` to update the value of an existing variable.
+既存の変数の値を更新するには、`overwrite=True` を使用できます。
 
 <Warning>
-**Contextual Behavior**
+**コンテキストに応じた動作**
 
-In a sync context (such as an `if __name__ == "__main__"` block or simple `def` scope), these methods are used synchronously.
-In an async context (such as an `async def` scope), they are used asynchronously.
+同期コンテキスト（`if __name__ == "__main__"` ブロックや単純な `def` スコープなど）では、これらのメソッドは同期的に使用されます。
+非同期コンテキスト（`async def` スコープなど）では、これらのメソッドは非同期的に使用されます。
 </Warning>
 
 <CodeGroup>
@@ -133,17 +130,17 @@ if __name__ == "__main__":
 ```
 </CodeGroup>
 
-### In `prefect.yaml` deployment steps
+### `prefect.yaml` のデプロイメント手順
 
-In `.yaml` files, variables are expressed as strings wrapped in quotes and double curly brackets: 
+`.yaml` ファイルでは、変数は引用符と二重中括弧で囲まれた文字列として表現されます。
+
 ```
 "{{ prefect.variables.my_variable }}"
 ```
 
-Use variables to templatize deployment steps by 
-referencing them in the `prefect.yaml` file that creates the deployments.
+変数を使用して、デプロイメントを作成する `prefect.yaml` ファイル内で参照することで、デプロイメントステップをテンプレート化できます。
 
-For example, you can pass in a variable to specify a branch for a git repo in a deployment `pull` step:
+例えば、デプロイメントの `pull` ステップで Git リポジトリのブランチを指定するために変数を渡すことができます。
 
 ```
 pull:
@@ -152,5 +149,4 @@ pull:
     branch: "{{ prefect.variables.deployment_branch }}"
 ```
 
-The `deployment_branch` variable is evaluated at runtime for the deployed flow, 
-allowing changes to variables used in a pull action without updating a deployment directly.
+`deployment_branch` 変数はデプロイされたフローの実行時に評価され、デプロイメントを直接更新せずにプルアクションで使用される変数を変更できるようになります。

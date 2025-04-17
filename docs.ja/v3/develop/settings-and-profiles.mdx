@@ -1,21 +1,23 @@
 ---
-title: Configure settings and profiles
-description: Prefect settings let you customize behavior across different environments.
+title: 設定とプロファイルを構成する
+description: Prefect 設定を使用すると、さまざまな環境にわたって動作をカスタマイズできます。
 ---
 
-## Why use settings?
+## 設定を使う理由
 
-Settings in Prefect help you control how your workflows behave. They let you easily customize Prefect to work the way you need it to, whether you're testing locally or running in production.
+Prefect の設定は、ワークフローの動作を制御するのに役立ちます。
 
-Specifically, settings enable:
+設定を使用すると、ローカルでテストする場合でも、本番環境で実行する場合でも、Prefect を必要に応じて簡単にカスタマイズできます。
+設定によって具体的には、次のことが可能になります。
 
-- **Environment-Specific Configuration**: Use different settings for development (like detailed logging), testing (like test databases), and production (like your production server) without changing your workflow code.
+- **環境固有の構成**：ワークフローコードを変更することなく、開発環境（詳細なログ記録など）、テスト環境（テストデータベースなど）、本番環境（本番サーバーなど）で異なる設定を使用できます。
 
-- **Runtime Flexibility**: Quickly adjust things like retry attempts or logging levels without having to modify and redeploy your workflows.
+- **ランタイムの柔軟性**：ワークフローを変更して再デプロイすることなく、再試行回数やログ記録レベルなどを迅速に調整できます。
 
-## Get started with settings
+## 設定を始めましょう
 
-The simplest way declare settings is by creating a `prefect.toml` file in your project directory. For example:
+設定を宣言する最も簡単な方法は、プロジェクトディレクトリに「prefect.toml」ファイルを作成することです。
+例:
 
 ```toml prefect.toml
 # Set more detailed logging while developing
@@ -24,132 +26,141 @@ level = "DEBUG"
 ```
 
 <Note>
-To use `prefect.toml` or `pyproject.toml` for configuration, `prefect>=3.1` must be installed.
+設定に `prefect.toml` または `pyproject.toml` を使用するには、`prefect>=3.1` がインストールされている必要があります。
 
-To use a `.env` file for configuration, `prefect>=3.0.5` must be installed.
+設定に `.env` ファイルを使用するには、`prefect>=3.0.5` がインストールされている必要があります。
 </Note>
 
-Most editors have plugins for TOML that provide syntax highlighting, linting, and autocomplete for `prefect.toml` files. If you use VSCode, we recommend the [Even Better TOML extension](https://marketplace.visualstudio.com/items?itemName=tamasfe.even-better-toml).
+ほとんどのエディターには、`prefect.toml` ファイルの構文ハイライト、リンティング、オートコンプリート機能を提供する TOML 用プラグインがあります。
+VSCode をご利用の場合は、[Even Better TOML 拡張機能](https://marketplace.visualstudio.com/items?itemName=tamasfe.even-better-toml) をお勧めします。
 
 <Tip>
-**Writing TOML**
+**TOMLの書き方**
 
-TOML is a simple configuration language. If you're new to TOML, learn more about the syntax in the [official documentation](https://toml.io/en/). 
+TOMLはシンプルな設定言語です。
+TOMLを初めて使う方は、[公式ドキュメント](https://toml.io/en/)で構文について詳しく学んでください。
 
-In particular, note that TOML uses square brackets to denote [tables](https://toml.io/en/v1.0.0#table), which are analogous to dictionaries in Python.
+特に、TOMLでは[テーブル](https://toml.io/en/v1.0.0#table)を表すために角括弧を使用していることに注意してください。これはPythonの辞書に似ています。
 </Tip>
 
-## Settings sources
+## 設定ソース
 
-You can configure settings via the following sources (highest to lowest precedence):
+設定は以下のソースから行うことができます（優先順位の高い順）。
 
-- **Environment variables**: Environment variables are useful for temporarily overriding settings or configuring the runtime environment of a single workflow run.
+- **環境変数**：環境変数は、設定を一時的に上書きしたり、単一のワークフロー実行のランタイム環境を構成したりするのに便利です。
 
-- **`.env` file**: `.env` files are useful for declaring local settings that you want to apply across multiple runs.
+- **`.env` ファイル**：`.env` ファイルは、複数の実行に適用するローカル設定を宣言するのに便利です。
 
-- **`prefect.toml` file**: A `prefect.toml` file is useful when you want to declare settings for an entire project. You can keep this file in your project directory and it will be automatically applied regardless of where you run your project.
+- **`prefect.toml` ファイル**：`prefect.toml` ファイルは、プロジェクト全体の設定を宣言する場合に便利です。
+このファイルをプロジェクトディレクトリに保存しておくと、プロジェクトをどこで実行しても自動的に適用されます。
 
-- **`pyproject.toml` file**: If you already have a `pyproject.toml` file in your project or like to consolidate settings for all your tools in one place, you can declare settings in the `[tool.prefect]` table of your `pyproject.toml` file.
+- **`pyproject.toml` ファイル**：プロジェクトに既に `pyproject.toml` ファイルがある場合、またはすべてのツールの設定を一か所にまとめたい場合は、`pyproject.toml` ファイルの `[tool.prefect]` テーブルで設定を宣言できます。
 
-- **Profiles**: Prefect profiles are useful for switching between different environments. For example, you might use one profile for a local Prefect server and another for your production environment.
+- **プロファイル**: Prefect プロファイルは、異なる環境を切り替えるのに便利です。
+例えば、ローカルの Prefect サーバー用に 1 つのプロファイルを使用し、本番環境用に別のプロファイルを使用できます。
 
-When multiple settings sources define the same setting, Prefect follows this precedence order (highest to lowest):
+複数の設定ソースで同じ設定が定義されている場合、Prefect は次の優先順位（高いものから低いものへ）に従います。
 
 <Steps>
-  <Step title="Environment variables"/>
-  <Step title=".env file in the current working directory"/>
-  <Step title="prefect.toml file in the current working directory"/>
-  <Step title="pyproject.toml file in the current working directory"/>
-  <Step title="Active profile settings"/>
-  <Step title="Default values"/>
+  <Step title="環境変数"/>
+  <Step title="現在の作業ディレクトリ内の.envファイル"/>
+  <Step title="現在の作業ディレクトリにあるprefect.tomlファイル"/>
+  <Step title="現在の作業ディレクトリにあるpyproject.tomlファイル"/>
+  <Step title="アクティブプロファイル設定"/>
+  <Step title="デフォルト値"/>
 </Steps>
 
-For example, if you set `PREFECT_API_URL` in both your environment and your active profile, the environment variable value will take precedence.
+たとえば、環境とアクティブ プロファイルの両方で `PREFECT_API_URL` を設定すると、環境変数の値が優先されます。
 
-### Environment variables
+### 環境変数
 
-Environment variables are useful for temporarily overriding settings or configuring the runtime environment of a workflow. 
+環境変数は、設定を一時的に上書きしたり、ワークフローのランタイム環境を構成したりするのに便利です。
 
-All Prefect settings can be set using environment variables prefixed with `PREFECT_`. They take precedence over all other sources, making them ideal for adjustments that should only apply to a single session or process.
+Prefect のすべての設定は、`PREFECT_` というプレフィックスが付いた環境変数を使用して設定できます。
+これらの設定は他のすべての設定よりも優先されるため、単一のセッションまたはプロセスにのみ適用する調整に最適です。
 
-For example, you can run the following command to temporarily set the logging level for a single flow run:
+例えば、次のコマンドを実行すると、単一のフロー実行のログレベルを一時的に設定できます。
 
 ```bash
 PREFECT_LOGGING_LEVEL="DEBUG" python my_flow.py
 ```
 
-You can also export an environment variable in your shell to apply it to all flow runs in that shell session:
+シェルで環境変数をエクスポートして、そのシェル セッション内のすべてのフロー実行に適用することもできます:
 
 ```bash
 export PREFECT_LOGGING_LEVEL="DEBUG"
 prefect run my_flow.py
 ```
 
-You can see supported environment variables for each setting in the [settings reference documentation](/v3/develop/settings-ref).
+各設定でサポートされている環境変数については、[設定リファレンスドキュメント](/v3/develop/settings-ref)で確認できます。
 
 <Tip>
-**Environment variables _always_ take precedence**
+**環境変数は常に優先されます**
 
-Environment variables always take precedence over values declared in other sources.
-This allows you to configure certain runtime behavior for your workflows by setting the appropriate
-environment variable on the job or process executing the workflow.
+環境変数は、他のソースで宣言された値よりも常に優先されます。
+これにより、ワークフローを実行するジョブまたはプロセスに適切な環境変数を設定することで、ワークフローの特定の実行時動作を設定できます。
 </Tip>
 
-### `.env` file
+### `.env` ファイル
 
-`.env` files are useful for declaring local settings that you want to apply across multiple runs. 
+`.env` ファイルは、複数の実行に適用するローカル設定を宣言するのに便利です。
 
-When running `prefect` in a directory that contains a `.env` file, Prefect will automatically apply the settings in the file. We recommend keeping your `.env` files local and not committing them to your code repositories.
+`.env` ファイルを含むディレクトリで `prefect` を実行すると、Prefect はファイル内の設定を自動的に適用します。
+`.env` ファイルはローカルに保存し、コードリポジトリにはコミットしないことを推奨します。
 
-For example, the following `.env` file declares a local setting for the logging level:
+例えば、次の `.env` ファイルは、ログレベルのローカル設定を宣言しています。
 
 ```bash .env
 PREFECT_LOGGING_LEVEL="DEBUG"
 ```
 
-Any flows run in the same directory as this `.env` file will use the `DEBUG` logging level, even if they are run in different shell sessions.
+この `.env` ファイルと同じディレクトリで実行されるフローは、異なるシェルセッションで実行される場合でも、`DEBUG` ログレベルを使用します。
 
-View supported environment variables for each setting in the [settings reference documentation](/v3/develop/settings-ref).
+各設定でサポートされている環境変数については、[設定リファレンスドキュメント](/v3/develop/settings-ref) を参照してください。
 
-### `prefect.toml` file
+### `prefect.toml` ファイル
 
-A `prefect.toml` file is useful when you want to declare settings for an entire project. 
+`prefect.toml` ファイルは、プロジェクト全体の設定を宣言したい場合に便利です。
 
-You can keep a `prefect.toml` file in your project directory and the declared settings will be automatically applied when running `prefect` in that directory. We recommend committing this file to your code repositories to ensure consistency across environments.
+`prefect.toml` ファイルをプロジェクトディレクトリに保存しておくと、そのディレクトリで `prefect` を実行すると、宣言された設定が自動的に適用されます。
+環境間での一貫性を保つため、このファイルをコードリポジトリにコミットすることをお勧めします。
 
-For example, the following `prefect.toml` file declares a setting for the logging level:
+例えば、次の `prefect.toml` ファイルは、ログレベルの設定を宣言しています。
 
 ```toml prefect.toml
 [logging]
 level = "DEBUG"
 ```
 
-If you commit your `prefect.toml` file to a code repository, creating deployments from flows in that repository will use the settings declared in the `prefect.toml` file.
+`prefect.toml` ファイルをコードリポジトリにコミットすると、そのリポジトリ内のフローからデプロイメントを作成する際に、`prefect.toml` ファイルで宣言された設定が使用されます。
 
-You can see the `prefect.toml` path for each setting in the [settings reference documentation](/v3/develop/settings-ref).
+各設定の `prefect.toml` パスは、[設定リファレンスドキュメント](/v3/develop/settings-ref) で確認できます。
 
-### `pyproject.toml` file
+### `pyproject.toml` ファイル
 
-Declaring settings in a `pyproject.toml` file is very similar to declaring settings in a `prefect.toml` file. The main difference is that settings are declared in the `[tool.prefect]` table instead of at the root of the file.
+`pyproject.toml` ファイルでの設定の宣言は、`prefect.toml` ファイルでの設定の宣言と非常に似ています。
+主な違いは、設定がファイルのルートではなく、`[tool.prefect]` テーブルで宣言されることです。
 
-For example, the following `pyproject.toml` file declares a setting for the logging level:
+例えば、次の `pyproject.toml` ファイルは、ログレベルの設定を宣言しています。
 
 ```toml pyproject.toml
 [tool.prefect]
 logging.level = "DEBUG"
 ```
 
-The advantage of declaring settings in a `pyproject.toml` file is that it allows you to keep all your dependencies and settings for all your tools in one place. You can learn more about `pyproject.toml` files in the [Python Packaging User Guide](https://packaging.python.org/en/latest/specifications/pyproject-toml/#arbitrary-tool-configuration-the-tool-table).
+`pyproject.toml` ファイルで設定を宣言する利点は、すべてのツールの依存関係と設定を 1 か所にまとめることができることです。
+`pyproject.toml` ファイルの詳細については、[Python パッケージング ユーザー ガイド](https://packaging.python.org/en/latest/specifications/pyproject-toml/#arbitrary-tool-configuration-the-tool-table) を参照してください。
 
-### Profiles
+### プロファイル
 
-Prefect profiles are useful for switching between different environments. By creating different profiles with different API URLs, you can easily switch between a local Prefect server and your production environment.
+Prefect プロファイルは、異なる環境間の切り替えに便利です。
+異なる API URL を持つ複数のプロファイルを作成することで、ローカルの Prefect サーバーと本番環境を簡単に切り替えることができます。
 
-Profiles are stored in a [TOML](https://toml.io/en/) file located at `~/.prefect/profiles.toml` by default. This location can be configured by setting `PREFECT_PROFILES_PATH`.
+プロファイルは、デフォルトでは `~/.prefect/profiles.toml` にある [TOML](https://toml.io/en/) ファイルに保存されます。この場所は `PREFECT_PROFILES_PATH` を設定することで変更できます。
 
-One and only one profile can be active at any time.
+アクティブにできるプロファイルは常に 1 つだけです。
 
-Immediately after installation, the `ephemeral` profile will be used, which only has 1 setting configured:
+インストール直後は、以下の 1 つの設定のみが設定された `ephemeral` プロファイルが使用されます:
 
 ```bash
 » docker run -it prefecthq/prefect:3-latest
@@ -165,41 +176,40 @@ PREFECT_SERVER_ALLOW_EPHEMERAL_MODE='True' (from profile)
 ```
 
 <Tip>
-**What is `PREFECT_SERVER_ALLOW_EPHEMERAL_MODE`?**
+**`PREFECT_SERVER_ALLOW_EPHEMERAL_MODE` とは何ですか？**
 
-This setting allows a Prefect server to be run ephemerally as needed without explicitly starting a server process.
+この設定により、明示的にサーバープロセスを開始することなく、必要に応じて Prefect サーバーを一時的に実行できるようになります。
 </Tip>
 
-The `prefect profile` CLI commands enable you to create, review, and manage profiles:
+`prefect profile` CLI コマンドを使用すると、プロファイルを作成、確認、管理できます:
 
 | Command | Description |
 | --- | --- |
-| `create` | Create a new profile; use the `--from` flag to copy settings from another profile. |
-| `delete` | Delete the given profile. |
-| `inspect` | Display settings from a given profile; defaults to active. |
-| `ls` | List all profile names. |
-| `rename` | Change the name of a profile. |
-| `use` | Switch the active profile. |
-| `populate-defaults` | Populate your `profiles.toml` file with opinionated stock profiles. |
+| `create` | 新しいプロファイルを作成します。別のプロファイルから設定をコピーするには、`--from` フラグを使用します。 |
+| `delete` | 指定されたプロファイルを削除します。 |
+| `inspect` | 指定されたプロファイルの設定を表示します。デフォルトではアクティブになっています。 |
+| `ls` | すべてのプロファイル名を一覧表示します。 |
+| `rename` | プロファイルの名前を変更します。 |
+| `use` | アクティブなプロファイルを切り替えます。 |
+| `populate-defaults` | `profiles.toml` ファイルに独自の株式プロファイルを入力します。 |
 
-... or you may edit your `profiles.toml` file directly:
+...または、`profiles.toml` ファイルを直接編集することもできます。
 
 ```bash
 vim ~/.prefect/profiles.toml
 ```
 
-#### Configure settings for the active profile
+#### アクティブなプロファイルの設定を構成する
 
-The `prefect config` CLI commands enable you to manage the settings within the currently active profile.
+「prefect config」CLIコマンドを使用すると、現在アクティブなプロファイル内の設定を管理できます。
 
 | Command | Description |
 | --- | --- |
-| set | Change the value for a setting. |
-| unset | Restore the default value for a setting. |
-| view | Display the current settings. |
+| set | 設定の値を変更します。 |
+| unset | 設定のデフォルト値を復元します。 |
+| view | 現在の設定を表示します。 |
 
-For example, the following CLI commands set configuration in the `ephemeral` profile and then create a new
-profile with new settings:
+たとえば、次の CLI コマンドは、`ephemeral` プロファイルに設定を設定し、新しい設定で新しいプロファイルを作成します:
 
 ```bash
 prefect profile use ephemeral
@@ -213,94 +223,89 @@ prefect profile inspect
 prefect config unset PREFECT_LOGGING_LEVEL -y
 ```
 
-## View current configuration
+## 現在の設定を表示
 
-To view all available settings and their active values from the command line, run:
+コマンドラインから利用可能なすべての設定とその有効な値を表示するには、次のコマンドを実行します:
 
 ```bash
 prefect config view --show-defaults
 ```
 
-These settings are type-validated and you may verify your setup at any time with:
+これらの設定はタイプ検証されており、次の方法でいつでも設定を確認できます:
 
 ```bash
 prefect config validate
 ```
 
-## Common client settings
+## 共通クライアント設定
 
-- [`api.url`](/v3/develop/settings-ref/#url): this setting specifies the API endpoint of your 
-Prefect Cloud workspace or a self-hosted Prefect server instance.
-- [`api.key`](/v3/develop/settings-ref/#key): this setting specifies the 
-[API key](/v3/manage/cloud/manage-users/api-keys/) used to authenticate with Prefect Cloud.
-- [`home`](/v3/develop/settings-ref/#home): the `home` value specifies the local Prefect directory for configuration files,
-profiles, and the location of the default Prefect SQLite database.
+- [`api.url`](/v3/develop/settings-ref/#url): この設定は、Prefect Cloud ワークスペースまたはセルフホスト型 Prefect サーバーインスタンスの API エンドポイントを指定します。
+- [`api.key`](/v3/develop/settings-ref/#key): この設定は、Prefect Cloud での認証に使用する [API キー](/v3/manage/cloud/manage-users/api-keys/) を指定します。
+- [`home`](/v3/develop/settings-ref/#home): `home` 値は、設定ファイル、プロファイル、およびデフォルトの Prefect SQLite データベースの場所を格納するローカルの Prefect ディレクトリを指定します。
 
 <Tip>
-**Use `prefect cloud login` to set these values for Prefect Cloud**
+**Prefect Cloud のこれらの値を設定するには、`prefect cloud login` を使用してください**
 
-To set `PREFECT_API_URL` and `PREFECT_API_KEY` for your active profile, run `prefect cloud login`. 
-Read more about [managing API keys](/v3/manage/cloud/manage-users/api-keys/). 
+アクティブなプロファイルの `PREFECT_API_URL` と `PREFECT_API_KEY` を設定するには、`prefect cloud login` を実行してください。
+[API キーの管理](/v3/manage/cloud/manage-users/api-keys/) の詳細については、こちらをご覧ください。
 </Tip>
 
-## Common server settings
+## 共通サーバー設定
 
+- [`server.database.connection_url`](/v3/develop/settings-ref#connection-url): セルフホスト型Prefectサーバーインスタンスのデータベース接続URL。
+SQLAlchemy互換の形式で指定する必要があります。Prefectは現在、SQLiteとPostgresをサポートしています。 
 
-- [`server.database.connection_url`](/v3/develop/settings-ref#connection-url): the database connection URL for a self-hosted Prefect server instance.
-Must be provided in a SQLAlchemy-compatible format. Prefect currently supports SQLite and Postgres. 
+#### セキュリティ設定
 
-#### Security settings
+**Basic認証**
 
-**Basic Authentication**
+セルフホスト型Prefectサーバーは、以下の2つの設定でBasic認証を利用できます。
 
-Self-hosted Prefect servers can be equipped with Basic Authentication through two settings:
+- **`server.api.auth_string="admin:pass"`**: この設定は、Prefectウェブサーバーをホストするすべてのプロセス（例：`prefect server start`）で、管理者IDとパスワードの組み合わせをコロンで区切って設定する必要があります。
+- **`api.auth_string="admin:pass"`**: この設定は、Prefect APIと通信する必要があるすべてのクライアントプロセス（例：ワークフローを実行するすべてのプロセス）で、サーバーと同じ管理者IDとパスワードの組み合わせを設定する必要があります。
 
-- **`server.api.auth_string="admin:pass"`**: this setting should be set with an administrator / password combination, separated by a colon, on any process that hosts the Prefect webserver (for example `prefect server start`).
-- **`api.auth_string="admin:pass"`**: this setting should be set with the same administrator / password combination as the server on any client process that needs to communicate with the Prefect API (for example, any process that runs a workflow).
+これらの設定により、初回ロード時にUIが完全な認証文字列「`"admin:pass"`」（引用符なし）の入力を求めます。
+この情報は、Kubernetes Secretやプライベートな`.env`ファイルなどの安全な方法で保存することをお勧めします。
 
-With these settings, the UI will prompt for the full authentication string `"admin:pass"` (no quotes) upon first load. It is recommended to store this information in a secure way, such as a Kubernetes Secret or in a private `.env` file.
-
-Example `.env` file:
+`.env`ファイルの例：
 
 ```bash .env
 PREFECT_SERVER_API_AUTH_STRING="admin:pass"
 PREFECT_API_AUTH_STRING="admin:pass"
 ```
 
-**Host the UI behind a reverse proxy**
+**リバースプロキシの背後に UI をホストする**
 
-When using a reverse proxy (such as [Nginx](https://nginx.org) or [Traefik](https://traefik.io)) to proxy traffic to a 
- hosted Prefect UI instance, you must also configure the self-hosted Prefect server instance to connect to the API. 
-The [`ui.api_url`](/v3/develop/settings-ref/#api_url) setting should be set to the external proxy URL.
+リバースプロキシ（[Nginx](https://nginx.org) や [Traefik](https://traefik.io) など）を使用して、ホストされている Prefect UI インスタンスへのトラフィックをプロキシする場合は、セルフホストされている Prefect サーバーインスタンスも API に接続できるように設定する必要があります。
+[`ui.api_url`](/v3/develop/settings-ref/#api_url) 設定には、外部プロキシ URL を指定する必要があります。
 
-For example, if your external URL is `https://prefect-server.example.com` then you can configure a `prefect.toml` file for your server like this:
+例えば、外部 URL が `https://prefect-server.example.com` の場合、サーバーの `prefect.toml` ファイルを次のように設定できます:
 
 ```toml prefect.toml
 [ui]
 api_url = "https://prefect-server.example.com/api"
 ```
 
-If you do not set `ui.api_url`, then `api.url` will be used as a fallback.
+`ui.api_url` を設定しない場合は、`api.url` がフォールバックとして使用されます。
 
-**CSRF protection settings**
+**CSRF 保護設定**
 
-If using self-hosted Prefect server, you can configure CSRF protection settings.
+セルフホスト型 Prefect サーバーを使用している場合は、CSRF 保護設定を構成できます。
 
-- [`server.api.csrf_protection_enabled`](/v3/develop/settings-ref/#csrf-protection-enabled): activates CSRF protection on the server, 
-requiring valid CSRF tokens for applicable requests. Recommended for production to prevent CSRF attacks. 
-Defaults to `False`.
-- [`server.api.csrf_token_expiration`](/v3/develop/settings-ref/#csrf-token-expiration): sets the expiration duration for server-issued CSRF tokens, 
-influencing how often tokens need to be refreshed. The default is 1 hour.
-- [`client.csrf_support_enabled`](/v3/develop/settings-ref/#csrf-support-enabled): enables or disables CSRF token handling in the Prefect client. 
-When enabled, the client manages CSRF tokens for state-changing API requests. Defaults to `True`.
+- [`server.api.csrf_protection_enabled`](/v3/develop/settings-ref/#csrf-protection-enabled): サーバー上で CSRF 保護を有効にし、該当するリクエストに対して有効な CSRF トークンを要求します。本番環境では、CSRF 攻撃を防ぐためにこのオプションの使用を推奨します。
+デフォルトは `False` です。
+- [`server.api.csrf_token_expiration`](/v3/develop/settings-ref/#csrf-token-expiration): サーバーが発行する CSRF トークンの有効期限を設定し、トークンの更新頻度に影響します。
+デフォルトは 1 時間です。
+- [`client.csrf_support_enabled`](/v3/develop/settings-ref/#csrf-support-enabled): Prefect クライアントでの CSRF トークン処理を有効または無効にします。
+有効にすると、クライアントは状態変更 API リクエストの CSRF トークンを管理します。デフォルトは `True` です。
 
-By default clients expect that CSRF protection is enabled on the server. If you are running a server without CSRF protection, 
-you can disable CSRF support in the client.
+デフォルトでは、クライアントはサーバーで CSRF 保護が有効になっていることを前提としています。
+CSRF 保護のないサーバーを実行している場合は、クライアントで CSRF サポートを無効にすることができます。
 
-**CORS settings**
+**CORS 設定**
 
-If using self-hosted Prefect server, you can configure CORS settings to control which origins are allowed to make cross-origin requests to your server.
+セルフホスト型 Prefect サーバーをご利用の場合、CORS 設定を構成することで、サーバーへのクロスオリジンリクエストを許可するオリジンを制御できます。
 
-- [`server.api.cors_allowed_origins`](/v3/develop/settings-ref/#cors-allowed-origins): a list of origins that are allowed to make cross-origin requests.
-- [`server.api.cors_allowed_methods`](/v3/develop/settings-ref/#cors-allowed-methods): a list of HTTP methods that are allowed to be used during cross-origin requests.
-- [`server.api.cors_allowed_headers`](/v3/develop/settings-ref/#cors-allowed-headers): a list of headers that are allowed to be used during cross-origin requests.
+- [`server.api.cors_allowed_origins`](/v3/develop/settings-ref/#cors-allowed-origins): クロスオリジンリクエストを許可するオリジンのリスト。
+- [`server.api.cors_allowed_methods`](/v3/develop/settings-ref/#cors-allowed-methods): クロスオリジンリクエストで使用できる HTTP メソッドのリスト。
+- [`server.api.cors_allowed_headers`](/v3/develop/settings-ref/#cors-allowed-headers): クロスオリジンリクエストで使用できるヘッダーのリスト。

@@ -1,45 +1,45 @@
 ---
-title: Limit concurrent task runs with tags
-description: Prevent too many tasks from running simultaneously using tags.
+title: タグを使用して同時タスク実行を制限する
+description: タグを使用して、同時に実行されるタスクが多すぎるのを防ぎます。
 ---
 
-Task run concurrency limits help prevent too many tasks from running simultaneously.
-For example, if many tasks across multiple flows are designed to interact with a database that only allows 10 connections.
+タスク実行の同時実行制限は、過剰なタスクが同時に実行されるのを防ぐのに役立ちます。
+例えば、複数のフローにまたがる多くのタスクが、10接続しか許可されていないデータベースとやり取りするように設計されている場合などです。
 
-Task run concurrency limits use [task tags](#tags). You can specify an optional concurrency limit as the maximum number of concurrent 
-task runs in a `Running` state for tasks with a given tag.
-
-<Tip>
-Tag-based task concurrency is different from [Global concurrency limits](/v3/develop/global-concurrency-limits), though they can be used to achieve similar outcomes. Global concurrency limits are a more general way to control concurrency for any Python-based operation, whereas tag-based concurrency limits are specific to Prefect tasks.
-</Tip>
-
-If a task has multiple tags, it will run only if **_all_** tags have available concurrency.
-
-Tags without specified concurrency limits are treated as unlimited. Setting a tag's concurrency limit to 0 causes immediate abortion of any task runs with that tag, rather than delaying them.
-
-### Execution behavior
-
-Task tag limits are checked whenever a task run attempts to enter a [`Running` state](/v3/develop/manage-states/).
-
-If there are no concurrency slots available for any one of your task's tags, it delays the transition to a `Running` state 
-and instructs the client to try entering a `Running` state again in 30 seconds 
-(or the value specified by the `PREFECT_TASK_RUN_TAG_CONCURRENCY_SLOT_WAIT_SECONDS` setting).
-
-### Configure task run concurrency limits
+タスク実行の同時実行制限には、[タスクタグ](#tags) を使用します。
+オプションで、特定のタグを持つタスクの「実行中」状態で同時実行されるタスクの最大数として同時実行制限を指定できます。
 
 <Tip>
-**Flow run concurrency limits are set at a work pool, work queue, or deployment level**
-
-While task run concurrency limits are configured through tags (as shown below), [flow run concurrency limits](/v3/develop/global-concurrency-limits) are configured through work pools and/or work queues.
+タグベースのタスク同時実行は[グローバル同時実行制限](/v3/develop/global-concurrency-limits)とは異なりますが、どちらも同様の結果を達成するために使用できます。
+グローバル同時実行制限は、あらゆるPythonベースの操作の同時実行を制御するためのより一般的な方法ですが、タグベースの同時実行制限はPrefectタスクに固有のものです。
 </Tip>
 
-You can set concurrency limits on as few or as many tags as you wish. You can set limits through:
+タスクに複数のタグがある場合、**_すべての_** タグの同時実行数が利用可能な場合にのみタスクが実行されます。
+
+同時実行数制限が指定されていないタグは、無制限として扱われます。
+タグの同時実行数制限を 0 に設定すると、そのタグで実行されるすべてのタスクは遅延されるのではなく、直ちに中止されます。
+
+### 実行動作
+
+タスク実行が [`Running` 状態](/v3/develop/manage-states/) に移行しようとするたびに、タスクタグの制限がチェックされます。
+
+タスクのタグのいずれかに利用可能な同時実行スロットがない場合、`Running` 状態への移行が遅延され、クライアントは 30 秒後（または `PREFECT_TASK_RUN_TAG_CONCURRENCY_SLOT_WAIT_SECONDS` 設定で指定された値後）に再度 `Running` 状態への移行を試行するよう指示されます。
+
+### タスク実行の同時実行制限を構成する
+
+<Tip>
+**フロー実行の同時実行制限は、ワークプール、ワークキュー、またはデプロイメントレベルで設定されます**
+
+タスク実行の同時実行制限はタグ（以下を参照）を介して設定されますが、[フロー実行の同時実行制限](/v3/develop/global-concurrency-limits)はワークプールまたはワークキューを介して設定されます。
+</Tip>
+
+タグの同時実行数制限は、必要な数だけ設定できます。制限設定は以下の方法で行えます:
 
 - Prefect [CLI](#cli)
 - Prefect [API](#api)
 - [Terraform](#terraform)
-- Prefect API by using `PrefectClient` [Python client](#python-client)
-- Prefect server UI or Prefect Cloud
+- `PrefectClient` を使用した Prefect API [Python クライアント](#python-client)
+- Prefect サーバー UI または Prefect Cloud
 
 #### CLI
 
@@ -54,24 +54,24 @@ prefect concurrency-limit [command] [arguments]
 
 | Command | Description                                                      |
 | ------- | ---------------------------------------------------------------- |
-| create  | Create a concurrency limit by specifying a tag and limit.        |
-| delete  | Delete the concurrency limit set on the specified tag.           |
-| inspect | View details about a concurrency limit set on the specified tag. |
-| ls      | View all defined concurrency limits.                             |
+| create  | タグと制限を指定して同時実行制限を作成します。        |
+| delete  | 指定されたタグに設定された同時実行制限を削除します。         |
+| inspect | 指定されたタグに設定された同時実行制限の詳細を表示します。 |
+| ls      | 定義されているすべての同時実行制限を表示します。                     |
 
-For example, to set a concurrency limit of 10 on the 'small_instance' tag:
+たとえば、「small_instance」タグに同時実行制限を 10 に設定するには、次のようにします:
 
 ```bash
 prefect concurrency-limit create small_instance 10
 ```
 
-To delete the concurrency limit on the 'small_instance' tag:
+「small_instance」タグの同時実行制限を削除するには:
 
 ```bash
 prefect concurrency-limit delete small_instance
 ```
 
-To view details about the concurrency limit on the 'small_instance' tag:
+「small_instance」タグの同時実行制限の詳細を表示するには:
 
 ```bash
 prefect concurrency-limit inspect small_instance
@@ -89,17 +89,16 @@ import { TF } from "/snippets/resource-management/terraform.mdx"
 
 <TF name="task run concurrency" href={task_run_concurrency.tf} />
 
-#### Python client
+#### Python クライアント
 
-To update your tag concurrency limits programmatically, use 
-[`PrefectClient.orchestration.create_concurrency_limit`](https://reference.prefect.io//prefect/client/orchestration/#prefect.client.orchestration.PrefectClient.create_concurrency_limit).
+タグの同時実行制限をプログラムで更新するには、[`PrefectClient.orchestration.create_concurrency_limit`](https://reference.prefect.io//prefect/client/orchestration/#prefect.client.orchestration.PrefectClient.create_concurrency_limit) を使用します。
 
-`create_concurrency_limit` takes two arguments:
+`create_concurrency_limit` は 2 つの引数を取ります:
 
-- `tag` specifies the task tag on which you're setting a limit.
-- `concurrency_limit` specifies the maximum number of concurrent task runs for that tag.
+- `tag` は、制限を設定するタスクタグを指定します。
+- `concurrency_limit` は、そのタグで同時に実行されるタスクの最大数を指定します。
 
-For example, to set a concurrency limit of 10 on the 'small_instance' tag:
+例えば、'small_instance' タグに同時実行制限を 10 に設定するには、次のようにします:
 
 ```python
 from prefect import get_client
@@ -112,7 +111,7 @@ async with get_client() as client:
         )
 ```
 
-To remove all concurrency limits on a tag, use [`PrefectClient.delete_concurrency_limit_by_tag`](https://reference.prefect.io/prefect/client/orchestration/#prefect.client.orchestration.PrefectClient.delete_concurrency_limit_by_tag/), passing the tag:
+タグのすべての同時実行制限を削除するには、[`PrefectClient.delete_concurrency_limit_by_tag`](https://reference.prefect.io/prefect/client/orchestration/#prefect.client.orchestration.PrefectClient.delete_concurrency_limit_by_tag/) を使用し、タグを渡します:
 
 ```python
 async with get_client() as client:
@@ -120,9 +119,9 @@ async with get_client() as client:
     await client.delete_concurrency_limit_by_tag(tag="small_instance")
 ```
 
-If you wish to query for the current limit on a tag, use [`PrefectClient.read_concurrency_limit_by_tag`](https://reference.prefect.io/prefect/client/orchestration/#prefect.client.orchestration.PrefectClient.read_concurrency_limit_by_tag), passing the tag:
+タグの現在の制限を照会するには、[`PrefectClient.read_concurrency_limit_by_tag`](https://reference.prefect.io/prefect/client/orchestration/#prefect.client.orchestration.PrefectClient.read_concurrency_limit_by_tag) を使用し、タグを渡します:
 
-To see _all_ of your limits across all of your tags, use [`PrefectClient.read_concurrency_limits`](https://reference.prefect.io/prefect/client/orchestration/#prefect.client.orchestration.PrefectClient.read_concurrency_limits).
+すべてのタグの制限をすべて確認するには、[`PrefectClient.read_concurrency_limits`](https://reference.prefect.io/prefect/client/orchestration/#prefect.client.orchestration.PrefectClient.read_concurrency_limits) を使用します。
 
 ```python
 async with get_client() as client:

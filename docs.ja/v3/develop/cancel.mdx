@@ -1,19 +1,18 @@
 ---
-title: Cancel flow runs
-description: Learn the different ways to cancel a flow run.
+title: フロー実行をキャンセル
+description: フロー実行をキャンセルするさまざまな方法を学習します。
 ---
 
-You can cancel a scheduled or in-progress flow run from the CLI, UI, REST API, or Python client.
+CLI、UI、REST API、または Python クライアントから、スケジュールされたフロー実行または進行中のフロー実行をキャンセルできます。
 
 {/*
 <!-- vale off -->
 */}
 
-When requesting cancellation, the flow run moves to a "Cancelling" state.
-If the deployment is a work pool-based deployment with a worker, then the worker monitors 
-the state of flow runs and detects that cancellation is requested.
-The worker then sends a signal to the flow run infrastructure, requesting termination of the run.
-If the run does not terminate after a grace period (default of 30 seconds), the infrastructure is killed, ensuring the flow run exits.
+キャンセルを要求すると、フロー実行は「キャンセル中」状態に移行します。
+ワーカーを使用したワークプールベースのデプロイメントの場合、ワーカーはフロー実行の状態を監視し、キャンセルが要求されたことを検出します。
+ワーカーはフロー実行インフラストラクチャにシグナルを送信し、実行の終了を要求します。
+猶予期間（デフォルトは30秒）が経過しても実行が終了しない場合、インフラストラクチャは強制終了され、フロー実行が確実に終了します。
 
 
 {/*
@@ -21,74 +20,70 @@ If the run does not terminate after a grace period (default of 30 seconds), the 
 */}
 
 <Warning>
-**A deployment is required**
+**デプロイメントが必要です**
 
-Flow run cancellation requires that the flow run is associated with a deployment.
-A monitoring process must be running to enforce the cancellation.
+フロー実行をキャンセルするには、フロー実行がデプロイメントに関連付けられている必要があります。
+キャンセルを強制するには、監視プロセスが実行されている必要があります。
 
-Inline nested flow runs (those created without `run_deployment`), cannot be cancelled without cancelling the parent flow run.
-To cancel a nested flow run independent of its parent flow run, we recommend deploying it separately 
-and starting it using the [run_deployment](/v3/deploy/index) 
-function.
+インラインでネストされたフロー実行（`run_deployment` を使用せずに作成されたもの）は、親フロー実行をキャンセルしなければキャンセルできません。
+親フロー実行とは独立してネストされたフロー実行をキャンセルするには、個別にデプロイし、[run_deployment](/v3/deploy/index) 関数を使用して開始することをお勧めします。
 </Warning>
 
-Cancellation is resilient to restarts of Prefect workers.
-To enable this, we attach metadata about the created infrastructure to the flow run.
-Internally, this is referred to as the `infrastructure_pid` or infrastructure identifier.
-Generally, this is composed of two parts:
+キャンセルはPrefectワーカーの再起動の影響を受けません。
+これを実現するために、作成されたインフラストラクチャに関するメタデータをフロー実行に添付します。
+内部的には、これは「infrastructure_pid」またはインフラストラクチャ識別子と呼ばれます。
+通常、これは2つの部分で構成されます。
 
-- Scope: identifying where the infrastructure is running.
-- ID: a unique identifier for the infrastructure within the scope.
+- スコープ: インフラストラクチャの実行場所を識別します。
+- ID: スコープ内でのインフラストラクチャの一意の識別子です。
 
 {/*
 <!-- vale off -->
 */}
 
-The scope ensures that Prefect does not kill the wrong infrastructure.
-For example, workers running on multiple machines may have overlapping process IDs but should not have a matching scope.
+スコープは、Prefect が間違ったインフラストラクチャを強制終了しないようにします。
+たとえば、複数のマシンで実行されているワーカーはプロセス ID が重複している可能性がありますが、スコープは一致してはなりません。
 
 {/*
 <!-- vale on -->
 */}
 
-The identifiers for infrastructure types are:
+インフラストラクチャタイプの識別子は次のとおりです。
 
-- Processes: The machine hostname and the PID.
-- Docker Containers: The Docker API URL and container ID.
-- Kubernetes Jobs: The Kubernetes cluster name and the job name.
+- プロセス: マシンのホスト名とPID。
+- Dockerコンテナ: Docker API URLとコンテナID。
+- Kubernetesジョブ: Kubernetesクラスタ名とジョブ名。
 
-While the cancellation process is robust, there are a few issues than can occur:
+キャンセルプロセスは堅牢ですが、いくつかの問題が発生する可能性があります。
 
-- If the infrastructure for the flow run does not support cancellation, cancellation will not work.
-- If the identifier scope does not match when attempting to cancel a flow run, the worker cannot cancel the flow run. 
-Another worker may attempt cancellation.
-- If the infrastructure associated with the run cannot be found or has already been killed, the worker marks the flow run as cancelled.
-- If the `infrastructre_pid` is missing, the flow run is marked as cancelled but cancellation cannot be enforced.
-- If the worker runs into an unexpected error during cancellation, the flow run may or may not be cancelled 
-depending on where the error occurred. The worker will try again to cancel the flow run. Another worker may attempt cancellation.
+- フロー実行のインフラストラクチャがキャンセルをサポートしていない場合、キャンセルは機能しません。
+- フロー実行をキャンセルしようとしたときに識別子のスコープが一致しない場合、ワーカーはフロー実行をキャンセルできません。
+別のワーカーがキャンセルを試行する場合があります。
+- 実行に関連付けられたインフラストラクチャが見つからない、または既に強制終了されている場合、ワーカーはフロー実行をキャンセル済みとしてマークします。
+- `infrastructre_pid` がない場合、フロー実行はキャンセル済みとしてマークされますが、キャンセルを強制することはできません。
+- キャンセル中にワーカーが予期しないエラーに遭遇した場合、エラーの発生場所に応じて、フロー実行がキャンセルされるかどうかが決まります。
+ワーカーはフロー実行のキャンセルを再試行します。別のワーカーがキャンセルを試行する場合があります。
 
-### Cancel through the CLI
+### CLI 経由でキャンセルする
 
-From the command line in your execution environment, you can cancel a flow run by using the 
-`prefect flow-run cancel` CLI command, passing the ID of the flow run.
+実行環境のコマンドラインから、フロー実行の ID を渡す「prefect flow-run cancel」CLI コマンドを使用して、フロー実行をキャンセルできます。
 
 ```bash
 prefect flow-run cancel 'a55a4804-9e3c-4042-8b59-b3b6b7618736'
 ```
 
-### Cancel through the UI
+### UI からキャンセルする
 
-Navigate to the flow run's detail page and click `Cancel` in the upper right corner.
+フロー実行の詳細ページに移動し、右上の「キャンセル」をクリックします。
 
 ![Prefect UI](/v3/img/ui/flow-run-cancellation-ui.png)
 
-## Timeouts
+## タイムアウト
 
-Flow timeouts prevent unintentional long-running flows. When the duration of execution for a flow 
-exceeds the duration specified in the timeout, a timeout exception is raised and the flow is marked as failed. 
-In the UI, the flow is visibly designated as `TimedOut`.
+フロータイムアウトは、意図しない長時間実行フローの発生を防ぎます。フローの実行時間がタイムアウトで指定された時間を超えると、タイムアウト例外が発生し、フローは失敗としてマークされます。
+UIでは、フローは「TimedOut」と表示されます。
 
-Timeout durations are specified using the `timeout_seconds` keyword argument.
+タイムアウト時間は、キーワード引数「timeout_seconds」を使用して指定します。
 
 ```python
 from prefect import flow

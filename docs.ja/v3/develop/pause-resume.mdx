@@ -1,27 +1,26 @@
 ---
-title: Pause and resume flow runs
-description: Learn the different ways to pause, suspend, and resume a flow run.
+title: フロー実行の一時停止と再開
+description: フロー実行を一時停止、中断、再開するさまざまな方法を学習します。
 ---
 
-Prefect allows you to halt a flow run with two functions that are similar, but slightly different.
-When a flow run is paused, code execution is stopped and the process continues to run.
-When a flow run is suspended, code execution is stopped and so is the process.
+Prefect では、似ているもののわずかに異なる 2 つの関数を使用してフロー実行を停止できます。
+フロー実行が一時停止されると、コード実行は停止されますが、プロセスは実行を継続します。
+フロー実行が中断されると、コード実行が停止され、プロセスも停止します。
 
-### Pause a flow run
+### フロー実行を一時停止する
 
-Prefect enables pausing an in-progress flow run for manual approval.
-Prefect exposes this capability with the [`pause_flow_run`](https://reference.prefect.io/prefect/engine/#prefect.engine.pause_flow_run)
-and [`resume_flow_run`](https://reference.prefect.io/prefect/engine/#prefect.engine.resume_flow_run) functions.
+Prefect では、進行中のフロー実行を一時停止して手動で承認を求めることができます。
+Prefect はこの機能を [`pause_flow_run`](https://reference.prefect.io/prefect/engine/#prefect.engine.pause_flow_run) 関数と [`resume_flow_run`](https://reference.prefect.io/prefect/engine/#prefect.engine.resume_flow_run) 関数で提供しています。
 
 <Note>
-**Timeouts**
+**タイムアウト**
 
-Paused flow runs time out after one hour by default.
-After the timeout, the flow run fails with a message saying it paused and never resumed.
-Specify a different timeout period in seconds using the `timeout` parameter.
+一時停止中のフロー実行は、デフォルトで1時間後にタイムアウトします。
+タイムアウト後、フロー実行は失敗し、一時停止したまま再開されなかったことを示すメッセージが表示されます。
+`timeout` パラメータを使用して、異なるタイムアウト期間を秒単位で指定できます。
 </Note>
 
-You can call `pause_flow_run` inside a flow:
+フロー内で `pause_flow_run` を呼び出すことができます:
 
 ```python
 from prefect import task, flow, pause_flow_run, resume_flow_run
@@ -43,7 +42,7 @@ async def inspiring_joke():
     await marvin_punchline()
 ```
 
-You can also implement conditional pauses:
+条件付きの一時停止を実装することもできます:
 
 ```python
 from prefect import task, flow, pause_flow_run
@@ -64,15 +63,14 @@ def my_flow():
         print("Task one failed. Skipping pause flow run..")
 ```
 
-Calling this flow blocks code execution after the first task and waits for resumption to deliver the punchline.
+このフローを呼び出すと、最初のタスクの後のコード実行がブロックされ、パンチラインの配信の再開を待機します。
 
 ```bash
 await inspiring_joke()
 > "a raft of ducks walk into a bar..."
 ```
 
-Resume paused flow runs by clicking **Resume** in the Prefect UI or
-calling the `resume_flow_run` utility through client code.
+一時停止されたフローの実行を再開するには、Prefect UI で [**再開**] をクリックするか、クライアント コードを通じて `resume_flow_run` ユーティリティを呼び出します。
 
 {/* pmd-metadata: notest */}
 ```python
@@ -81,46 +79,45 @@ from prefect import resume_flow_run
 resume_flow_run(FLOW_RUN_ID)
 ```
 
-The paused flow run then finishes.
+一時停止されたフローの実行は終了します。
 
 ```
 > "it's a wonder none of them ducked!"
 ```
 
-### Suspend a flow run
+### フロー実行を一時停止する
 
-Similar to pausing a flow run, Prefect enables suspending an in-progress flow run.
-
-<Note>
-**The difference between pausing and suspending a flow run**
-
-There is an important difference between pausing and suspending a flow run.
-When you pause a flow run, the flow code is still running but is _blocked_ until someone resumes the flow.
-This is not the case with suspending a flow run.
-When you suspend a flow run, the flow exits completely and the infrastructure running it (for example, a Kubernetes Job) tears down.
-</Note>
-
-This means you can suspend flow runs to save costs instead of paying for long-running infrastructure.
-However, when the flow run resumes, the flow code will execute again from the beginning of the flow.
-We recommend using [tasks](/v3/develop/write-tasks/) and [task caching](/v3/develop/task-caching) to avoid recomputing expensive operations.
-
-Prefect exposes this capability through the [`suspend_flow_run`](https://reference.prefect.io/prefect/engine/#prefect.engine.suspend_flow_run) and
-[`resume_flow_run`](https://reference.prefect.io/prefect/engine/#prefect.engine.resume_flow_run) functions, as well as the Prefect UI.
-
-When called inside of a flow, `suspend_flow_run` immediately suspends execution of the flow run.
-The flow run is marked as `Suspended` and will not resume until `resume_flow_run` is called.
+フロー実行を一時停止するのと同様に、Prefect では進行中のフロー実行を一時停止できます。
 
 <Note>
-**Timeouts**
+**フロー実行の一時停止と中断の違い**
 
-Suspended flow runs time out after one hour by default.
-After the timeout, the flow run fails with a message saying it suspended and never resumed.
-You can specify a different timeout period in seconds using the `timeout` parameter or pass `timeout=None` for no timeout.
+フロー実行の一時停止と中断には重要な違いがあります。
+フロー実行を一時停止すると、フローコードは引き続き実行されますが、誰かがフローを再開するまでブロックされます。
+これは、フロー実行の中断には当てはまりません。
+フロー実行を中断すると、フローは完全に終了し、それを実行しているインフラストラクチャ（Kubernetes ジョブなど）は破棄されます。
 </Note>
 
-Here is an example of a flow that does not block flow execution while paused.
-This flow exits after one task, and is rescheduled upon resuming.
-The stored result of the first task is retrieved instead of rerunning.
+つまり、長時間実行されるインフラストラクチャの費用を節約するために、フロー実行を一時停止することができます。
+ただし、フロー実行が再開されると、フローコードはフローの先頭から再度実行されます。
+高コストな操作の再計算を避けるため、[タスク](/v3/develop/write-tasks/)と[タスクキャッシュ](/v3/develop/task-caching)を使用することをお勧めします。
+
+Prefectは、この機能を[`suspend_flow_run`](https://reference.prefect.io/prefect/engine/#prefect.engine.suspend_flow_run)関数と[`resume_flow_run`](https://reference.prefect.io/prefect/engine/#prefect.engine.resume_flow_run)関数、およびPrefect UIを通じて提供しています。
+
+フロー内で呼び出されると、`suspend_flow_run`はフロー実行の実行を直ちに一時停止します。
+フロー実行は「Suspended」としてマークされており、「resume_flow_run」が呼び出されるまで再開されません。
+
+<Note>
+**タイムアウト**
+
+一時停止されたフロー実行は、デフォルトで1時間後にタイムアウトします。
+タイムアウト後、フロー実行は失敗し、一時停止され再開されなかったことを示すメッセージが表示されます。
+`timeout` パラメータを使用して、異なるタイムアウト時間を秒単位で指定するか、`timeout=None` を渡してタイムアウトなしとすることもできます。
+</Note>
+
+以下は、一時停止中にフローの実行をブロックしないフローの例です。
+このフローは 1 つのタスクの後に終了し、再開時に再スケジュールされます。
+最初のタスクの保存された結果は、再実行されずに取得されます。
 
 ```python
 from prefect import flow, pause_flow_run, task
@@ -139,10 +136,9 @@ def noblock_pausing():
     omega = foo(wait_for=[x, y])
 ```
 
-You can suspend flow runs out-of-process by calling `suspend_flow_run(flow_run_id=<ID>)` or
-selecting the **Suspend** button in the Prefect UI or Prefect Cloud.
+アウトオブプロセスでフロー実行を一時停止するには、`suspend_flow_run(flow_run_id=<ID>)` を呼び出すか、Prefect UI または Prefect Cloud で **Suspend** ボタンを選択します。
 
-Resume suspended flow runs can by clicking **Resume** in the Prefect UI or calling the `resume_flow_run` utility through client code.
+一時停止したフロー実行を再開するには、Prefect UI で **Resume** をクリックするか、クライアントコードから `resume_flow_run` ユーティリティを呼び出します。
 
 {/* pmd-metadata: notest */}
 ```python
@@ -152,37 +148,31 @@ resume_flow_run(FLOW_RUN_ID)
 ```
 <Note>
 
-**You can't suspend subflows independently of their parent run**
+**親フローの実行とは独立してサブフローを一時停止することはできません**
 
-If you use a flow to schedule a flow run with `run_deployment`, the
-scheduled flow run is linked to the calling flow as a nested flow run by
-default. This means you can't suspend the scheduled flow run
-independently of the calling flow.
+`run_deployment` を使ってフロー実行をスケジュールする場合、スケジュールされたフロー実行は、デフォルトで呼び出し元フローにネストされたフロー実行としてリンクされます。
+つまり、呼び出し元フローとは独立してスケジュールされたフロー実行を一時停止することはできません。
 
-Call `run_deployment` with
-`as_subflow=False` to disable this linking if you need to suspend
-the scheduled flow run independently of the calling flow.
+呼び出し元フローとは独立してスケジュールされたフロー実行を一時停止する必要がある場合は、`as_subflow=False` を指定して `run_deployment` を呼び出し、このリンクを無効にしてください。
 </Note>
 
-## Waiting for input when pausing or suspending a flow run
+## フロー実行を一時停止または中断するときに入力を待機する
 
 <Warning>
-**Experimental**
+**試験的**
 
-The `wait_for_input` parameter used in the `pause_flow_run` or `suspend_flow_run` functions is an experimental feature.
-The interface or behavior of this feature may change without warning in future releases.
+`pause_flow_run` または `suspend_flow_run` 関数で使用される `wait_for_input` パラメータは試験的な機能です。
+この機能のインターフェースまたは動作は、将来のリリースで予告なく変更される可能性があります。
 
-If you encounter any issues, please let us know in Slack or with a GitHub issue.
+問題が発生した場合は、Slack または GitHub の Issue でお知らせください。
 </Warning>
 
-When pausing or suspending a flow run you may want to wait for input from a user.
-Prefect provides a way to do this by using the `pause_flow_run` and `suspend_flow_run` functions.
-These functions accept a `wait_for_input` argument, which should be a subclass of `prefect.input.RunInput`(a Pydantic model).
-When resuming the flow run, users are required to provide data for this model. After successful validation,
-the flow run resumes, and the return value of the `pause_flow_run` or `suspend_flow_run`
-is an instance of the model containing the provided data.
+フロー実行を一時停止または中断する際に、ユーザーからの入力を待機する必要がある場合があります。
+Prefect では、`pause_flow_run` 関数と `suspend_flow_run` 関数を使用することで、これを実現できます。
+これらの関数は `wait_for_input` 引数を受け取ります。この引数は、`prefect.input.RunInput`（Pydantic モデル）のサブクラスである必要があります。
+フロー実行を再開する際には、ユーザーはこのモデルにデータを入力する必要があります。検証が成功すると、フロー実行が再開され、`pause_flow_run` または `suspend_flow_run` の戻り値は、入力されたデータを含むモデルのインスタンスになります。
 
-Here is an example of a flow that pauses and waits for input from a user:
+以下は、一時停止してユーザーからの入力を待機するフローの例です。
 
 ```python
 from prefect import flow, pause_flow_run
@@ -202,13 +192,11 @@ async def greet_user():
     print(f"Hello, {user_input.name}!")
 ```
 
-Running this flow creates a flow run. The flow run advances until code execution reaches `pause_flow_run`,
-at which point it moves into a `Paused` state.
-Execution blocks and waits for resumption.
+このフローを実行すると、フロー実行が作成されます。フロー実行は、コード実行が `pause_flow_run` に到達するまで進行し、その時点で `Paused` 状態に移行します。
+実行はブロックされ、再開を待機します。
 
-When resuming the flow run, users are prompted to provide a value for the `name` field of the `UserNameInput` model.
-After successful validation, the flow run resumes, and the return value of the `pause_flow_run`
-is an instance of the `UserNameInput` model containing the provided data.
+フロー実行を再開すると、ユーザーは `UserNameInput` モデルの `name` フィールドに値を入力するよう求められます。
+検証が成功すると、フロー実行が再開され、`pause_flow_run` の戻り値は、入力されたデータを含む `UserNameInput` モデルのインスタンスになります。
 
-For more information on receiving input from users when pausing and suspending flow runs,
-see [Send and receive flow run inputs](/v3/develop/inputs/).
+フロー実行の一時停止および中断時にユーザーからの入力を受信する方法の詳細については、
+[フロー実行入力の送受信](/v3/develop/inputs/)を参照してください。

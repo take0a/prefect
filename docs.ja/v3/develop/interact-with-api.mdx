@@ -1,24 +1,22 @@
 ---
-title: Using prefect client methods
-description: Learn how to use the `PrefectClient` to interact with the API.
+title: Prefect クライアントメソッドの使用
+description: "`PrefectClient` を使用して API と対話する方法を学びます。"
 ---
 
-## Overview
+## 概要
 
+[`PrefectClient`](https://reference.prefect.io/prefect/client/) は、SDK では抽象化できない可能性のある、Prefect の REST API に対する一般的な操作を簡素化するメソッドを提供します。
 
-The [`PrefectClient`](https://reference.prefect.io/prefect/client/) 
-offers methods to simplify common operations against Prefect's REST API that may not be abstracted away by the SDK.
-
-For example, to [reschedule flow runs](/v3/develop/interact-with-api/#reschedule-late-flow-runs), one might use methods like:
-  - `read_flow_runs` with a `FlowRunFilter` to read certain flow runs
-  - `create_flow_run_from_deployment` to schedule new flow runs
-  - `delete_flow_run` to delete a very `Late` flow run
+例えば、[フロー実行を再スケジュール](/v3/develop/interact-with-api/#reschedule-late-flow-runs) するには、次のようなメソッドを使用できます。
+- `flowRunFilter` を指定した `read_flow_runs` で特定のフロー実行を読み取ります。
+- `create_flow_run_from_deployment` で新しいフロー実行をスケジュールします。
+- `delete_flow_run` で非常に遅れているフロー実行を削除します。
 
 
 
-### Getting a client
+### クライアントの取得
 
-By default, `get_client()` returns an asynchronous client to be used as a context manager, but you may also use a synchronous client.
+デフォルトでは、`get_client()` はコンテキストマネージャーとして使用される非同期クライアントを返しますが、同期クライアントを使用することもできます。
 
 <CodeGroup>
 
@@ -42,24 +40,23 @@ with get_client(sync_client=True) as client:
 
 </CodeGroup>
 
-## Examples
+## 例
 
-These examples are meant to illustrate how one might develop their own utilities for interacting with the API.
+これらの例は、API を操作するための独自のユーティリティを開発する方法を示すことを目的としています。
 
 <Note>
-If you believe a client method is missing, or you'd like to see a specific pattern better represented in the SDK generally, please [open an issue](https://github.com/PrefectHQ/prefect/issues/new/choose).
+クライアント メソッドが不足していると思われる場合、または特定のパターンを SDK 全体でより適切に表現したい場合は、[問題を開いてください](https://github.com/PrefectHQ/prefect/issues/new/choose)。
 </Note>
-### Reschedule late flow runs
 
-To bulk reschedule flow runs that are late, delete the late flow runs and create new ones in a 
-`Scheduled` state with a delay. This is useful if you accidentally scheduled many 
-flow runs of a deployment to an inactive work pool, for example.
+### 遅延しているフロー実行の再スケジュール
 
-The following example reschedules the last three late flow runs of a deployment named 
-`healthcheck-storage-test` to run six hours later than their original expected start time. 
-It also deletes any remaining late flow runs of that deployment.
+遅延しているフロー実行を一括で再スケジュールするには、遅延しているフロー実行を削除し、遅延を設定した「スケジュール済み」状態の新しいフロー実行を作成します。
+これは、例えば、デプロイメントのフロー実行を誤って非アクティブなワークプールにスケジュールしてしまった場合などに便利です。
 
-First, define the rescheduling function:
+次の例では、「healthcheck-storage-test」というデプロイメントの最後の3つの遅延しているフロー実行を、元の予定開始時刻から6時間後に再スケジュールします。
+また、そのデプロイメントの残りの遅延しているフロー実行も削除します。
+
+まず、再スケジュール関数を定義します。
 
 ```python
 async def reschedule_late_flow_runs(
@@ -95,7 +92,7 @@ async def reschedule_late_flow_runs(
         return rescheduled_flow_runs
 ```
 
-Then use it to reschedule flows:
+次に、これを使用してフローのスケジュールを変更します:
 
 ```python
 rescheduled_flow_runs = asyncio.run(
@@ -178,11 +175,11 @@ if __name__ == "__main__":
 
 </Accordion>
 
-### Get the last `N` completed flow runs from your workspace
+### ワークスペースから最新の `N` 件の完了したフロー実行を取得します。
 
-To get the last `N` completed flow runs from your workspace, use `read_flow_runs` and `prefect.client.schemas`.
+ワークスペースから最新の `N` 件の完了したフロー実行を取得するには、`read_flow_runs` と `prefect.client.schemas` を使用します。
 
-This example gets the last three completed flow runs from your workspace:
+次の例では、ワークスペースから最新の 3 件の完了したフロー実行を取得します:
 
 ```python
 async def get_most_recent_flow_runs(
@@ -199,7 +196,7 @@ async def get_most_recent_flow_runs(
         )
 ```
 
-Use it to get the last 3 completed runs:
+これを使用して、最後に完了した 3 回の実行を取得します:
 
 ```python
 flow_runs: list[FlowRun] = asyncio.run(
@@ -249,13 +246,12 @@ if __name__ == "__main__":
 
 </Accordion>
 
-Instead of the last three from the whole workspace, you can also use the `DeploymentFilter` 
-to get the last three completed flow runs of a specific deployment.
+ワークスペース全体の最後の 3 つではなく、`DeploymentFilter` を使用して、特定のデプロイメントの最後の 3 つの完了したフロー実行を取得することもできます。
 
-### Transition all running flows to cancelled through the Client
+### クライアントを介して、実行中のすべてのフローをキャンセル状態に遷移させます
 
-Use `get_client`to set multiple runs to a `Cancelled` state.
-This example cancels all flow runs that are in `Pending`, `Running`, `Scheduled`, or `Late` states when the script is run.
+`get_client` を使用して、複数の実行を `Canceled` 状態に設定します。
+この例では、スクリプトの実行時に `Pending`、`Running`、`Scheduled`、または `Late` 状態にあるすべてのフロー実行をキャンセルします。
 
 ```python
 async def list_flow_runs_with_states(states: list[str]) -> list[FlowRun]:

@@ -1,47 +1,44 @@
 ---
-title: Access runtime context
-description: The runtime context allows global access to information about the current run.
+title: ランタイムコンテキストにアクセスする
+description: ランタイム コンテキストを使用すると、現在の実行に関する情報にグローバルにアクセスできます。
 ---
 
-Prefect tracks information about the current flow or task run with a run context.
+Prefect は、実行コンテキストを使用して、現在のフローまたはタスク実行に関する情報を追跡します。
 
-The run context is like a global variable that allows the Prefect engine to determine relationships 
-between your runs, such as which flow your task was called from.
+実行コンテキストは、Prefect エンジンが実行間の関係（タスクがどのフローから呼び出されたかなど）を判断できるようにするグローバル変数のようなものです。
 
-The run context itself contains many internal objects used by Prefect to manage execution of 
-your run, and is only available in specific situations. For this reason, we expose a simple interface 
-that only includes the items you care about and dynamically retrieves additional information when necessary. 
-We call this the "runtime context" as it contains information that's only accessible during a run.
+実行コンテキスト自体には、Prefect が実行の実行を管理するために使用する多くの内部オブジェクトが含まれており、特定の状況でのみ使用できます。
+そのため、必要な項目のみを含み、必要に応じて追加情報を動的に取得するシンプルなインターフェースを公開しています。
+実行中にのみアクセス可能な情報が含まれるため、これを「ランタイムコンテキスト」と呼びます。
 
 <Tip>
-**Mock values through environment variable**
-You may want to mock certain values for testing purposes. For example, by manually setting an ID or 
-a scheduled start time to ensure your code is functioning properly.
+**環境変数による値のモック**
+テスト目的で特定の値をモックしたい場合があります。
+例えば、IDや開始時刻を手動で設定することで、コードが正しく動作するかを確認できます。
 
-Mock values in runtime through an environment variable using the schema 
-`PREFECT__RUNTIME__{SUBMODULE}__{KEY_NAME}=value`:
+実行時に環境変数を介して値をモックするには、スキーマ
+`PREFECT__RUNTIME__{SUBMODULE}__{KEY_NAME}=value` を使用します。
 
 ```bash
 export PREFECT__RUNTIME__TASK_RUN__FAKE_KEY='foo'
 python -c 'from prefect.runtime import task_run; print(task_run.fake_key)' # "foo"
 ```
 
-If the environment variable mocks an existing runtime attribute, the value is cast to the same type. 
-This works for runtime attributes of basic types (`bool`, `int`, `float` and `str`) and `datetime.datetime`. 
-For complex types like `list` or `dict`, we suggest mocking them using 
-[monkeypatch](https://docs.pytest.org/en/latest/how-to/monkeypatch.html) or a similar tool.
+環境変数が既存のランタイム属性をモックする場合、値は同じ型にキャストされます。
+これは、基本型 (`bool`、`int`、`float`、`str`) および `datetime.datetime` のランタイム属性で機能します。
+`list` や `dict` などの複雑な型の場合は、[monkeypatch](https://docs.pytest.org/en/latest/how-to/monkeypatch.html) または同様のツールを使用してモックすることをお勧めします。
 </Tip>
 
-## Access runtime information
+## ランタイム情報へのアクセス
 
-The `prefect.runtime` module is the home for all runtime context access. Each major runtime concept 
-has its own submodule:
+`prefect.runtime` モジュールは、すべてのランタイムコンテキストへのアクセスの拠点です。
+主要なランタイムコンセプトごとに、それぞれサブモジュールがあります。
 
-- `deployment`: Access information about the deployment for the current run
-- `flow_run`: Access information about the current flow run
-- `task_run`: Access information about the current task run
+- `deployment`: 現在の実行におけるデプロイメントに関する情報にアクセスします。
+- `flow_run`: 現在のフロー実行に関する情報にアクセスします。
+- `task_run`: 現在のタスク実行に関する情報にアクセスします。
 
-For example:
+例:
 
 ```python my_runtime_info.py
 from prefect import flow, task
@@ -62,7 +59,7 @@ if __name__ == "__main__":
     my_flow(1)
 ```
 
-Running this file produces output similar to the following:
+このファイルを実行すると、次のような出力が生成されます:
 
 ```bash
 10:08:02.948 | INFO    | prefect.engine - Created flow run 'solid-gibbon' for flow 'my-flow'
@@ -76,25 +73,24 @@ Running this file produces output similar to the following:
 10:08:04.968 | INFO    | Flow run 'solid-gibbon' - Finished in state Completed('All states completed.')
 ```
 
-The above example demonstrates access to information about the current flow run, task run, and deployment.
-When run without a deployment (through `python my_runtime_info.py`), you should see `"I belong to deployment None"` logged.
-When information is not available, the runtime always returns an empty value.
-Because this flow runs outside of a deployment, there is no deployment data.
-If this flow was run as part of a deployment, we'd see the name of the deployment instead.
+上記の例は、現在のフロー実行、タスク実行、およびデプロイメントに関する情報へのアクセスを示しています。
+デプロイメントなしで実行した場合（`python my_runtime_info.py` を使用）、`"I belonging to deployment None"` がログに記録されます。
+情報が利用できない場合、ランタイムは常に空の値を返します。
+このフローはデプロイメント外で実行されるため、デプロイメントデータはありません。
+このフローがデプロイメントの一部として実行された場合は、代わりにデプロイメントの名前が表示されます。
 
-See the [runtime API reference](https://reference.prefect.io/prefect/runtime/flow_run/) for a full list of available attributes.
+利用可能な属性の完全なリストについては、[ランタイム API リファレンス](https://reference.prefect.io/prefect/runtime/flow_run/) を参照してください。
 
-## Access the run context directly
+## 実行コンテキストに直接アクセスする
 
-Access the current run context with `prefect.context.get_run_context()`.
-This function raises an exception if no run context is available, meaning you are not in a flow or task run.
-If a task run context is available, it is returned even if a flow run context is available.
+`prefect.context.get_run_context()` を使用して、現在の実行コンテキストにアクセスします。
+実行コンテキストが利用できない場合、つまりフローまたはタスク実行中でない場合、この関数は例外を発生させます。
+タスク実行コンテキストが利用可能な場合は、フロー実行コンテキストが利用可能であっても、そのコンテキストが返されます。
 
-Alternatively, you can access the flow run or task run context explicitly.
-For example, this allows you to access the flow run context from a task run.
+あるいは、フロー実行コンテキストまたはタスク実行コンテキストに明示的にアクセスすることもできます。
+例えば、これにより、タスク実行からフロー実行コンテキストにアクセスできます。
 
-Prefect does not send the flow run context to distributed task workers because the context is 
-costly to serialize and deserialize.
+Prefect は、フロー実行コンテキストのシリアル化とデシリアル化にコストがかかるため、分散タスクワーカーにフロー実行コンテキストを送信しません。
 
 ```python
 from prefect.context import FlowRunContext, TaskRunContext
@@ -103,5 +99,5 @@ flow_run_ctx = FlowRunContext.get()
 task_run_ctx = TaskRunContext.get()
 ```
 
-Unlike `get_run_context`, these method calls do not raise an error if the context is unavailable. 
-Instead, they return `None`.
+`get_run_context` とは異なり、これらのメソッド呼び出しではコンテキストが利用できない場合でもエラーは発生しません。
+代わりに、`None` を返します。

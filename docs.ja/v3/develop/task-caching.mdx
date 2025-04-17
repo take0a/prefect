@@ -1,79 +1,66 @@
 ---
-title: Configure task caching
+title: タスクキャッシュを構成する
 description: Learn how to use caching to gain efficiency and pipeline idempotency.
 ---
 
-Caching refers to the ability of a task run to enter a `Completed` state and return a predetermined 
-value without actually running the code that defines the task. 
-Caching allows you to efficiently reuse [results of tasks](/v3/develop/results/) that may be expensive to compute
-and ensure that your pipelines are idempotent when retrying them due to unexpected failure. 
+キャッシュとは、タスク実行が「完了」状態になり、タスクを定義するコードを実際に実行することなく、事前に定義された値を返す機能を指します。
+キャッシュにより、計算コストが高くなる可能性のある[タスクの結果](/v3/develop/results/)を効率的に再利用し、予期しない障害による再試行時にパイプラインのべき等性を確保できます。
 
-By default Prefect's caching logic is based on the following attributes of a task invocation:
-- the inputs provided to the task
-- the code definition of the task
-- the prevailing flow run ID, or if executed autonomously, the prevailing task run ID
+デフォルトでは、Prefect のキャッシュロジックは、タスク呼び出しの以下の属性に基づいています。
+- タスクに提供される入力
+- タスクのコード定義
+- 有効なフロー実行 ID、または自律的に実行される場合は有効なタスク実行 ID
 
-These values are hashed to compute the task's _cache key_. 
-This implies that, by default, calling the same task with the same inputs more than once within a flow 
-will result in cached behavior for all calls after the first.
-This behavior can be configured - see [customizing the cache](/v3/develop/write-tasks#customizing-the-cache) below.
+これらの値はハッシュ化され、タスクの _キャッシュキー_ が計算されます。
+これは、デフォルトでは、フロー内で同じタスクを同じ入力で複数回呼び出すと、最初の呼び出し以降のすべての呼び出しでキャッシュされた動作が実行されることを意味します。
+この動作は設定可能です - 以下の[キャッシュのカスタマイズ](/v3/develop/write-tasks#customizing-the-cache)を参照してください。
 
 <Warning>
-**Caching requires result persistence**
+**キャッシュには結果の永続性が必要です**
 
-Caching requires result persistence, which is off by default.
-To turn on result persistence for all of your tasks use the `PREFECT_RESULTS_PERSIST_BY_DEFAULT` setting:
+キャッシュには結果の永続性が必要ですが、これはデフォルトでは無効になっています。
+すべてのタスクで結果の永続性を有効にするには、`PREFECT_RESULTS_PERSIST_BY_DEFAULT` 設定を使用します:
 
 ```
 prefect config set PREFECT_RESULTS_PERSIST_BY_DEFAULT=true
 ```
 
-See [managing results](/v3/develop/results/) for more details on managing your result configuration, and
-[settings](/v3/develop/settings-and-profiles) for more details on managing Prefect settings.
+結果構成の管理の詳細については [結果の管理](/v3/develop/results/) を参照してください。Prefect 設定の管理の詳細については [設定](/v3/develop/settings-and-profiles) を参照してください。
 </Warning>
 
-## Cache keys
+## キャッシュキー
 
-To determine whether a task run should retrieve a cached state, Prefect uses the concept of a "cache key". 
-A cache key is a computed string value that determines where the task's return value will be persisted within
-its configured result storage.
-When a task run begins, Prefect first computes its cache key and uses this key to lookup a record in the task's result
-storage. 
-If an unexpired record is found, this result is returned and the task does not run, but instead, enters a 
-`Cached` state with the corresponding result value.
+タスク実行時にキャッシュされた状態を取得するかどうかを判断するために、Prefect は「キャッシュキー」という概念を使用します。
+キャッシュキーは、タスクの戻り値が設定された結果ストレージ内のどこに保存されるかを決定する計算された文字列値です。
+タスク実行が開始されると、Prefect はまずキャッシュキーを計算し、このキーを使用してタスクの結果ストレージ内のレコードを検索します。
+期限切れでないレコードが見つかった場合、この結果が返され、タスクは実行されず、対応する結果値を持つ「キャッシュ済み」状態になります。
 
-Cache keys can be shared by the same task across different flows, and even among different tasks, 
-so long as they all share a common result storage location.
+キャッシュキーは、同じタスクで異なるフロー間、さらには異なるタスク間でも共有できます。ただし、すべてのタスクが共通の結果ストレージ場所を共有している必要があります。
 
-By default Prefect stores results locally in `~/.prefect/storage/`. 
-The filenames in this directory will correspond exactly to computed cache keys from your task runs.
+デフォルトでは、Prefect は結果をローカルの `~/.prefect/storage/` に保存します。
+このディレクトリ内のファイル名は、タスク実行から計算されたキャッシュキーと完全に一致します。
 
 <Warning>
-**Relationship with result persistence** 
+**結果の永続性との関係**
 
-Task caching and result persistence are intimately related. Because task caching relies on loading a 
-known result, task caching will only work when your task can persist its output 
-to a fixed and known location.
+タスクのキャッシュと結果の永続性は密接に関連しています。タスクのキャッシュは既知の結果を読み込むことに依存するため、タスクが出力を固定された既知の場所に永続化できる場合にのみ機能します。
 
-Therefore any configuration which explicitly avoids result persistence will result in your task never
-using a cache, for example setting `persist_result=False`.
+したがって、結果の永続性を明示的に回避する設定（例えば `persist_result=False` の設定）を行うと、タスクはキャッシュを使用しなくなります。
 </Warning>
 
-## Cache policies
+## キャッシュポリシー
 
-Cache key computation can be configured through the use of _cache policies_. 
-A cache policy is a recipe for computing cache keys for a given task.
+キャッシュキーの計算は、_キャッシュポリシー_ を使用して設定できます。
+キャッシュポリシーとは、特定のタスクのキャッシュキーを計算するための方法です。
 
-Prefect comes prepackaged with a few common cache policies:
-- `DEFAULT`: this cache policy uses the task's inputs, its code definition, as well as the prevailing flow run ID
-to compute the task's cache key.
-- `INPUTS`: this cache policy uses _only_ the task's inputs to compute the cache key.
-- `TASK_SOURCE`: this cache policy only considers raw lines of code in the task (and not the source code of nested tasks) to compute the cache key.
-- `FLOW_PARAMETERS`: this cache policy uses _only_ the parameter values provided to the parent flow run
-to compute the cache key.
-- `NO_CACHE`: this cache policy always returns `None` and therefore avoids caching and result persistence altogether.
+Prefect には、いくつかの一般的なキャッシュポリシーがあらかじめ用意されています。
+- `DEFAULT`: このキャッシュポリシーは、タスクの入力、コード定義、そして現在のフロー実行 ID を使用して、タスクのキャッシュキーを計算します。
+- `INPUTS`: このキャッシュポリシーは、タスクの入力のみを使用してキャッシュキーを計算します。
+- `TASK_SOURCE`: このキャッシュポリシーは、タスク内の生のコード行のみ（ネストされたタスクのソースコードは考慮しません）を使用してキャッシュキーを計算します。
+- `FLOW_PARAMETERS`: このキャッシュポリシーは、親フロー実行に提供されたパラメータ値のみを使用してキャッシュキーを計算します。
+- `NO_CACHE`: このキャッシュ ポリシーは常に `None` を返すため、キャッシュと結果の永続化は完全に回避されます。
 
-These policies can be set using the `cache_policy` keyword on the [task decorator](https://reference.prefect.io/prefect/tasks/#prefect.tasks.task):
+これらのポリシーは、[task デコレータ](https://reference.prefect.io/prefect/tasks/#prefect.tasks.task) の `cache_policy` キーワードを使用して設定できます:
 
 ```python
 from prefect import task
@@ -92,7 +79,7 @@ my_stateful_task() # sleeps
 my_stateful_task() # does not sleep
 ```
 
-No matter how many flows call it, this task will run once and only once until its underlying code is altered:
+フローがいくつ呼び出されても、このタスクは、基礎となるコードが変更されるまで 1 回だけ実行されます:
 
 ```python
 @task(cache_policy=TASK_SOURCE)
@@ -106,29 +93,25 @@ def my_stateful_task():
 my_stateful_task() # sleeps again
 ```
 
-## Customizing the cache
+## キャッシュのカスタマイズ
 
-Prefect allows you to configure task caching behavior in numerous ways.
+Prefect では、タスクのキャッシュ動作をさまざまな方法で設定できます。
 
-### Cache expiration
+### キャッシュの有効期限
 
-All cache keys can optionally be given an _expiration_ through the `cache_expiration` keyword on 
-the [task decorator](https://reference.prefect.io/prefect/tasks/#prefect.tasks.task).
-This keyword accepts a `datetime.timedelta` specifying a duration for which the cached value should be
-considered valid.
+すべてのキャッシュキーには、[タスクデコレータ](https://reference.prefect.io/prefect/tasks/#prefect.tasks.task) の `cache_expiration` キーワードを使用して、オプションで有効期限を設定できます。
+このキーワードは、キャッシュされた値を有効と見なす期間を指定する `datetime.timedelta` を受け入れます。
 
-Providing an expiration value results in Prefect persisting an expiration timestamp alongside the result
-record for the task.
-This expiration is then applied to _all_ other tasks that may share this cache key.
+有効期限を指定すると、Prefect はタスクの結果レコードと共に有効期限のタイムスタンプを保持します。
+この有効期限は、このキャッシュキーを共有する可能性のある他のすべてのタスクに適用されます。
 
-### Cache policies
+### キャッシュポリシー
 
-Cache policies can be composed and altered using basic Python syntax to form more complex policies.
-For example, all task policies except for `NO_CACHE` can be _added_ together to form new policies that combine
-the individual policies' logic into a larger cache key computation.
-Combining policies in this way results in caches that are _easier_ to invalidate.
+キャッシュポリシーは、基本的な Python 構文を使用して作成および変更することで、より複雑なポリシーを作成できます。
+例えば、「NO_CACHE」を除くすべてのタスクポリシーを _追加_ することで、個々のポリシーのロジックを統合し、より大きなキャッシュキー計算を行う新しいポリシーを作成できます。
+このようにポリシーを組み合わせることで、キャッシュの無効化が _容易_になります。
 
-For example:
+例:
 
 ```python
 from prefect import task
@@ -138,10 +121,9 @@ def my_cached_task(x: int):
     return x + 42
 ```
 
-This task will rerun anytime you provide new values for `x`, _or_ anytime you change the underlying code.
+このタスクは、`x` に新しい値を指定するか、基盤となるコードを変更するたびに再実行されます。
 
-The `INPUTS` policy is a special policy that allows you to _subtract_ string values to ignore
-certain task inputs:
+`INPUTS` ポリシーは、文字列値を減算して特定のタスク入力を無視できる特別なポリシーです:
 
 ```python
 from prefect import task
@@ -160,20 +142,17 @@ my_cached_task(1)
 my_cached_task(1, debug=True) # still uses the cache
 ```
 
-### Cache key functions
+### キャッシュキー関数
 
-You can configure custom cache policy logic through the use of cache key functions.
-A cache key function is a function that accepts two positional arguments:
-- The first argument corresponds to the `TaskRunContext`, which stores task run metadata. For example, 
-this object has attributes `task_run_id`, `flow_run_id`, and `task`, all of which can be used in your
-custom logic.
-- The second argument corresponds to a dictionary of input values to the task. For example, 
-if your task has the signature `fn(x, y, z)` then the dictionary will have keys "x", "y", and "z" with corresponding values that can be used to compute your cache key.
+キャッシュキー関数を使用することで、カスタムキャッシュポリシーロジックを設定できます。
+キャッシュキー関数は、2つの位置引数を受け入れる関数です。
+- 最初の引数は、タスク実行メタデータを格納する `TaskRunContext` に対応します。たとえば、このオブジェクトには `task_run_id`、`flow_run_id`、`task` という属性があり、これらはすべてカスタムロジックで使用できます。
+- 2番目の引数は、タスクへの入力値の辞書に対応します。
+たとえば、タスクのシグネチャが `fn(x, y, z)` の場合、辞書にはキー "x"、"y"、"z" と、それに対応する値が格納され、キャッシュキーの計算に使用できます。
 
-This function can then be specified using the `cache_key_fn` argument on 
-the [task decorator](https://reference.prefect.io/prefect/tasks/#prefect.tasks.task).
+この関数は、[task デコレータ](https://reference.prefect.io/prefect/tasks/#prefect.tasks.task) の `cache_key_fn` 引数を使用して指定できます。
 
-For example:
+例:
 
 ```python
 def static_cache_key(context, parameters):
@@ -186,18 +165,17 @@ def my_cached_task(x: int):
     return x + 1
 ```
 
-### Cache storage
+### キャッシュストレージ
 
-By default, cache records are collocated with task results and files containing task results will include metadata used for caching. 
-Configuring a cache policy with a `key_storage` argument allows cache records to be stored separately from task results. 
+デフォルトでは、キャッシュレコードはタスク結果と同じ場所に保存され、タスク結果を含むファイルにはキャッシュに使用されるメタデータが含まれます。
+`key_storage` 引数を使用してキャッシュポリシーを構成すると、キャッシュレコードをタスク結果とは別に保存できます。
 
-When cache key storage is configured, persisted task results will only include the return value of your task and cache records can be deleted or modified 
-without effecting your task results.
+キャッシュキーストレージを構成すると、永続化されたタスク結果にはタスクの戻り値のみが含まれ、タスク結果に影響を与えることなくキャッシュレコードを削除または変更できます。
 
-You can configure where cache records are stored by using the `.configure` method with a `key_storage` argument on a cache policy.
-The `key_storage` argument accepts either a path to a local directory or a storage block.
+キャッシュポリシーで `key_storage` 引数を指定して `.configure` メソッドを使用することで、キャッシュレコードの保存場所を設定できます。
+`key_storage` 引数には、ローカルディレクトリへのパスまたはストレージブロックのいずれかを指定できます。
 
-For example:
+例:
 
 ```python
 from prefect import task
@@ -210,9 +188,9 @@ def my_cached_task(x: int):
     return x + 42
 ```
 
-This task will store cache records in the specified directory.
+このタスクは、指定されたディレクトリにキャッシュレコードを保存します。
 
-To store cache records in a remote object store such as S3, pass a storage block instead:
+S3 などのリモートオブジェクトストアにキャッシュレコードを保存するには、代わりにストレージブロックを渡します:
 
 ```python
 from prefect import task
@@ -227,14 +205,13 @@ def my_cached_task(x: int):
     return x + 42
 ```
 
-### Cache isolation
+### キャッシュ分離
 
-Cache isolation controls how concurrent task runs interact with cache records. Prefect supports two isolation levels: `READ_COMMITTED` and `SERIALIZABLE`.
+キャッシュ分離は、同時実行タスクがキャッシュレコードとどのようにやり取りするかを制御します。Prefect は、`READ_COMMITTED` と `SERIALIZABLE` の 2 つの分離レベルをサポートしています。
 
-By default, cache records operate with a `READ_COMMITTED` isolation level. This guarantees that reading a cache record will see the latest committed cache value,
-but allows multiple executions of the same task to occur simultaneously.
+デフォルトでは、キャッシュレコードは `READ_COMMITTED` 分離レベルで動作します。これにより、キャッシュレコードの読み取り時に最新のコミット済みキャッシュ値が参照されることが保証されますが、同じタスクが同時に複数回実行される可能性があります。
 
-Consider the following example:
+次の例を考えてみましょう:
 
 ```python
 from prefect import task
@@ -265,9 +242,9 @@ if __name__ == "__main__":
     thread_2.join()
 ```
 
-When running this script, both tasks will execute in parallel and perform work despite both tasks using the same cache key.
+このスクリプトを実行すると、両方のタスクが同じキャッシュキーを使用しているにもかかわらず、両方のタスクが並行して実行され、作業が実行されます。
 
-This is evidenced by seeing both `my_task_version_1 running` and `my_task_version_2 running` in the output:
+これは、出力に「my_task_version_1 running」と「my_task_version_2 running」の両方が表示されることから明らかです:
 
 ```
 11:27:21.031 | INFO    | Task run 'my_task_version_2' - Created task run 'my_task_version_2' for task 'my_task_version_2'
@@ -278,13 +255,13 @@ my_task_version_1 running
 11:27:21.051 | INFO    | Task run 'my_task_version_1' - Finished in state Completed()
 ```
 
-For stricter isolation, you can use the `SERIALIZABLE` isolation level. This ensures that only one execution of a task occurs at a time for a given cache 
-record via a locking mechanism.
+より厳密な分離が必要な場合は、`SERIALIZABLE` 分離レベルを使用できます。
+これにより、ロックメカニズムによって、特定のキャッシュレコードに対して一度に 1 つのタスクのみが実行されることが保証されます。
 
-To configure the isolation level, use the `.configure` method with an `isolation_level` argument on a cache policy. When using `SERIALIZABLE`, you must 
-also provide a `lock_manager` that implements locking logic for your system.
+分離レベルを設定するには、キャッシュポリシーの `isolation_level` 引数を指定した `.configure` メソッドを使用します。
+`SERIALIZABLE` を使用する場合は、システムのロックロジックを実装する `lock_manager` も提供する必要があります。
 
-Here's an updated version of the previous example that uses `SERIALIZABLE` isolation:
+`SERIALIZABLE` 分離レベルを使用した、前の例の更新版を以下に示します:
 
 ```python
 import threading
@@ -323,9 +300,9 @@ if __name__ == "__main__":
     thread_2.join()
 ```
 
-In the updated script, only one of the tasks will run and the other will use the cached value.
+更新されたスクリプトでは、タスクの1つだけが実行され、もう1つはキャッシュされた値を使用します。
 
-This is evidenced by seeing only one of `my_task_version_1 running` or `my_task_version_2 running` in the output:
+これは、出力に「my_task_version_1 running」または「my_task_version_2 running」のいずれか一方だけが表示されていることからも明らかです:
 
 ```
 11:34:00.383 | INFO    | Task run 'my_task_version_1' - Created task run 'my_task_version_1' for task 'my_task_version_1'
@@ -336,11 +313,11 @@ my_task_version_1 running
 ```
 
 <Note>
-**Locking in a distributed setting**
+**分散環境でのロック**
 
-To manage locks in a distributed setting, you will need to use a storage system for locks that is accessible by all of your execution infrastructure.
+分散環境でロックを管理するには、すべての実行インフラストラクチャからアクセス可能なロック用ストレージシステムを使用する必要があります。
 
-We recommend using the `RedisLockManager` provided by `prefect-redis` in conjunction with a shared Redis instance:
+`prefect-redis` が提供する `RedisLockManager` を共有 Redis インスタンスと組み合わせて使用​​することをお勧めします:
 
 ```python
 from prefect import task
@@ -361,16 +338,14 @@ def my_cached_task(x: int):
 </Note>
 
 
-### Handling Non-Serializable Objects
+### シリアライズ不可能なオブジェクトの処理
 
-You may have task inputs that can't (or shouldn't) be serialized as part of the cache key. There are two direct approaches to handle this, both of which based on the same idea.
+タスク入力の中には、キャッシュキーの一部としてシリアライズできない（またはシリアライズすべきでない）ものがあるかもしれません。
+この問題を解決するには、2つの直接的なアプローチがあり、どちらも同じ考え方に基づいています。
 
+**シリアライズロジックを調整**することで、入力の特定のプロパティのみをシリアライズすることができます:
 
-You can **adjust the serialization logic** to only serialize certain properties of an input:
-
-
-
-1. Using a custom cache key function:
+1. カスタムキャッシュキー関数を使用する：
 ```python
 from prefect import flow, task
 from prefect.cache_policies import CacheKeyFnPolicy, RUN_ID
@@ -405,7 +380,7 @@ def demo_flow():
     assert state.result() == other_state.result()
 ```
 
-2. Using Pydantic's [custom serialization](https://docs.pydantic.dev/latest/concepts/serialization/#custom-serializers) on your input types:
+2. 入力タイプに Pydantic の [カスタムシリアル化](https://docs.pydantic.dev/latest/concepts/serialization/#custom-serializers) を使用する:
 ```python
 from pydantic import BaseModel, ConfigDict, model_serializer
 from prefect import flow, task
@@ -443,15 +418,14 @@ def demo_flow():
     assert state.result() == other_state.result()
 ```
 
-Choose the approach that best fits your needs:
-- Use Pydantic models when you want consistent serialization across your application
-- Use custom cache key functions when you need different caching logic for different tasks
+ニーズに最適なアプローチを選択してください。
+- アプリケーション全体で一貫したシリアル化が必要な場合は、Pydantic モデルを使用します。
+- タスクごとに異なるキャッシュロジックが必要な場合は、カスタムキャッシュキー関数を使用します。
 
-## Multi-task caching
+## マルチタスクキャッシュ
 
-There are many situations in which multiple tasks need to always run together or not at all.
-This can be achieved in Prefect by configuring these tasks to always write to their caches within 
-a single [_transaction_](/v3/develop/transactions).
+複数のタスクを常に同時に実行したり、まったく実行しない必要がある状況は数多くあります。
+Prefect では、これらのタスクが常に単一の [_transaction_](/v3/develop/transactions) 内でキャッシュに書き込むように設定することで、これを実現できます。
 
 ```python
 from prefect import task, flow
@@ -478,21 +452,18 @@ def multi_task_cache(fail: bool = True):
         process_data(data=data, fail=fail)
 ```
 
-When this flow is run with default parameter values it will fail on the `process_data` task.
-The `load_data` task will succeed. However, because caches are only written to when a transaction
-is _committed_, the `load_data` task will _not_ write a result to its cache key location until
-the `process_data` task succeeds as well.
+このフローをデフォルトのパラメータ値で実行すると、`p​​rocess_data` タスクで失敗します。
+`load_data` タスクは成功します。ただし、キャッシュへの書き込みはトランザクションがコミットされたときにのみ行われるため、`load_data` タスクは `process_data` タスクも成功するまで、結果をキャッシュキーの場所に書き込みません。
 
-This ensures that anytime you need to rerun this flow both `load_data` and `process_data` are executed
-together. 
-After a successful execution both tasks will be cached until the cache key is updated.
-Read more about [transactions](/v3/develop/transactions). 
+これにより、このフローを再実行する必要があるときはいつでも、`load_data` と `process_data` の両方が同時に実行されます。
+実行が成功すると、キャッシュキーが更新されるまで両方のタスクがキャッシュされます。
+[トランザクション](/v3/develop/transactions) の詳細については、こちらをご覧ください。
 
-## Caching example
+## キャッシュの例
 
-In this example, until the `cache_expiration` time is reached, as long as the input to `hello_task()` remains 
-the same when it is called, the cached return value will be returned. The task is not rerun. 
-However, if the input argument value changes, `hello_task()` runs using the new input.
+この例では、`cache_expiration` の時間に達するまで、`hello_task()` への入力が呼び出し時の値と同じであれば、キャッシュされた戻り値が返されます。
+タスクは再実行されません。
+ただし、入力引数の値が変更された場合、`hello_task()` は新しい入力を使用して実行されます。
 
 ```python 
 from datetime import timedelta
@@ -510,8 +481,7 @@ def hello_flow(name_input):
     hello_task(name_input) # does not rerun
 ```
 
-A more realistic example might include the flow run id in the cache key, so only repeated 
-calls in the same flow run are cached:
+より現実的な例としては、キャッシュ キーにフロー実行 ID を含めることが考えられます。これにより、同じフロー実行内の繰り返し呼び出しのみがキャッシュされます:
 
 ```python
 from prefect.cache_policies import INPUTS, RUN_ID
@@ -533,12 +503,11 @@ def hello_flow(name_input):
     hello_task(name_input) 
 ```
 
-## Force ignore the cache
+## キャッシュを強制的に無視する
 
-A cache "refresh" instructs Prefect to ignore the data associated with a task's cache key and rerun 
-no matter what.
+キャッシュの「リフレッシュ」は、タスクのキャッシュキーに関連付けられたデータを無視し、どのような状況でも再実行するようにPrefectに指示します。
 
-The `refresh_cache` option enables this behavior for a specific task:
+`refresh_cache` オプションは、特定のタスクに対してこの動作を有効にします。
 
 ```python
 import random
@@ -554,17 +523,16 @@ def caching_task():
     return random.random()
 ```
 
-When this task runs, it _always_ updates the cache key instead of using the cached value. This is 
-particularly useful when you have a flow that is responsible for updating the cache.
+このタスクが実行されると、キャッシュされた値を使用する代わりに、常にキャッシュキーが更新されます。これは、キャッシュの更新を行うフローがある場合に特に便利です。
 
-To refresh the cache for all tasks, use the `PREFECT_TASKS_REFRESH_CACHE` setting. 
-Setting `PREFECT_TASKS_REFRESH_CACHE=true` changes the default behavior of all tasks to refresh. 
-This is particularly useful to rerun a flow without cached results.
-See [settings](/v3/develop/settings-and-profiles) for more details on managing Prefect settings.
+すべてのタスクのキャッシュを更新するには、`PREFECT_TASKS_REFRESH_CACHE` 設定を使用します。
+`PREFECT_TASKS_REFRESH_CACHE=true` に設定すると、すべてのタスクのデフォルトの動作が更新されます。
+これは、キャッシュされた結果がないフローを再実行する場合などに特に便利です。
+Prefect 設定の管理の詳細については、[設定](/v3/develop/settings-and-profiles) を参照してください。
 
-If you have tasks that should not refresh when this setting is enabled, you may explicitly set `refresh_cache` 
-to `False`. These tasks will never refresh the cache. If a cache key exists it will be read, not updated. 
-If a cache key does _not_ exist yet, these tasks can still write to the cache.
+この設定が有効になっているときに更新しないタスクがある場合は、`refresh_cache` を明示的に `False` に設定できます。これらのタスクはキャッシュを更新しません。
+キャッシュキーが存在する場合は、更新されずに読み込まれます。
+キャッシュキーがまだ存在しない場合でも、これらのタスクはキャッシュに書き込むことができます。
 
 ```python
 @task(cache_key_fn=static_cache_key, refresh_cache=False)

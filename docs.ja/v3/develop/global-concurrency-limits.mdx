@@ -1,101 +1,98 @@
 ---
-title: Apply global concurrency and rate limits
-description: Learn how to control concurrency and apply rate limits using Prefect's provided utilities.
+title: グローバル同時実行とレート制限を適用する
+description: Prefect が提供するユーティリティを使用して同時実行を制御し、レート制限を適用する方法を学習します。
 ---
 
-**Global concurrency limits** allow you to manage execution efficiently, controlling how many tasks, flows, or other operations can run simultaneously. 
-They are ideal for optimizing resource usage, preventing bottlenecks, and customizing task execution.
+**グローバル同時実行制限** を使用すると、タスク、フロー、その他の操作を同時にいくつ実行できるかを制御し、実行を効率的に管理できます。
+リソース使用量の最適化、ボトルネックの防止、タスク実行のカスタマイズに最適です。
 
 <Tip>
-**Clarification on use of the term 'tasks'**
+**「タスク」という用語の使用に関する説明**
 
-In the context of global concurrency and rate limits, "tasks" doesn't specifically refer to Prefect tasks, but to concurrent units of work in 
-general—such as those managed by an event loop or `TaskGroup` in asynchronous programming. These general "tasks" could include Prefect 
-tasks when they are part of an asynchronous execution environment.
+グローバル同時実行性とレート制限の文脈において、「タスク」はPrefectタスクそのものを指すのではなく、一般的な同時実行単位（イベントループや非同期プログラミングにおける「TaskGroup」によって管理されるものなど）を指します。
+これらの一般的な「タスク」には、非同期実行環境の一部であるPrefectタスクが含まれる場合があります。
 </Tip>
 
-**Rate Limits** ensure system stability by governing the frequency of requests or operations. They are suitable for preventing overuse, ensuring 
-fairness, and handling errors gracefully.
+**レート制限** は、リクエストや操作の頻度を制御することでシステムの安定性を確保します。
+レート制限は、過度の使用を防ぎ、公平性を確保し、エラーを適切に処理するのに適しています。
 
-When selecting between global concurrency and rate limits, consider your primary goal:
+グローバル同時実行とレート制限のどちらかを選択する際には、主な目標を考慮してください。
 
-- Choose global concurrency limits for **resource optimization** and **task management**.
+- **リソース最適化** と **タスク管理** のために、グローバル同時実行制限を選択します。
 
-- Choose rate limits to **maintain system stability** and **fair access** to services.
+- **システムの安定性** とサービスへの **公平なアクセス** を維持するために、レート制限を選択します。
 
-The core difference between a rate limit and a concurrency limit is the way slots are released. With a rate limit, slots are released at a 
-controlled rate determined by `slot_decay_per_second`. With a concurrency limit, slots are released when the concurrency manager exits.
+レート制限と同時実行制限の主な違いは、スロットの解放方法にあります。
+レート制限では、スロットは `slot_decay_per_second` によって決定される制御されたレートで解放されます。
+同時実行制限では、同時実行マネージャーが終了したときにスロットが解放されます。
 
-## Manage global concurrency and rate limits
+## グローバル同時実行数とレート制限の管理
 
-You can create, read, edit, and delete concurrency limits through the Prefect UI or Python SDK.
+Prefect UI または Python SDK を使用して、同時実行数制限を作成、参照、編集、削除できます。
 
-When creating a concurrency limit, you can specify the following parameters:
+同時実行数制限を作成する際に、以下のパラメータを指定できます。
 
-- **Name**: The name of the concurrency limit. This name is also how you'll reference the concurrency limit in your code. Special characters, 
-such as `/`, `%`, `&`, `>`, `<`, are not allowed.
-- **Concurrency Limit**: The maximum number of slots that can be occupied on this concurrency limit.
-- **Slot Decay Per Second**: Controls the rate at which slots are released when the concurrency limit is used as a rate limit. You must 
-configure this value when using the `rate_limit` function.
-- **Active**: Whether or not the concurrency limit is in an active state.
+- **Name**: 同時実行数制限の名前。この名前は、コード内で同時実行数制限を参照する際にも使用されます。特殊文字 (`/`、`%`、`&`、`>`、`<` など) は使用できません。
+- **Concurrency Limit**: この同時実行数制限で占有できるスロットの最大数。
+- **Slot Decay Per Second**: 同時実行数制限をレート制限として使用する場合のスロットの解放レートを制御します。`rate_limit` 関数を使用する場合は、この値を設定する必要があります。
+- **Active**: 同時実行数制限がアクティブ状態かどうか。
 
-### Active vs. inactive limits
+### アクティブ制限と非アクティブ制限
 
-Global concurrency limits can be in an `active` or `inactive` state:
+グローバル同時実行制限は、`active` または `inactive` の状態になります。
 
-- **Active**: In this state, slots can be occupied, and code execution is blocked when slots are unable to be acquired.
-- **Inactive**: In this state, slots are not occupied, and code execution is not blocked. Concurrency enforcement occurs only when 
-you activate the limit.
+- **active**: この状態では、スロットは占有可能で、スロットを取得できない場合はコード実行がブロックされます。
+- **inactive**: この状態では、スロットは占有されておらず、コード実行もブロックされません。同時実行制限は、制限をアクティブにした場合にのみ適用されます。
 
-### Slot decay
-To implement rate limiting, you can configure "slot decay", which determines how rapidly used slots are freed up for new tasks.
+### スロット減衰
 
-When you set up a concurrency limit with slot decay:
-1. Each time a slot is occupied, it becomes unavailable for other tasks to use.
-2. The slot eventually becomes available again over time, based on the slot decay rate (with `slot_decay_per_second`).
-3. This creates a "rate limiting" effect, limiting how often slots can be used.
+レート制限を実装するには、「スロット減衰」を設定できます。これは、使用済みのスロットが新しいタスク用に解放される速度を決定します。
 
-To configure slot decay, set the `slot_decay_per_second` parameter when creating or updating a concurrency limit. This value determines how quickly slots refresh:
+同時実行数制限にスロット減衰を設定すると、次のようになります。
+1. スロットが占有されるたびに、他のタスクはそのスロットを使用できなくなります。
+2. スロットは、スロット減衰率（「slot_decay_per_second」を使用）に基づいて、時間の経過とともに最終的に再び使用可能になります。
+3. これにより、「レート制限」効果が生じ、スロットの使用頻度が制限されます。
 
-- A higher value (for example, 5.0) means slots refresh quickly. Tasks can run more frequently, but with short pauses between them.
-- A lower value (for example, 0.1) means slots refresh slowly. Tasks run less frequently, with longer pauses between them.
+スロット減衰を設定するには、同時実行数制限を作成または更新する際に「slot_decay_per_second」パラメータを設定します。この値によってスロットの更新速度が決まります。
 
-For example:
+- 値が高い（例：5.0）と、スロットの更新速度が速くなります。タスクはより頻繁に実行されますが、タスク間の一時停止は短くなります。
+- 値が低い（例：0.1）と、スロットの更新速度が遅くなります。タスクの実行頻度は低くなり、タスク間の一時停止は長くなります。
 
-- With a decay rate of 5.0, you could run a task roughly every 0.2 seconds.
-- With a decay rate of 0.1, you'd wait about 10 seconds between task runs.
+例:
 
-Choose a decay rate that balances your required frequency of task execution with the acceptable limit of overall system load. This allows you to fine-tune your workflow's performance and resource usage.
+- 減衰率が 5.0 の場合、約 0.2 秒ごとにタスクを実行できます。
+- 減衰率が 0.1 の場合、タスクの実行間隔は約 10 秒になります。
 
-### Through the UI
+必要なタスク実行頻度とシステム全体の負荷の許容範囲のバランスが取れる減衰率を選択してください。これにより、ワークフローのパフォーマンスとリソース使用量を微調整できます。
 
-You can manage global concurrency limits in the **Concurrency** section of the Prefect UI.
+### UI 経由
+
+Prefect UI の **Concurrency** セクションで、グローバル同時実行制限を管理できます。
 
 ![Concurrency limits in the UI](/images/gcl-1.png)
 
 
-### Through the CLI
+### CLI経由
 
 import { CLI } from "/snippets/resource-management/cli.mdx"
 import { global_concurrency } from "/snippets/resource-management/vars.mdx"
 
 <CLI name="global concurrency" href={global_concurrency.cli} />
 
-To create a new concurrency limit, use the `prefect gcl create` command. You must specify a `--limit` argument, and can optionally specify a 
-`--slot-decay-per-second` and `--disable` argument.
+新しい同時実行制限を作成するには、「prefect gcl create」コマンドを使用します。「--limit」引数を指定する必要があります。また、オプションで「--slot-decay-per-second」および「--disable」引数を指定することもできます。
 
 ```bash
 prefect gcl create my-concurrency-limit --limit 5 --slot-decay-per-second 1.0
 ```
 
-Inspect the details of a concurrency limit using the `prefect gcl inspect` command:
+`prefect gcl inspect` コマンドを使用して同時実行制限の詳細を検査します:
 
 ```bash
 prefect gcl inspect my-concurrency-limit
 ```
 
-To update a concurrency limit, use the `prefect gcl update` command. You can update the `--limit`, `--slot-decay-per-second`, `--enable`, 
-and `--disable` arguments:
+同時実行制限を更新するには、「prefect gcl update」コマンドを使用します。
+「--limit」、「--slot-decay-per-second」、「--enable」、「--disable」の各引数を更新できます:
 
 ```bash
 prefect gcl update my-concurrency-limit --limit 10
@@ -105,7 +102,7 @@ prefect gcl update my-concurrency-limit --limit 10
 prefect gcl update my-concurrency-limit --disable
 ```
 
-To delete a concurrency limit, use the `prefect gcl delete` command:
+同時実行制限を削除するには、`prefect gcl delete` コマンドを使用します:
 
 ```bash
 prefect gcl delete my-concurrency-limit
@@ -113,15 +110,15 @@ Are you sure you want to delete global concurrency limit 'my-concurrency-limit'?
 Deleted global concurrency limit with name 'my-concurrency-limit'.
 ```
 
-See all available commands and options by running `prefect gcl --help`.
+`prefect gcl --help` を実行すると、使用可能なすべてのコマンドとオプションが表示されます。
 
-### Through Terraform
+### Terraformを通じて
 
 import { TF } from "/snippets/resource-management/terraform.mdx"
 
 <TF name="global concurrency" href={global_concurrency.tf} />
 
-### Through the API
+### API経由で
 
 import { API } from "/snippets/resource-management/api.mdx"
 
@@ -129,14 +126,15 @@ import { API } from "/snippets/resource-management/api.mdx"
 
 ## Using the `concurrency` context manager
 
-The `concurrency`context manager allows control over the maximum number of concurrent operations. Select either the synchronous (`sync`) 
-or asynchronous (`async`) version, depending on your use case. Here's how to use it:
+`concurrency`コンテキストマネージャを使用すると、同時実行可能な操作の最大数を制御できます。
+ユースケースに応じて、同期バージョン（`sync`）または非同期バージョン（`async`）のいずれかを選択してください。
+使用方法は次のとおりです:
 
 <Tip>
-**Concurrency limits are not implicitly created**
+**同時実行制限は暗黙的に作成されません**
 
-When using the `concurrency` context manager, if the provided `names` of the concurrency limits don't already exist, then no limiting is enforced and a warning will be logged.
-For stricter control, use `strict=True` to instead raise an error if no matching limits exist to block execution of the task.
+`concurrency` コンテキストマネージャを使用する場合、指定された同時実行制限の `names` がまだ存在しない場合、制限は適用されず、警告がログに記録されます。
+より厳密な制御を行うには、`strict=True` を使用して、一致する制限が存在しない場合にタスクの実行をブロックするエラーを発生させます。
 </Tip>
 
 **Sync**
@@ -186,23 +184,23 @@ if __name__ == "__main__":
     asyncio.run(my_flow())
 ```
 
-1. The code imports the necessary modules and the concurrency context manager. Use the `prefect.concurrency.sync` module for sync usage 
-and the `prefect.concurrency.asyncio` module for async usage.
-2. It defines a `process_data` task, taking `x` and `y` as input arguments. Inside this task, the concurrency context manager controls 
-concurrency, using the `database` concurrency limit and occupying one slot. If another task attempts to run with the same limit and no 
-slots are available, that task is blocked until a slot becomes available.
-3. A flow named `my_flow` is defined. Within this flow, it iterates through a list of tuples, each containing pairs of x and y values. 
-For each pair, the `process_data` task is submitted with the corresponding x and y values for processing.
+1. コードは必要なモジュールと同時実行コンテキストマネージャをインポートします。
+同期処理には `prefect.concurrency.sync` モジュールを使用し、非同期処理には `prefect.concurrency.asyncio` モジュールを使用します。
+2. `process_data` タスクを定義し、`x` と `y` を入力引数として受け取ります。
+このタスク内では、同時実行コンテキストマネージャが `database` 同時実行制限を使用して 1 つのスロットを占有し、同時実行を制御します。
+別のタスクが同じ制限で実行を試み、利用可能なスロットがない場合、そのタスクはスロットが利用可能になるまでブロックされます。
+3. `my_flow` というフローを定義します。このフロー内では、x と y の値のペアを含むタプルのリストを反復処理します。
+各ペアに対して、対応する x と y の値と共に `process_data` タスクが送信され、処理されます。
 
-## Using `rate_limit`
+## `rate_limit` の使用
 
-The Rate Limit feature provides control over the frequency of requests or operations, ensuring responsible usage and system stability. 
-Depending on your requirements, you can use `rate_limit` to govern both synchronous (sync) and asynchronous (async) operations. 
-Here's how to make the most of it:
+レート制限機能は、リクエストや操作の頻度を制御し、責任ある使用とシステムの安定性を確保します。
+要件に応じて、`rate_limit` を使用して同期 (sync) 操作と非同期 (async) 操作の両方を制御できます。
+この機能を最大限に活用する方法は次のとおりです。
 
 <Tip>
-**Slot decay**
-When using the `rate_limit` function, the concurrency limit must have a slot decay configured.
+**スロットの減衰**
+`rate_limit` 関数を使用する場合、同時実行制限にスロットの減衰を設定する必要があります。
 </Tip>
 
 **Sync**
@@ -253,14 +251,16 @@ if __name__ == "__main__":
     asyncio.run(my_flow())
 ```
 
-1. The code imports the necessary modules and the `rate_limit` function. Use the `prefect.concurrency.sync` module for sync usage and the 
-`prefect.concurrency.asyncio` module for async usage.
-2. It defines a `make_http_request` task. Inside this task, the `rate_limit` function ensures that the requests are made at a controlled pace.
-3. A flow named `my_flow` is defined. Within this flow the `make_http_request` task is submitted 10 times.
+1. このコードは必要なモジュールと `rate_limit` 関数をインポートします。
+同期の場合は `prefect.concurrency.sync` モジュール、非同期の場合は `prefect.concurrency.asyncio` モジュールを使用します。
+2. `make_http_request` タスクを定義します。
+このタスク内では、`rate_limit` 関数によってリクエストが制御されたペースで実行されるようにします。
+3. `my_flow` というフローを定義します。
+このフロー内では、`make_http_request` タスクが10回送信されます。
 
-## Use `concurrency` and `rate_limit` outside of a flow
+## フロー外で `concurrency` と `rate_limit` を使用する
 
-Use`concurrency` and `rate_limit` outside of a flow to control concurrency and rate limits for any operation.
+フロー外で `concurrency` と `rate_limit` を使用して、あらゆる操作の同時実行性とレート制限を制御します。
 
 ```python
 import asyncio
@@ -279,14 +279,14 @@ if __name__ == "__main__":
     asyncio.run(main())
 ```
 
-## Use cases
+## ユースケース
 
-### Throttling task submission
+### タスク送信のスロットリング
 
-Throttling task submission helps avoid overloading resources, complying with external rate limits, or ensuring a steady, controlled flow of work.
+タスク送信のスロットリングは、リソースの過負荷を回避し、外部のレート制限を遵守し、安定した制御された作業フローを確保するのに役立ちます。
 
-In this scenario the `rate_limit` function throttles the submission of tasks. The rate limit acts as a bottleneck, ensuring 
-that tasks are submitted at a controlled rate, governed by the `slot_decay_per_second` setting on the associated concurrency limit.
+このシナリオでは、`rate_limit` 関数がタスクの送信をスロットリングします。
+レート制限はボトルネックとして機能し、関連する同時実行制限の `slot_decay_per_second` 設定によって制御されたレートでタスクが送信されるようにします。
 
 ```python
 from prefect import flow, task
@@ -309,13 +309,13 @@ if __name__ == "__main__":
     my_flow()
 ```
 
-### Manage database connections
+### データベース接続の管理
 
-Manage the maximum number of concurrent database connections to avoid exhausting database resources.
+データベースリソースの枯渇を防ぐため、同時接続の最大数を管理します。
 
-This scenario uses a concurrency limit named `database`. It has a maximum concurrency limit that matches the maximum number
-of database connections. The `concurrency` context manager controls the number of database connections
-allowed at any one time.
+このシナリオでは、「database」という同時接続制限を使用します。
+この制限は、データベース接続の最大数と同じ最大同時接続制限を持ちます。
+「concurrency」コンテキストマネージャは、一度に許可されるデータベース接続の数を制御します。
 
 ```python
 from prefect import flow, task, concurrency
@@ -341,13 +341,13 @@ if __name__ == "__main__":
     my_flow()
 ```
 
-### Parallel data processing
+### 並列データ処理
 
-Limit the maximum number of parallel processing tasks.
+並列処理タスクの最大数を制限します。
 
-This scenario limits the number of `process_data` tasks to five at any one time. The `concurrency` 
-context manager requests five slots on the `data-processing` concurrency limit. This blocks until five slots are free and then
-submits five more tasks, ensuring that the maximum number of parallel processing tasks is never exceeded.
+このシナリオでは、`process_data` タスクの同時実行数を5つに制限します。
+`concurrency` コンテキストマネージャは、`data-processing` 同時実行制限で5つのスロットを要求します。
+これにより、5つのスロットが空くまでブロックされ、その後さらに5つのタスクが送信され、並列処理タスクの最大数を超えないようにします。
 
 ```python
 import asyncio
@@ -378,13 +378,13 @@ if __name__ == "__main__":
     asyncio.run(main())
 ```
 
-## Other ways to limit concurrency
+## 同時実行を制限するその他の方法
 
-In addition to global concurrency limits, Prefect provides several other ways to limit concurrency for fine-grained control. 
+グローバル同時実行制限に加えて、Prefect はきめ細かな制御のために同時実行を制限するいくつかの方法を提供しています。
 
-Unlike global concurrency limits, which are a more general way to control concurrency for any Python-based operation, the following concurrency limit options are specific to Prefect objects:
+Python ベースのあらゆる操作の同時実行を制御するためのより一般的な方法であるグローバル同時実行制限とは異なり、以下の同時実行制限オプションは Prefect オブジェクトに固有のものです。
 
-- [Work pool flow run concurrency limits](/v3/deploy/infrastructure-concepts/work-pools#manage-concurrency)
-- [Work queue flow run concurrency limits](/v3/deploy/infrastructure-concepts/work-pools#queue-concurrency-limits)
-- [Deployment flow run concurrency limits](/v3/deploy/index#concurrency-limiting)
-- [Task run concurrency limits](/v3/develop/task-run-limits)
+- [ワークプールフロー実行の同時実行制限](/v3/deploy/infrastructure-concepts/work-pools#manage-concurrency)
+- [ワークキューフロー実行の同時実行制限](/v3/deploy/infrastructure-concepts/work-pools#queue-concurrency-limits)
+- [デプロイメントフロー実行の同時実行制限](/v3/deploy/index#concurrency-limiting)
+- [タスク実行の同時実行制限](/v3/develop/task-run-limits)

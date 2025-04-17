@@ -1,50 +1,48 @@
 ---
-title: Send and receive flow run inputs
-description: Learn how to create interactive workflows with Prefect.
+title: フロー実行への入力の送受信
+description: Prefect を使用してインタラクティブなワークフローを作成する方法を学びます。
 ---
 
-Flows can pause or suspend execution and automatically resume when they receive type-checked input in Prefect's UI.
-Flows can also send and receive type-checked input at any time while running—without pausing or suspending.
+フローは実行を一時停止または中断することができ、Prefect の UI で型チェック済みの入力を受信すると自動的に再開します。
+また、フローは実行中にいつでも、一時停止や中断することなく、型チェック済みの入力を送受信できます。
 
-This guide explains how to use these features to build _interactive workflows_.
-
-<Note>
-**Async Python syntax**
-Most of the example code in this section uses async Python functions and `await`. However, as with other Prefect features,
-you can call these functions with or without `await`.
-</Note>
-
-## Pause or suspend a flow until it receives input
-
-You can pause or suspend a flow until it receives input from a user in Prefect's UI. This is useful when you need to ask for
-additional information or feedback before resuming a flow. These workflows are often called
-[human-in-the-loop](https://hai.stanford.edu/news/humans-loop-design-interactive-ai-systems) (HITL) systems.
+このガイドでは、これらの機能を使用して_インタラクティブなワークフロー_を構築する方法について説明します。
 
 <Note>
-**Human-in-the-loop interactivity**
-Approval workflows that pause to ask a human to confirm whether a workflow should continue are very common in the business world.
-Certain types of [machine learning training](https://link.springer.com/article/10.1007/s10462-022-10246-w) and artificial intelligence
-workflows benefit from incorporating HITL design.
+**非同期 Python 構文**
+このセクションのサンプルコードのほとんどは、非同期 Python 関数と `await` を使用しています。
+ただし、他の Prefect 機能と同様に、これらの関数は `await` の有無にかかわらず呼び出すことができます。
 </Note>
 
-### Wait for input
+## 入力を受け取るまでフローを一時停止または中断する
 
-To receive input while paused or suspended use the `wait_for_input` parameter in the `pause_flow_run` or `suspend_flow_run` functions.
-This parameter accepts one of the following:
+Prefect の UI で、ユーザーからの入力を受け取るまでフローを一時停止または中断できます。
+これは、フローを再開する前に追加情報やフィードバックを求める必要がある場合に便利です。
+これらのワークフローは、しばしば [human-in-the-loop](https://hai.stanford.edu/news/humans-loop-design-interactive-ai-systems) (HITL) システムと呼ばれます。
 
-- A built-in type like `int` or `str`, or a built-in collection like `List[int]`
-- A `pydantic.BaseModel` subclass
-- A subclass of `prefect.input.RunInput`
+<Note>
+**人間参加型インタラクション**
+承認ワークフローにおいて、ワークフローを続行するかどうかを人間に確認するために一時停止する機能は、ビジネスの世界では非常に一般的です。
+特定の種類の[機械学習トレーニング](https://link.springer.com/article/10.1007/s10462-022-10246-w)および人工知能ワークフローでは、HITL設計を組み込むことでメリットが得られます。
+</Note>
+
+### 入力を待機
+
+一時停止中または中断中に入力を受け取るには、`pause_flow_run` または `suspend_flow_run` 関数の `wait_for_input` パラメータを使用します。
+このパラメータには、次のいずれかを指定できます。
+
+- `int` や `str` などの組み込み型、または `List[int]` などの組み込みコレクション
+- `pydantic.BaseModel` のサブクラス
+- `prefect.input.RunInput` のサブクラス
 
 <Tip>
-When to use a `RunModel` or `BaseModel` instead of a built-in type"
-There are a few reasons to use a `RunModel` or `BaseModel`. The first is that when you let Prefect automatically create one of these
-classes for your input type, the field that users see in Prefect's UI when they click "Resume" on a flow run is named `value` and
-has no help text to suggest what the field is. If you create a `RunInput` or `BaseModel`, you can change details like the field name,
-help text, and default value, and users see those reflected in the "Resume" form.
+組み込み型の代わりに `RunModel` または `BaseModel` を使用する場合
+`RunModel` または `BaseModel` を使用する理由はいくつかあります。
+1 つ目は、Prefect に入力タイプ用のこれらのクラスのいずれかを自動作成させると、フロー実行でユーザーが「再開」をクリックしたときに Prefect の UI に表示されるフィールドの名前が `value` になり、フィールドの内容を示すヘルプテキストが表示されなくなることです。
+`RunInput` または `BaseModel` を作成すると、フィールド名、ヘルプテキスト、デフォルト値などの詳細を変更でき、それらの変更は「再開」フォームに反映されます。
 </Tip>
 
-The simplest way to pause or suspend and wait for input is to pass a built-in type:
+一時停止または中断して入力を待つ最も簡単な方法は、組み込み型を渡すことです:
 
 ```python
 from prefect import flow
@@ -60,17 +58,17 @@ def greet_user():
     logger.info(f"Hello, {user}!")
 ```
 
-In this example, the flow run pauses until a user clicks the Resume button in the Prefect UI, enters a name, and submits the form.
+この例では、ユーザーが Prefect UI の [再開] ボタンをクリックし、名前を入力してフォームを送信するまで、フロー実行は一時停止されます。
 
 <Note>
-**Types can you pass for `wait_for_input`**
+**`wait_for_input` に渡せる型**
 
-When you pass a built-in type such as `int` as an argument for the `wait_for_input` parameter to `pause_flow_run` or `suspend_flow_run`,
-Prefect automatically creates a Pydantic model containing one field annotated with the type you specified. This means you can use
-[any type annotation that Pydantic accepts for model fields](https://docs.pydantic.dev/1.10/usage/types/) with these functions.
+`wait_for_input` パラメータの引数として `int` などの組み込み型を `pause_flow_run` または `suspend_flow_run` に渡すと、Prefect は指定した型でアノテーションが付けられたフィールドを 1 つ含む Pydantic モデルを自動的に作成します。
+つまり、これらの関数では [Pydantic がモデルフィールドに受け入れる任意の型アノテーション](https://docs.pydantic.dev/1.10/usage/types/) を使用できます。
 </Note>
 
-Instead of a built-in type, you can pass in a `pydantic.BaseModel` class. This is useful if you already have a `BaseModel` you want to use:
+組み込み型の代わりに、`pydantic.BaseModel` クラスを渡すこともできます。
+これは、使用したい `BaseModel` が既にある場合に便利です:
 
 ```python
 from prefect import flow
@@ -94,15 +92,14 @@ async def greet_user():
 ```
 
 <Note>
-**`BaseModel` classes are upgraded to `RunInput` classes automatically**
+**`BaseModel` クラスは自動的に `RunInput` クラスにアップグレードされます**
 
-When you pass a `pydantic.BaseModel` class as the `wait_for_input` argument to `pause_flow_run` or `suspend_flow_run`, Prefect
-automatically creates a `RunInput` class with the same behavior as your `BaseModel` and uses that instead.
+`pause_flow_run` または `suspend_flow_run` の `wait_for_input` 引数として `pydantic.BaseModel` クラスを渡すと、Prefect は `BaseModel` と同じ動作をする `RunInput` クラスを自動的に作成し、代わりにそれを使用します。
 
-`RunInput` classes contain extra logic that allows flows to send and receive them at runtime. You shouldn't notice any difference.
+`RunInput` クラスには、フローが実行時にそれらを送受信できるようにするための追加ロジックが含まれています。違いに気付くことはないはずです。
 </Note>
 
-For advanced use cases such as overriding how Prefect stores flow run inputs, create a `RunInput` class:
+Prefect がフロー実行入力を保存する方法をオーバーライドするなどの高度な使用例では、`RunInput` クラスを作成します:
 
 ```python
 from prefect import flow
@@ -126,12 +123,12 @@ async def greet_user():
     logger.info(f"Hello, {user.name}!")
 ```
 
-### Provide initial data
+### 初期データを提供する
 
-Set default values for fields in your model with the `with_initial_data` method. This is useful for providing default values
-for the fields in your own `RunInput` class.
+`with_initial_data` メソッドを使用して、モデル内のフィールドにデフォルト値を設定します。
+これは、独自の `RunInput` クラスのフィールドにデフォルト値を提供する場合に便利です。
 
-Expanding on the example above, you can make the `name` field default to "anonymous":
+上記の例を拡張すると、`name` フィールドのデフォルトを "anonymous" に設定できます。
 
 ```python
 from prefect import flow
@@ -156,12 +153,12 @@ async def greet_user():
         logger.info(f"Hello, {user_input.name}!")
 ```
 
-When a user sees the form for this input, the name field contains "anonymous" as the default.
+ユーザーがこの入力フォームを見ると、名前フィールドにはデフォルトで「anonymous」が含まれています。
 
-### Provide a description with runtime data
+### 実行時データに説明を追加する
 
-You can provide a dynamic, Markdown description that appears in the Prefect UI when the flow run pauses.
-This feature enables context-specific prompts, enhancing clarity and user interaction. Building on the example above:
+フロー実行が一時停止した際にPrefect UIに表示される、動的なMarkdown形式の説明を追加できます。
+この機能により、状況に応じたプロンプトが表示されるようになり、明瞭性とユーザーインタラクションが向上します。上記の例を基に、以下の手順を説明します:
 
 ```python
 from datetime import datetime
@@ -202,23 +199,23 @@ Please enter your details below:
         logger.info(f"Hello, {user_input.name}!")
 ```
 
-When a user sees the form for this input, the given Markdown appears above the input fields.
+ユーザーがこの入力フォームを見ると、指定された Markdown が入力フィールドの上に表示されます。
 
-### Handle custom validation
+### カスタム検証の処理
 
-Prefect uses the fields and type hints on your `RunInput` or `BaseModel` class to validate the general structure of input your flow receives.
-If you require more complex validation, use Pydantic [model_validators](https://docs.pydantic.dev/latest/concepts/validators/#model-validators).
+Prefect は、`RunInput` または `BaseModel` クラスのフィールドと型ヒントを使用して、フローが受け取る入力の一般的な構造を検証します。
+より複雑な検証が必要な場合は、Pydantic [model_validators](https://docs.pydantic.dev/latest/concepts/validators/#model-validators) を使用してください。
 
 <Warning>
-**Calling custom validation runs after the flow resumes**
+**フロー再開後にカスタム検証を実行する**
 
-Prefect transforms the type annotations in your `RunInput` or `BaseModel` class to a JSON schema and uses that schema in
-the UI for client-side validation. However, custom validation requires running _Python_ logic defined in your `RunInput` class.
-Because of this, validation happens _after the flow resumes_, so you should handle it explicitly in your flow.
-Continue reading for an example best practice.
+Prefect は、`RunInput` クラスまたは `BaseModel` クラスの型アノテーションを JSON スキーマに変換し、そのスキーマを UI でクライアント側検証に使用します。
+ただし、カスタム検証を実行するには、`RunInput` クラスで定義された _Python_ ロジックを実行する必要があります。
+そのため、検証は _フロー再開後_ に実行されるため、フロー内で明示的に処理する必要があります。
+ベストプラクティスの例については、引き続きお読みください。
 </Warning>
 
-The following is an example `RunInput` class that uses a custom `model_validator`:
+以下は、カスタム `model_validator` を使用する `RunInput` クラスの例です:
 
 ```python
 from typing import Literal
@@ -242,8 +239,8 @@ class ShirtOrder(RunInput):
         return self
 ```
 
-In the example, we use Pydantic's `model_validator` decorator to define custom validation for our `ShirtOrder` class.
-You can use it in a flow like this:
+この例では、Pydantic の `model_validator` デコレータを使用して `ShirtOrder` クラスのカスタム検証を定義します。
+次のようなフローで使用できます。
 
 ```python
 from typing import Literal
@@ -273,11 +270,11 @@ def get_shirt_order():
     shirt_order = pause_flow_run(wait_for_input=ShirtOrder)
 ```
 
-If a user chooses any size and color combination other than `small` and `green`, the flow run resumes successfully.
-However, if the user chooses size `small` and color `green`, the flow run will resume, and `pause_flow_run` raises a
-`ValidationError` exception. This causes the flow run to fail and log the error.
+ユーザーが「small」と「green」以外のサイズと色の組み合わせを選択した場合、フロー実行は正常に再開されます。
+ただし、ユーザーがサイズ「small」と色「green」を選択した場合、フロー実行は再開され、「pause_flow_run」は「ValidationError」例外を発生させます。
+これにより、フロー実行は失敗し、エラーがログに記録されます。
 
-To avoid a flow run failure, use a `while` loop and pause again if the `ValidationError` exception is raised:
+フロー実行の失敗を回避するには、「while」ループを使用し、「ValidationError」例外が発生した場合は再度一時停止します:
 
 ```python
 from typing import Literal
@@ -319,44 +316,44 @@ def get_shirt_order():
     )
 ```
 
-This code causes the flow run to continually pause until the user enters a valid age.
+このコードにより、ユーザーが有効な年齢を入力するまでフローの実行が継続的に一時停止されます。
 
-As an additional step, you can use an [automation](/v3/automate/events/automations-triggers) to alert the user to the error.
+追加の手順として、[オートメーション](/v3/automate/events/automations-triggers)を使用して、ユーザーにエラーを通知することもできます。
 
-## Send and receive input at runtime
+## 実行時に入力を送受信する
 
-Use the `send_input` and `receive_input` functions to send input to a flow or receive input from a flow at runtime.
-You don't need to pause or suspend the flow to send or receive input.
+`send_input` 関数と `receive_input` 関数を使用して、実行時にフローに入力を送信したり、フローから入力を受信したりします。
+入力を送受信するためにフローを一時停止したり中断したりする必要はありません。
 
 <Note>
-**Reasons to send or receive input without pausing or suspending**
+**一時停止や中断なしに入力を送受信する理由**
 
-You might want to send or receive input without pausing or suspending in scenarios where the flow run is designed to handle
-real-time data. For example, in a live monitoring system, you might need to update certain parameters based on the incoming
-data without interrupting the flow. Another example is having a long-running flow that continually responds to runtime input with
-low latency. For example, if you're building a chatbot, you could have a flow that starts a GPT Assistant and manages a conversation thread.
+フロー実行がリアルタイムデータを処理するように設計されているシナリオでは、一時停止や中断なしに入力を送受信することが必要な場合があります。
+たとえば、ライブ監視システムでは、フローを中断することなく、受信データに基づいて特定のパラメータを更新する必要がある場合があります。
+もう1つの例として、実行時の入力に低レイテンシで継続的に応答する、長時間実行されるフローがあります。
+
+たとえば、チャットボットを構築している場合、GPTアシスタントを起動して会話スレッドを管理するフローを作成できます。
 </Note>
 
-The most important parameter to the `send_input` and `receive_input` functions is `run_type`, which should be one of the following:
+`send_input` 関数と `receive_input` 関数の最も重要なパラメータは `run_type` です。これは次のいずれかになります。
 
-- A built-in type such as `int` or `str`
-- A `pydantic.BaseModel` class
-- A `prefect.input.RunInput` class
+- `int` や `str` などの組み込み型
+- `pydantic.BaseModel` クラス
+- `prefect.input.RunInput` クラス
 
 <Tip>
-**When to use a `BaseModel` or `RunInput` instead of a built-in type**
+**組み込み型の代わりに `BaseModel` または `RunInput` を使用する場合**
 
-Most built-in types and collections of built-in types should work with `send_input` and `receive_input`, but there is a caveat with
-nested collection types, such as lists of tuples. For example, `List[Tuple[str, float]])`. In this case, validation may happen after
-your flow receives the data, so calling `receive_input` may raise a `ValidationError`. You can plan to catch this exception, and
-consider placing the field in an explicit `BaseModel` or `RunInput` so your flow only receives exact type matches.
+ほとんどの組み込み型と組み込み型のコレクションは `send_input` と `receive_input` で動作しますが、タプルのリストなど、ネストされたコレクション型には注意が必要です。
+例えば、`List[Tuple[str, float]])` のような場合、フローがデータを受信した後に検証が行われる可能性があるため、`receive_input` を呼び出すと `ValidationError` が発生する可能性があります。
+この例外をキャッチできるようにし、フローが完全に一致する型のみを受信するように、フィールドを明示的な `BaseModel` または `RunInput` に配置することを検討してください。
 
-See examples below of `receive_input`, `send_input`, and the two functions working together.
+`receive_input`、`send_input`、そしてこの 2 つの関数が連携して動作する例を以下に示します。
 </Tip>
 
-### Receiving input
+### 入力の受信
 
-The following flow uses `receive_input` to continually receive names and print a personalized greeting for each name it receives:
+次のフローでは、`receive_input` を使用して継続的に名前を受信し、受信した名前ごとに個別の挨拶文を出力します:
 
 ```python
 from prefect import flow
@@ -370,17 +367,15 @@ async def greeter_flow():
         print(f"Hello, {name_input}!")
 ```
 
-When you pass a type such as `str` into `receive_input`, Prefect creates a `RunInput` class to manage your
-input automatically. When a flow sends input of this type, Prefect uses the `RunInput` class to validate the input.
-If the validation succeeds, your flow receives the input in the type you specified. In this example, if the flow received a
-valid string as input, the variable `name_input` contains the string value.
+`receive_input` に `str` などの型を渡すと、Prefect は入力を自動的に管理するための `RunInput` クラスを作成します。
+フローがこの型の入力を送信すると、Prefect は `RunInput` クラスを使用して入力を検証します。
+検証が成功すると、フローは指定した型の入力を受け取ります。この例では、フローが有効な文字列を入力として受け取ると、変数 `name_input` にその文字列値が格納されます。
 
-If, instead, you pass a `BaseModel`, Prefect upgrades your `BaseModel` to a `RunInput` class, and the variable your flow sees
-(in this case, `name_input`), is a `RunInput` instance that behaves like a `BaseModel`. If you pass in a `RunInput` class,
-no upgrade is needed and you'll get a `RunInput` instance.
+代わりに `BaseModel` を渡すと、Prefect は `BaseModel` を `RunInput` クラスにアップグレードし、フローが参照する変数 (この場合は `name_input`) は `BaseModel` のように動作する `RunInput` インスタンスになります。
+`RunInput` クラスを渡す場合、アップグレードは不要で、`RunInput` インスタンスが返されます。
 
-A simpler approach is to pass types such as `str` into `receive_input` . If you need access to the generated
-`RunInput` that contains the received value, pass `with_metadata=True` to `receive_input`:
+より簡単な方法は、`str` などの型を `receive_input` に渡すことです。
+受信した値を含む生成された `RunInput` にアクセスする必要がある場合は、`receive_input` に `with_metadata=True` を渡します。
 
 ```python
 from prefect import flow
@@ -399,16 +394,14 @@ async def greeter_flow():
 
 ```
 <Tip>
-**When to use `with_metadata=True`**
+**`with_metadata=True` を使用する場合**
 
-The primary uses of accessing the `RunInput` object for a receive input are to respond to the sender with the `RunInput.respond()`
-function, or to access the unique key for an input.
+受信入力の `RunInput` オブジェクトにアクセスする主な用途は、`RunInput.respond()` 関数を使用して送信者に応答すること、または入力の一意のキーにアクセスすることです。
 </Tip>
 
-Notice that the printing of `name_input.value`. When Prefect generates a `RunInput` for you from a built-in type,
-the `RunInput` class has a single field, `value`, that uses a type annotation matching the type you specified.
-So if you call `receive_input` like this: `receive_input(str, with_metadata=True)`, it's equivalent to manually
-creating the following `RunInput` class and `receive_input` call:
+`name_input.value` の出力に注目してください。
+Prefect が組み込み型から `RunInput` を生成する場合、`RunInput` クラスには `value` という単一のフィールドがあり、このフィールドは指定した型に一致する型アノテーションを使用します。
+したがって、`receive_input` を `receive_input(str, with_metadata=True)` のように呼び出すと、次の `RunInput` クラスを手動で作成して `receive_input` を呼び出すのと同等になります:
 
 ```python
 from prefect import flow
@@ -423,20 +416,19 @@ async def greeter_flow():
         print(f"Hello, {name_input.value}!")
 ```
 <Warning>
-**The type used in `receive_input` and `send_input` must match**
+**`receive_input` と `send_input` で使用される型は一致している必要があります**
 
-For a flow to receive input, the sender must use the same type that the receiver is receiving.
-This means that if the receiver is receiving `GreeterInput`, the sender must send `GreeterInput`. If the receiver is
-receiving `GreeterInput` and the sender sends the `str` input that Prefect automatically upgrades to a `RunInput` class,
-the types won't match; which means the receiving flow run won't receive the input. However, the input will wait for if the flow ever
-calls `receive_input(str)`.
+フローが入力を受信するには、送信側が受信側と同じ型を使用する必要があります。
+つまり、受信側が `GreeterInput` を受信する場合、送信側は `GreeterInput` を送信する必要があります。
+受信側が `GreeterInput` を受信し、送信側が Prefect によって自動的に `RunInput` クラスにアップグレードされる `str` 入力を送信する場合、型が一致しないため、受信側のフロー実行は入力を受信しません。
+ただし、フローが `receive_input(str)` を呼び出す場合、入力は待機します。
 </Warning>
 
-### Keep track of inputs you've already seen
+### 既に受信した入力を追跡する
 
-By default, each time you call `receive_input`, you get an iterator that iterates over all known inputs to a specific flow run,
-starting with the first received. The iterator keeps track of your current position as you iterate over it, or you can call `next()`
-to explicitly get the next input. If you're using the iterator in a loop, you should assign it to a variable:
+デフォルトでは、`receive_input` を呼び出すたびに、特定のフロー実行へのすべての既知の入力を、最初に受信した入力から順に反復処理するイテレータが返されます。
+イテレータは、反復処理中に現在の位置を追跡します。また、`next()` を呼び出して次の入力を明示的に取得することもできます。
+ループ内でイテレータを使用する場合は、変数に代入する必要があります。
 
 ```python
 from prefect import flow, get_client
@@ -489,11 +481,11 @@ async def sender():
         print(greeting)
 ```
 
-An iterator helps keep track of the inputs your flow has already received. If you want your flow to suspend and then resume later,
-save the keys of the inputs you've seen so the flow can read them back out when it resumes.
-Consider using a [block](/v3/develop/blocks/), such as a `JSONBlock`.
+イテレータは、フローが既に受信した入力を追跡するのに役立ちます。
+フローを一時停止してから後で再開する場合は、受信した入力のキーを保存しておき、再開時にフローがそれらを読み取れるようにします。
+`JSONBlock` などの [ブロック](/v3/develop/blocks/) の使用を検討してください。
 
-The following flow receives input for 30 seconds then suspends itself, which exits the flow and tears down infrastructure:
+次のフローは、30秒間入力を受信した後、自身を一時停止します。これにより、フローが終了し、インフラストラクチャが破棄されます。
 
 ```python
 from prefect import flow
@@ -545,22 +537,20 @@ async def greeter():
         await suspend_flow_run(timeout=10000)
 ```
 
-As this flow processes name input, it adds the _key_ of the flow run input to the `seen_keys_block`.
-When the flow later suspends and then resumes, it reads the keys it has already seen out of the JSON block and
-passes them as the `exlude_keys` parameter to `receive_input`.
+このフローは名前入力を処理する際に、フロー実行入力の _key_ を `seen_keys_block` に追加します。
+フローがその後一時停止してから再開すると、JSON ブロックから既に確認したキーを読み取り、それらを `exlude_keys` パラメータとして `receive_input` に渡します。
 
-### Respond to the input's sender
+### 入力の送信者に応答する
 
-When your flow receives input from another flow, Prefect knows the sending flow run ID, so the receiving flow can
-respond by calling the `respond` method on the `RunInput` instance the flow received. There are a couple of requirements:
+フローが別のフローから入力を受信すると、Prefect は送信側のフロー実行 ID を認識します。そのため、受信側のフローは、受信した `RunInput` インスタンスの `respond` メソッドを呼び出すことで応答できます。
+いくつかの要件があります。
 
-- Pass in a `BaseModel` or `RunInput`, or use `with_metadata=True`.
-- The flow you are responding to must receive the same type of input you send to see it.
+- `BaseModel` または `RunInput` を渡すか、`with_metadata=True` を使用します。
+- 応答先のフローは、送信側と同じ種類の入力を受信して​​初めて応答します。
 
-The `respond` method is equivalent to calling `send_input(..., flow_run_id=sending_flow_run.id)`. But with `respond`,
-your flow doesn't need to know the sending flow run's ID.
+`respond` メソッドは、`send_input(..., flow_run_id=sending_flow_run.id)` を呼び出すのと同じです。ただし、`respond` を使用する場合、フローは送信側のフロー実行 ID を認識する必要はありません。
 
-Next, make the `greeter_flow` respond to name inputs instead of printing them:
+次に、`greeter_flow` が名前入力を出力するのではなく、応答するようにします:
 
 ```python
 from prefect import flow
@@ -577,8 +567,8 @@ async def greeter():
         await name_input.respond(f"Hello, {name_input.value}!")
 ```
 
-However, this flow runs forever unless there's a signal that it should exit.
-Here's how to make it to look for a special string:
+ただし、このフローは終了のシグナルがない限り永久に実行されます。
+特殊な文字列を検索するようにするには、次のようにします:
 
 ```python
 from prefect import flow
@@ -603,23 +593,22 @@ async def greeter():
         await name_input.respond(f"Hello, {name_input.value}!")
 ```
 
-With a `greeter` flow in place, create the flow that sends `greeter` names.
+`greeter` フローが配置されたら、`greeter` の名前を送信するフローを作成します。
 
-### Send input
+### 入力を送信
 
-Send input to a flow with the `send_input` function. This works similarly to `receive_input` and, like that function,
-accepts the same `run_input` argument. This can be a built-in type such as `str`, or else a `BaseModel` or `RunInput` subclass.
+`send_input` 関数を使用して、フローに入力を送信します。
+これは `receive_input` と同様に動作し、`receive_input` 関数と同様に、同じ `run_input` 引数を受け取ります。
+引数には、`str` などの組み込み型、または `BaseModel` または `RunInput` のサブクラスを指定できます。
 
 <Note>
-**When to send input to a flow run**
+**フロー実行に入力を送信するタイミング**
 
-Send input to a flow run as soon as you have the flow run's ID. The flow does not have to be receiving input for you to send input.
-If you send a flow input before it is receiving, it will see your input when it calls `receive_input`
-(as long as the types in the `send_input` and `receive_input` calls match).
+フロー実行のIDを取得したらすぐに、フロー実行に入力を送信してください。入力を送信するために、フローが入力を受信して​​いる必要はありません。
+フローが入力を受信する前にフロー入力を送信した場合、`receive_input` の呼び出し時に入力が認識されます（`send_input` と `receive_input` の呼び出しの型が一致している限り）。
 </Note>
 
-Next, create a `sender` flow that starts a `greeter` flow run and then enters a loop—continuously
-getting input from the terminal and sending it to the greeter flow:
+次に、`greeter` フロー実行を開始してループに入り、ターミナルからの入力を継続的に取得してそれを greeter フローに送信する `sender` フローを作成します:
 
 ```python
 from prefect import flow
@@ -656,22 +645,25 @@ async def sender():
         print(greeting)
 ```
 
-First, `run_deployment` starts a `greeter` flow run. This requires a deployed flow running in a process.
-That process begins running `greeter` while `sender` continues to execute. Calling `run_deployment(..., timeout=0)`
-ensures that `sender` won't wait for the `greeter` flow run to complete, because it's running a loop and only exits when sending `EXIT_SIGNAL`.
+まず、`run_deployment` は `greeter` フロー実行を開始します。
+これには、プロセス内で実行されているデプロイ済みフローが必要です。
+そのプロセスは `sender` が実行を継続している間、`greeter` の実行を開始します。
+`run_deployment(..., timeout=0)` を呼び出すことで、`sender` はループを実行し、`EXIT_SIGNAL` を送信した場合にのみ終了するため、`greeter` フロー実行の完了を待機する必要がなくなります。
 
-Next, the iterator returned by `receive_input` as `receiver` is captured. This flow works by entering a loop. On each iteration of the loop,
-the flow asks for terminal input, sends that to the `greeter` flow, and then runs `receiver.next()` to wait until it receives the response from `greeter`.
+次に、`receive_input` によって `receiver` として返されたイテレータがキャプチャされます。
+このフローはループに入ることで動作します。
+ループの各反復処理で、フローは端末入力を要求し、それを `greeter` フローに送信します。
+その後、`receiver.next()` を実行して `greeter` からの応答を受信するまで待機します。
 
-Next, the terminal user who ran this flow is allowed to exit by entering the string `q` or `quit`.
-When that happens, the `greeter` flow is sent an exit signal to shut down, too.
+次に、このフローを実行した端末ユーザーは、文字列 `q` または `quit` を入力することで終了できます。
+この処理が完了すると、`greeter` フローにも終了信号が送信され、フローが終了します。
 
-Finally, the new name is sent to `greeter`. `greeter` sends back a greeting as a string.
-When you receive the greeting, print it and continue the loop that gets terminal input.
+最後に、新しい名前が `greeter` に送信されます。`greeter` は文字列として挨拶を返します。
+挨拶を受け取ったら、それを出力し、端末入力を取得するループを続行します。
 
-### A complete example
+### 完全な例
 
-For a complete example of using `send_input` and `receive_input`, here is what the `greeter` and `sender` flows look like together:
+`send_input` と `receive_input` の完全な使用例として、`greeter` フローと `sender` フローの組み合わせを以下に示します:
 
 ```python
 import asyncio
@@ -756,15 +748,15 @@ if __name__ == "__main__":
         asyncio.run(sender())
 ```
 
-To run the example, you need a Python environment with Prefect installed, pointed at either a Prefect Cloud account or a self-hosted Prefect server instance.
+このサンプルを実行するには、Prefect がインストールされ、Prefect Cloud アカウントまたはセルフホスト型 Prefect サーバーインスタンスにリンクされた Python 環境が必要です。
 
-With your environment set up, start a flow runner in one terminal with the following command:
+環境がセットアップされたら、以下のコマンドでターミナルからフローランナーを起動します:
 
 ```bash
 python my_file_name greeter
 ```
 
-For example, with Prefect Cloud, you should see output like this:
+たとえば、Prefect Cloud では次のような出力が表示されます:
 
 ```bash
 ______________________________________________________________________
@@ -780,13 +772,13 @@ ______________________________________________________________________
 ______________________________________________________________________
 ```
 
-Then start the greeter process in another terminal:
+次に、別のターミナルで Greeter プロセスを開始します:
 
 ```bash
 python my_file_name sender
 ```
 
-You should see output like this:
+次のような出力が表示されます:
 
 ```bash
 11:38:41.800 | INFO    | prefect.engine - Created flow run 'gregarious-owl' for flow 'sender'
@@ -794,7 +786,7 @@ You should see output like this:
 What is your name?
 ```
 
-Type a name and press the enter key to see a greeting to see sending and receiving in action:
+名前を入力して Enter キーを押すと、送信と受信の動作を確認するための挨拶が表示されます:
 
 ```bash
 What is your name? andrew

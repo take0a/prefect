@@ -1,81 +1,80 @@
 ---
-title: Manage states
-description: Prefect states contain information about the status of a flow or task run.
+title: 状態を管理する
+description: Prefect 状態には、フローまたはタスク実行のステータスに関する情報が含まれます。
 ---
 
-States are rich objects that contain information about the status of a particular [task](/v3/develop/write-tasks)
-run or [flow](/v3/develop/write-flows/) run.
+状態は、特定の [タスク](/v3/develop/write-tasks) 実行または [フロー](/v3/develop/write-flows/) 実行のステータスに関する情報を含むリッチオブジェクトです。
 
-You can learn many things about a task or flow by examining its current state or the
-history of its states. For example, a state could tell you that a task:
+タスクまたはフローの現在の状態や状態の履歴を調べることで、そのタスクについて多くのことを知ることができます。
+例えば、状態からタスクの状態がわかります。
 
-- is scheduled to make a third run attempt in an hour
-- succeeded and what data it produced
-- was scheduled to run, but later cancelled
-- used the cached result of a previous run instead of re-running
-- failed because it timed out
+- 1時間以内に3回目の実行がスケジュールされている
+- 成功し、生成されたデータ
+- 実行がスケジュールされていたが、後でキャンセルされた
+- 再実行ではなく、前回の実行のキャッシュされた結果を使用した
+- タイムアウトのため失敗した
 
 <Note>
-**Only runs have states**:
-Flows and tasks are templates that describe what a system does;
-only when we **run** the system does it also take on a state.
+**実行時にのみ状態が存在します**:
+フローとタスクは、システムの処理内容を記述するテンプレートです。システムを**実行** した場合にのみ、状態が発生します。
 </Note>
 
-## State types
+## 状態の種類
 
-Prefect states have names and types.
-A state's name is often, but not always, synonymous with its type. For example, a task run
-that is running for the first time has a state with the name Running and the type `RUNNING`. However, if the task retries,
-that same task run will have the name Retrying and the type `RUNNING`.
+Prefect の状態には、名前と種類があります。
+状態の名前は、多くの場合、その種類と同義ですが、必ずしもそうとは限りません。
+たとえば、初めて実行されるタスク実行の状態は、「実行中」という名前で、種類は「実行中」です。
+しかし、タスクが再試行される場合、同じタスク実行の状態は「再試行中」で、種類は「実行中」になります。
 
-The distinction between types and names is subtle: state _types_ are typically used for backing orchestration logic, whereas state _names_ are more for visual display and bookkeeping.
+種類と名前の違いは微妙です。状態 _type_ は通常、オーケストレーションロジックの基盤として使用され、状態 _name_ は主に視覚的な表示や記録に使用されます。
 
-The full list of states and state types includes:
+状態と状態種類の完全なリストは次のとおりです。
 
 | Name | Type | Terminal? | Description
 | --- | --- | --- | --- |
-| `Scheduled` | `SCHEDULED` | No | The run will begin at a particular time in the future. |
-| `Late` | `SCHEDULED` | No | The run's scheduled start time has passed, but it has not transitioned to PENDING (15 seconds by default). |
-| <span class="no-wrap">`AwaitingRetry`</span> | `SCHEDULED` | No | The run did not complete successfully because of a code issue and had remaining retry attempts. |
-| `Pending` | `PENDING` | No | The run has been submitted to execute, but is waiting on necessary preconditions to be satisfied. |
-| `Running` | `RUNNING` | No | The run code is currently executing. |
-| `Retrying` | `RUNNING` | No | The run code is currently executing after previously not completing successfully. |
-| `Paused` | `PAUSED` | No | The run code has stopped executing until it receives manual approval to proceed. |
-| `Cancelling` | `CANCELLING` | No | The infrastructure on which the code was running is being cleaned up. |
-| `Cancelled` | `CANCELLED` | Yes | The run did not complete because a user determined that it should not. |
-| `Completed` | `COMPLETED` | Yes | The run completed successfully. |
-| `Cached` | `COMPLETED` | Yes | The run result was loaded from a previously cached value. |
-| `RolledBack` | `COMPLETED` | Yes | The run completed successfully but the transaction rolled back and executed rollback hooks. |
-| `Failed` | `FAILED` | Yes | The run did not complete because of a code issue and had no remaining retry attempts. |
-| `Crashed` | `CRASHED` | Yes | The run did not complete because of an infrastructure issue. |
+| `Scheduled` | `SCHEDULED` | No | 実行は将来の特定の時間に開始されます。 |
+| `Late` | `SCHEDULED` | No | 実行の予定開始時刻は過ぎましたが、保留中 (デフォルトでは 15 秒) に移行していません。 |
+| <span class="no-wrap">`AwaitingRetry`</span> | `SCHEDULED` | No | コードの問題のため実行は正常に完了せず、再試行回数が残っていました。 |
+| `Pending` | `PENDING` | No | 実行は送信されましたが、必要な前提条件が満たされるのを待機しています。 |
+| `Running` | `RUNNING` | No | 実行コードが現在実行中です。|
+| `Retrying` | `RUNNING` | No | 実行コードは、以前は正常に完了しなかったものの、現在実行中です。 |
+| `Paused` | `PAUSED` | No | 実行コードは、続行するための手動承認を受け取るまで実行を停止します。 |
+| `Cancelling` | `CANCELLING` | No | コードが実行されていたインフラストラクチャがクリーンアップされています。 |
+| `Cancelled` | `CANCELLED` | Yes | ユーザーが実行は完了すべきではないと判断したため、実行は完了しませんでした。 |
+| `Completed` | `COMPLETED` | Yes | 実行は正常に完了しました。 |
+| `Cached` | `COMPLETED` | Yes | 実行結果は、以前にキャッシュされた値から読み込まれました。 |
+| `RolledBack` | `COMPLETED` | Yes | 実行は正常に完了しましたが、トランザクションはロールバックされ、ロールバック フックが実行されました。 |
+| `Failed` | `FAILED` | Yes | コードの問題のため実行は完了せず、再試行回数は残っていませんでした。 |
+| `Crashed` | `CRASHED` | Yes | インフラストラクチャの問題のため、実行は完了しませんでした。 |
 
-## State transitions
+## 状態遷移
 
-When a flow run changes states, you can often tell if it is behaving normally or not.
-Here are some common state transitions and what they mean:
+フロー実行の状態が変化すると、正常に動作しているかどうかが分かります。
+以下に、一般的な状態遷移とその意味を示します。
 
 |    | From | To | Triggered By | Explanation |
 | --- | --------------- | ------------ | ----------- | ----------- |
-| ✅ | None | Scheduled | Manual run, automation, or schedule | A flow run has been created and scheduled for future execution. |
-| ✅ | Scheduled | Pending | Worker | A worker is attempting to start the infrastructure for your flow run. |
-| ⛔ | Scheduled | Late | Cloud or self-hosted server | Typically means that a worker did not pick up the run because 1) no workers are healthy, 2) workers are not polling the right work pool or work queue, or 3) workers are concurrency limited. |
-| ✅ | Pending | Running | Worker | The infrastructure was provisioned and the flow is running |
-| ⛔ | Pending | Crashed | Worker or runner | Something went wrong. Some possibilities are 1) the worker could have failed to create the infrastructure, 2) the code is not present in storage or the worker failed to authenticate, or 3) the code has missing or broken imports, or syntax errors. |
-| ✅ | Running | Completed | Flow run | The flow completed successfully. |
-| ⛔ | Running | Failed | Flow run | This usually means that your code raised an exception, check the flow run logs. |
-| ⛔ | Running | Crashed | Worker or flow run | Probably not a raised exception in your code, but could be an infrastructure issue such as 1) an out of memory error, 2) an evicted pod, or 3) a timeout. |
+| ✅ | None | Scheduled | Manual run, automation, or schedule | フロー実行が作成され、将来の実行がスケジュールされました。 |
+| ✅ | Scheduled | Pending | Worker | ワーカーがフロー実行のインフラストラクチャを開始しようとしています。 |
+| ⛔ | Scheduled | Late | Cloud or self-hosted server | 通常、1) 正常なワーカーがいない、2) ワーカーが適切な作業プールまたは作業キューをポーリングしていない、または 3) ワーカーの同時実行が制限されているなどの理由で、ワーカーが実行を引き継がなかったことを意味します。 |
+| ✅ | Pending | Running | Worker | インフラストラクチャがプロビジョニングされ、フローが実行されています |
+| ⛔ | Pending | Crashed | Worker or runner | 問題が発生しました。考えられる原因としては、1) ワーカーがインフラストラクチャの作成に失敗した、2) コードがストレージに存在しないかワーカーが認証に失敗した、3) コードのインポートが欠落しているか壊れている、あるいは構文エラーがある、などが挙げられます。 |
+| ✅ | Running | Completed | Flow run | フローは正常に完了しました。 |
+| ⛔ | Running | Failed | Flow run | これは通常、コードで例外が発生したことを意味します。フロー実行ログを確認してください。 |
+| ⛔ | Running | Crashed | Worker or flow run | おそらくコード内で例外は発生していないと思われますが、1) メモリ不足エラー、2) ポッドの削除、3) タイムアウトなどのインフラストラクチャの問題である可能性があります。 |
 
-## Final state determination
+## 最終状態の決定
 
-The final state of a flow or task run depends on a number of factors; generally speaking there are three categories of terminal states:
-- `COMPLETED`: a run in any `COMPLETED` state did not encounter any errors or exceptions and returned successfully
-- `FAILED`: a run in any `FAILED` state encountered an error during execution, such as a raised exception
-- `CRASHED`: a run in any `CRASHED` state was interrupted by an OS signal such as a `KeyboardInterrupt` or `SIGTERM`
+フローまたはタスク実行の最終状態は、いくつかの要因によって決まります。一般的に、終了状態には3つのカテゴリがあります。
+- `COMPLETED`: `COMPLETED` 状態の実行で、エラーや例外が発生せず、正常に終了した場合
+- `FAILED`: `FAILED` 状態の実行で、実行中に例外などのエラーが発生した場合
+- `CRASHED`: `CRASHED` 状態の実行で、`KeyboardInterrupt` や `SIGTERM` などの OS シグナルによって中断された場合
 
-The flow of state transitions can be visualized here:
+状態遷移のフローは次のように視覚化できます:
 
 <Note>
-States are represented by their name, with boxes behind states clarifying their underlying type. Dotted lines lead to terminal states.
+状態は名前で表され、状態の背後にあるボックスはその基礎となるタイプを明確に示します。
+点線は終端状態を示します。
 </Note>
 
 ```mermaid
@@ -175,10 +174,9 @@ flowchart TD
 
 ```
 
-### Task return values
+### タスクの戻り値
 
-A task will be placed into a `Completed` state if it returns  _any_ Python object, with one exception:
-if a task explicitly returns a Prefect `Failed` state, the task will be marked `Failed`.
+タスクは、Python オブジェクトを何らかの形で返すと「Completed」状態になります。ただし、例外が 1 つあります。タスクが明示的に「Failed」状態を返す場合、そのタスクは「Failed」としてマークされます。
 
 ```python
 from prefect import task, flow
@@ -205,7 +203,7 @@ def example():
     return state_one, state_two
 ```
 
-You can also access state objects directly within a flow through the `return_state` flag:
+`return_state` フラグを使用して、フロー内の状態オブジェクトに直接アクセスすることもできます:
 
 ```python
 from prefect import flow, task
@@ -227,22 +225,22 @@ def my_flow():
 ```
 
 <Tip>
-Returning a `State` via `return_state=True` is useful when you want to conditionally respond to the terminal states of a task or flow. For example, `if state.is_failed(): ...`.
+`return_state=True` で `State` を返すことは、タスクまたはフローの終了状態に応じて条件付きで応答したい場合に便利です。
+例えば、`if state.is_failed(): ...` のように記述します。
 </Tip>
 
 
-### Flow return values
+### フロー戻り値
 
 import FinalFlowState from '/snippets/final-flow-state.mdx'
 
 <FinalFlowState />
 
-## Execute code on state changes
+## 状態変化時にコードを実行する
 
-State change hooks execute code in response to **_client side_** changes in flow or task run states, enabling you to define actions for
-specific state transitions in a workflow.
+状態変化フックは、**_クライアント側_** のフローまたはタスク実行状態の変化に応じてコードを実行し、ワークフロー内の特定の状態遷移に対するアクションを定義できます。
 
-State hooks have the following signature:
+状態変化フックのシグネチャは次のとおりです:
 
 ```python
 def my_task_state_hook(task: Task, run: TaskRun, state: State) -> None:
@@ -252,7 +250,7 @@ def my_flow_state_hook(flow: Flow, run: FlowRun, state: State) -> None:
     ...
 ```
 
-Both task and flow run hooks can be specified through a keyword argument or through decorator syntax:
+タスク実行フックとフロー実行フックはどちらも、キーワード引数またはデコレータ構文を通じて指定できます:
 
 ```python
 from prefect import task, flow
@@ -284,11 +282,10 @@ nice_task(name='Marvin')
 ```
 
 <Note>
-To import a `TaskRun` or `FlowRun` for type hinting, you can import from `prefect.client.schemas.objects`.
+型ヒント用に `TaskRun` または `FlowRun` をインポートするには、`prefect.client.schemas.objects` からインポートできます。
 </Note>
 
-State change hooks are versatile, allowing you to specify multiple state change hooks for the same state transition,
-or to use the same state change hook for different transitions:
+状態変更フックは多用途で、同じ状態遷移に対して複数の状態変更フックを指定したり、異なる遷移に対して同じ状態変更フックを使用したりできます:
 
 ```python
 def my_success_hook(task, task_run, state):
@@ -306,25 +303,24 @@ def my_succeed_or_fail_hook(task, task_run, state):
 )
 ```
 
-### Available state change hooks
+### 利用可能な状態変更フック
 
 | Type | Flow | Task | Description |
 | ----- | --- | --- | --- |
-| `on_completion` | ✓ | ✓ | Executes when a flow or task run enters a `Completed` state. |
-| `on_failure` | ✓ | ✓ | Executes when a flow or task run enters a `Failed` state. |
-| <span class="no-wrap">`on_cancellation`</span> | ✓ | - | Executes when a flow run enters a `Cancelling` state. |
-| `on_crashed` | ✓ | - | Executes when a flow run enters a `Crashed` state. |
-| `on_running` | ✓ | - | Executes when a flow run enters a `Running` state. |
+| `on_completion` | ✓ | ✓ | フローまたはタスクの実行が「完了」状態になったときに実行されます。 |
+| `on_failure` | ✓ | ✓ | フローまたはタスクの実行が「失敗」状態になったときに実行されます。 |
+| <span class="no-wrap">`on_cancellation`</span> | ✓ | - | フロー実行が「キャンセル」状態になったときに実行されます。 |
+| `on_crashed` | ✓ | - | フロー実行が「クラッシュ」状態になったときに実行されます。 |
+| `on_running` | ✓ | - | フロー実行が「実行中」状態になったときに実行されます。 |
 
 <Note>
-Note that the `on_rollback` hook for tasks is _not_ a proper state change hook but instead
-is a transaction lifecycle hook.
-Rollback hooks accept one argument representing the transaction for the task.
+タスクの「on_rollback」フックは、正式な状態変更フックではなく、トランザクションライフサイクルフックであることに注意してください。
+ロールバックフックは、タスクのトランザクションを表す1つの引数を受け取ります。
 </ Note>
 
-### Pass `kwargs` to state change hooks
+### 状態変更フックに `kwargs` を渡す
 
-You can compose the `with_options` method to effectively pass arbitrary `**kwargs` to your hooks:
+`with_options` メソッドを組み合わせることで、任意の `**kwargs` をフックに効果的に渡すことができます:
 
 ```python
 from functools import partial
@@ -353,11 +349,11 @@ _, task_run_state = ok_with_failure_flow()
 assert data == {"x": "foo", "y": 42, "state": task_run_state}
 ```
 
-### Example usage: send a notification when a flow run fails
+### 使用例: フロー実行が失敗したときに通知を送信する
 
-State change hooks enable you to customize messages sent when tasks transition between states, such as sending notifications containing sensitive information when tasks enter a `Failed` state.
+状態変更フックを使用すると、タスクが状態遷移するときに送信されるメッセージをカスタマイズできます。例えば、タスクが「失敗」状態になったときに機密情報を含む通知を送信するなどです。
 
-Here's an example of running a client-side hook upon a flow run entering a `Failed` state:
+以下は、フロー実行が「失敗」状態になったときにクライアント側フックを実行する例です:
 
 ```python
 from prefect import flow
@@ -388,4 +384,4 @@ if __name__ == "__main__":
     failing_flow()
 ```
 
-Note that retries are configured in this example. This means the `on_failure` hook does not run until all `retries` have completed when the flow run enters a `Failed` state.
+この例では再試行が設定されていることに注意してください。つまり、フロー実行が「失敗」状態になった場合、すべての「再試行」が完了するまで「on_failure」フックは実行されません。

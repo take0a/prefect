@@ -1,31 +1,31 @@
 ---
-title: Create run artifacts
-description: Prefect artifacts are persisted outputs designed for human consumption and available in the UI.
+title: 実行アーティファクトを作成する
+description: Prefect アーティファクトは、人間が使用できるように設計され、UI で利用できる永続的な出力です。
 ---
 
-Prefect artifacts:
+Prefect アーティファクト:
 
-- are visually rich annotations on flow and task runs
-- are human-readable visual metadata defined in code
-- come in standardized formats such as tables, progress indicators, images, Markdown, and links
-- are stored in Prefect Cloud or Prefect server and rendered in the Prefect UI
-- make it easy to visualize outputs or side effects that your runs produce, and capture updates over time
+- フローとタスクの実行に関する視覚的にリッチな注釈
+- コード内で定義された、人間が読める形式のビジュアルメタデータ
+- 表、進捗状況インジケーター、画像、Markdown、リンクなどの標準化された形式で提供されます
+- Prefect Cloud または Prefect サーバーに保存され、Prefect UI でレンダリングされます
+- 実行によって生成される出力や副作用を簡単に視覚化し、経時的な更新をキャプチャできます
 
 ![Markdown artifact sales report screenshot](/v3/img/ui/md-artifact-info.png)
 
-Common use cases for artifacts include:
+アーティファクトの一般的なユースケースは次のとおりです:
 
-- **Progress** indicators: Publish progress indicators for long-running tasks. This helps monitor the progress of your tasks and flows and ensure they are running as expected.
-- **Debugging**: Publish data that you care about in the UI to easily see when and where your results were written. If an artifact doesn't look the way you expect, you can find out which flow run last updated it, and you can click through a link in the artifact to a storage location (such as an S3 bucket).
-- **Data quality checks**: Publish data quality checks from in-progress tasks to ensure that data quality is maintained throughout a pipeline. Artifacts make for great performance graphs. For example, you can visualize a long-running machine learning model training run. You can also track artifact versions, making it easier to identify changes in your data.
-- **Documentation**: Publish documentation and sample data to help you keep track of your work and share information. 
-For example, add a description to signify why a piece of data is important.
+- **進行状況** インジケーター: 長時間実行タスクの進行状況インジケーターを公開します。これにより、タスクとフローの進行状況を監視し、期待どおりに実行されていることを確認できます。
+- **デバッグ**: UI で重要なデータを公開して、結果がいつどこに書き込まれたかを簡単に確認できます。アーティファクトが期待どおりに表示されない場合は、どのフロー実行で最後に更新されたかを確認したり、アーティファクト内のリンクをクリックしてストレージの場所（S3 バケットなど）に移動したりできます。
+- **データ品質チェック**: 進行中のタスクからデータ品質チェックを公開して、パイプライン全体でデータ品質が維持されていることを確認します。アーティファクトは優れたパフォーマンスグラフを作成できます。たとえば、長時間実行される機械学習モデルのトレーニング実行を視覚化できます。また、アーティファクトのバージョンを追跡することで、データの変更を容易に特定できます。
+- **ドキュメント**: ドキュメントとサンプルデータを公開して、作業の追跡と情報の共有に役立ちます。
+たとえば、データがなぜ重要であるかを示す説明を追加します。
 
-## Create artifacts
+## アーティファクトを作成する
 
-Creating artifacts allows you to publish data from task or flow runs.
+アーティファクトを作成すると、タスクまたはフローの実行からデータを公開できます。
 
-There are five artifact types:
+アーティファクトの種類は5つあります。
 
 - links
 - Markdown
@@ -34,22 +34,19 @@ There are five artifact types:
 - tables
 
 <Note> 
-Each artifact created within a task is displayed individually in the Prefect UI.
-This means that each call to `create_link_artifact()` or `create_markdown_artifact()` generates a distinct artifact.
+タスク内で作成された各アーティファクトは、Prefect UI に個別に表示されます。
+つまり、`create_link_artifact()` または `create_markdown_artifact()` の各呼び出しは、それぞれ異なるアーティファクトを生成します。
 
-Unlike the Python `print()` function (where you can concatenate multiple calls to include additional items in a report), 
-these artifact creation functions must be called multiple times, if necessary. 
+Python の `print()` 関数（複数の呼び出しを連結してレポートに追加項目を含めることができます）とは異なり、これらのアーティファクト作成関数は、必要に応じて複数回呼び出す必要があります。
 
-To create artifacts such as reports or summaries using `create_markdown_artifact()`, define your message string 
-and then pass it to `create_markdown_artifact()` to create the artifact.
+`create_markdown_artifact()` を使用してレポートやサマリーなどのアーティファクトを作成するには、メッセージ文字列を定義し、それを `create_markdown_artifact()` に渡してアーティファクトを作成します。
 </Note>
 
-### Create link artifacts
+### リンクアーティファクトの作成
 
-To create a link artifact, use the `create_link_artifact()` function.
-To create multiple versions of the same artifact and/or view them on the Artifacts page of the Prefect UI, 
-provide a `key` argument to the `create_link_artifact()` function to track the artifact's history over time.
-Without a `key`, the artifact is only visible in the Artifacts tab of the associated flow run or task run.
+リンクアーティファクトを作成するには、`create_link_artifact()` 関数を使用します。
+同じアーティファクトの複数のバージョンを作成したり、Prefect UI の「アーティファクト」ページで表示したりするには、`create_link_artifact()` 関数に `key` 引数を指定して、アーティファクトの履歴を時系列で追跡します。
+`key` を指定しない場合、アーティファクトは関連するフロー実行またはタスク実行の「アーティファクト」タブにのみ表示されます。
 
 ```python
 from prefect import flow, task
@@ -85,25 +82,25 @@ if __name__ == "__main__":
 ```
 
 <Tip>
-**Specify multiple artifacts with the same key for artifact lineage**
+**アーティファクトの系統を示すために、同じキーを持つ複数のアーティファクトを指定する**
 
-You can specify multiple artifacts with the same key to easily track something very specific, such as irregularities in your data pipeline.
+データパイプラインの不規則性など、非常に具体的な事象を簡単に追跡するために、同じキーを持つ複数のアーティファクトを指定できます。
 </Tip>
 
-After running flows that create artifacts, view the artifacts in the **Artifacts** page of the UI.
-Click into the "irregular-data" artifact to see its versions, along with custom descriptions and links to the relevant data.
+アーティファクトを作成するフローを実行した後、UI の **Artifacts** ページでアーティファクトを表示します。
+「irregular-data」アーティファクトをクリックすると、そのバージョン、カスタム説明、関連データへのリンクが表示されます。
 
 ![Link artifact details with multiple versions](/v3/img/ui/link-artifact-info.png)
 
-You can also view information about the artifact such as:
+アーティファクトに関する以下の情報も表示できます:
 
-- its associated flow run or task run id
-- previous and future versions of the artifact (multiple artifacts can have the same key to show lineage) 
-- data (in this case a Markdown-rendered link)
-- an optional Markdown description
-- when the artifact was created or updated
+- 関連するフロー実行またはタスク実行のID
+- アーティファクトの以前のバージョンと将来のバージョン（複数のアーティファクトに同じキーを設定することで、系統を示すことができます）
+- データ（この場合はMarkdownでレンダリングされたリンク）
+- オプションのMarkdownの説明
+- アーティファクトが作成または更新された日時
 
-To make the links more readable for you and your collaborators, you can pass a `link_text` argument:
+リンクを自分や共同作業者にとって読みやすくするために、`link_text`引数を渡すことができます:
 
 ```python
 from prefect import flow
@@ -123,15 +120,15 @@ if __name__ == "__main__":
     my_flow()
 ```
 
-In the above example, the `create_link_artifact` method is used within a flow to create a link artifact with a key of `my-important-link`.
-The `link` parameter specifies the external resource to link to, and `link_text` specifies the text to display for the link.
-Add an optional `description` for context.
+上記の例では、フロー内で `create_link_artifact` メソッドを使用して、キー `my-important-link` を持つリンクアーティファクトを作成しています。
+`link` パラメータはリンク先の外部リソースを指定し、`link_text` はリンクに表示するテキストを指定します。
+コンテキスト用にオプションで `description` を追加します。
 
-### Create progress artifacts
+### 進捗アーティファクトの作成
 
-Progress artifacts render dynamically on the flow run graph in the Prefect UI, indicating the progress of long-running tasks. 
+進捗アーティファクトは、Prefect UI のフロー実行グラフに動的にレンダリングされ、長時間実行タスクの進捗状況を示します。
 
-To create a progress artifact, use the `create_progress_artifact()` function. To update a progress artifact, use the `update_progress_artifact()` function.
+進捗アーティファクトを作成するには、`create_progress_artifact()` 関数を使用します。進捗アーティファクトを更新するには、`update_progress_artifact()` 関数を使用します。
 
 ![Progress artifact example](/v3/img/ui/progress-artifact-example.png)
 
@@ -170,18 +167,19 @@ if __name__ == "__main__":
     etl()
 ```
 
-Progress artifacts are updated with the `update_progress_artifact()` function. Prefect updates a progress artifact in place, rather than versioning it.
+進捗アーティファクトは `update_progress_artifact()` 関数で更新されます。Prefect は進捗アーティファクトをバージョン管理するのではなく、その場で更新します。
 
-### Create Markdown artifacts
+### Markdown アーティファクトの作成
 
-To create a Markdown artifact, you can use the `create_markdown_artifact()` function.
-To create multiple versions of the same artifact and/or view them on the Artifacts page of the Prefect UI, provide a `key` argument to the `create_markdown_artifact()` function to track an artifact's history over time.
-Without a `key`, the artifact is only visible in the Artifacts tab of the associated flow run or task run.
+Markdown アーティファクトを作成するには、`create_markdown_artifact()` 関数を使用します。
+同じアーティファクトの複数のバージョンを作成したり、Prefect UI の「アーティファクト」ページで表示したりするには、`create_markdown_artifact()` 関数に `key` 引数を指定して、アーティファクトの履歴を時系列で追跡します。
+`key` を指定しないと、アーティファクトは関連するフロー実行またはタスク実行の「アーティファクト」タブにのみ表示されます。
 
 <Warning>
-**Don't indent Markdown**
+**Markdown をインデントしないでください**
 
-Don't indent Markdown in mult-line strings. Otherwise it will be interpreted incorrectly.
+複数行の文字列では Markdown をインデントしないでください。
+そうしないと、正しく解釈されません。
 </Warning>
 
 ```python
@@ -237,20 +235,20 @@ if __name__ == "__main__":
     my_flow()
 ```
 
-After running the above flow, you should see your "gtm-report" artifact in the Artifacts page of the UI.
+上記のフローを実行すると、UI の Artifacts ページに「gtm-report」アーティファクトが表示されます。
 
 ![Markdown sales report screenshot](/v3/img/ui/md-artifact-info.png)
 
-You can view the associated flow run id or task run id, previous versions of the artifact, the rendered Markdown data, and the optional Markdown description.
+関連付けられているフロー実行 ID またはタスク実行 ID、成果物の以前のバージョン、レンダリングされた Markdown データ、およびオプションの Markdown の説明を表示できます。
 
-### Create table artifacts
+### テーブルアーティファクトの作成
 
-Create a table artifact by calling `create_table_artifact()`.
-To create multiple versions of the same artifact and/or view them on the Artifacts page of the Prefect UI, provide a `key` argument to the `create_table_artifact()` function to track an artifact's history over time.
-Without a `key`, the artifact is only visible in the artifacts tab of the associated flow run or task run.
+`create_table_artifact()` を呼び出してテーブルアーティファクトを作成します。
+同じアーティファクトの複数のバージョンを作成したり、Prefect UI の「アーティファクト」ページでそれらを表示したりするには、`create_table_artifact()` 関数に `key` 引数を指定して、アーティファクトの履歴を時系列で追跡します。
+`key` を指定しないと、アーティファクトは関連するフロー実行またはタスク実行の「アーティファクト」タブにのみ表示されます。
 
 <Note>
-The `create_table_artifact()` function accepts a `table` argument. Pass this as a list of lists, a list of dictionaries, or a dictionary of lists.
+`create_table_artifact()` 関数は `table` 引数を受け取ります。この引数は、リストのリスト、辞書のリスト、またはリストの辞書として渡してください。
 </Note>
 
 ```python
@@ -276,9 +274,9 @@ if __name__ == "__main__":
 
 ![Table artifact with customer info](/v3/img/ui/table-artifact-info.png)
 
-### Create image artifacts
+### 画像アーティファクトの作成
 
-Image artifacts render publicly available images in the Prefect UI. To create an image artifact, use the `create_image_artifact()` function.
+画像アーティファクトは、Prefect UI で公開されている画像をレンダリングします。画像アーティファクトを作成するには、`create_image_artifact()` 関数を使用します。
 
 ![Image artifact example](/v3/img/ui/image-artifact-example.png)
 
@@ -307,31 +305,31 @@ if __name__ == "__main__":
     print(f"Image URL: {image_url}")
 ```
 
-To create an artifact that links to a private image, use the `create_link_artifact()` function instead.
+プライベート イメージにリンクするアーティファクトを作成するには、代わりに `create_link_artifact()` 関数を使用します。
 
-## Manage artifacts
+## アーティファクトの管理
 
-### Reading artifacts
+### アーティファクトの読み取り
 
-In the Prefect UI, you can view all of the latest versions of your artifacts and click into a specific artifact to see its lineage over time.
-Additionally, you can inspect all versions of an artifact with a given key from the CLI by running:
+Prefect UI では、アーティファクトの最新バージョンをすべて表示し、特定のアーティファクトをクリックしてそのアーティファクトの時系列を確認できます。
+さらに、CLI から次のコマンドを実行することで、特定のキーを持つアーティファクトのすべてのバージョンを調べることができます:
 
 ```bash
 prefect artifact inspect <my_key>
 ```
 
-or view all artifacts by running:
+または、次のコマンドを実行してすべての成果物を表示します:
 
 ```bash
 prefect artifact ls
 ```
 
-You can also use the [Prefect REST API](https://app.prefect.cloud/api/docs#tag/Artifacts/operation/read_artifacts_api_accounts__account_id__workspaces__workspace_id__artifacts_filter_post) 
-to programmatically filter your results.
+[Prefect REST API](https://app.prefect.cloud/api/docs#tag/Artifacts/operation/read_artifacts_api_accounts__account_id__workspaces__workspace_id__artifacts_filter_post) を使用して、結果をプログラムでフィルターすることもできます。
 
-### Fetching artifacts
+### アーティファクトの取得
 
-In Python code, you can retrieve an existing artifact with the `Artifact.get` class method:
+Python コードでは、`Artifact.get` クラスメソッドを使用して既存のアーティファクトを取得できます:
+
 ```python
 from prefect.artifacts import Artifact
 
@@ -339,9 +337,9 @@ from prefect.artifacts import Artifact
 my_retrieved_artifact = Artifact.get("my_artifact_key")
 ```
 
-### Delete artifacts
+### アーティファクトの削除
 
-Delete an artifact in the CLI by providing a key or id:
+キーまたはIDを指定して、CLIでアーティファクトを削除します:
 
 ```bash
 prefect artifact delete <my_key>
@@ -351,12 +349,12 @@ prefect artifact delete <my_key>
 prefect artifact delete --id <my_id>
 ```
 
-## Artifacts API
+## アーティファクト API
 
-Create, read, or delete artifacts programmatically through the [Prefect REST API](/v3/api-ref/rest-api/).
-With the Artifacts API, you can automate the creation and management of artifacts as part of your workflow.
+[Prefect REST API](/v3/api-ref/rest-api/) を介して、プログラムでアーティファクトを作成、読み取り、または削除できます。
+アーティファクト API を使用すると、ワークフローの一部としてアーティファクトの作成と管理を自動化できます。
 
-For example, to read the five most recently created Markdown, table, and link artifacts, you can run the following:
+例えば、最近作成された 5 つの Markdown、テーブル、およびリンク アーティファクトを読み取るには、次のコマンドを実行します:
 
 ```python fixture:mock_post_200
 import requests
@@ -383,6 +381,6 @@ for artifact in response.json():
     print(artifact)
 ```
 
-If you don't specify a key or that a key must exist, you will also return results, which are a type of key-less artifact.
+キーを指定しない場合、またはキーが存在する必要がある場合は、キーのないアーティファクトの一種である結果も返されます。
 
-See the [Prefect REST API documentation](/v3/api-ref/rest-api/) on artifacts for more information.
+アーティファクトの詳細については、[Prefect REST API ドキュメント](/v3/api-ref/rest-api/)をご覧ください。
