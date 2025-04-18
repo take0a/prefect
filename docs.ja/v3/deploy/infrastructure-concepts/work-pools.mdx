@@ -1,52 +1,49 @@
 ---
-title: Configure dynamic infrastructure with work pools
-description: Learn how to configure dynamic infrastructure provisioning with work pools
+title: 作業プールを使用して動的なインフラストラクチャを構成する
+description: 作業プールを使用して動的インフラストラクチャプロビジョニングを構成する方法を学びます
 ---
 
-Work pools are a bridge between the Prefect orchestration layer and the infrastructure where flows are run.
+ワークプールは、Prefect オーケストレーション層とフローが実行されるインフラストラクチャをつなぐ橋渡し役です。
 
-The primary reason to use work pools is for **dynamic infrastructure provisioning and configuration**.
-For example, you might have a workflow that has expensive infrastructure requirements and runs infrequently.
-In this case, you don't want an idle process running within that infrastructure.
+ワークプールを使用する主な理由は、**動的なインフラストラクチャのプロビジョニングと構成** です。
+例えば、インフラストラクチャの要件が高く、実行頻度が低いワークフローがあるとします。
+このような場合、そのインフラストラクチャ内でアイドル状態のプロセスが実行されることは望ましくありません。
 
-Other advantages of work pools:
+ワークプールのその他の利点：
 
-- Configure default infrastructure configurations on your work pools that all jobs inherit and can override.
-- Allow platform teams to use work pools to expose opinionated (and enforced) interfaces to the infrastructure that they oversee.
-- Allow work pools to prioritize (or limit) flow runs through the use of [work queues](/v3/deploy/infrastructure-concepts/work-pools/#work-queues).
+- すべてのジョブが継承し、上書き可能なデフォルトのインフラストラクチャ構成をワークプールに構成できます。
+- プラットフォームチームがワークプールを使用することで、監視対象のインフラストラクチャに独自の（かつ強制的な）インターフェースを公開できます。
+- ワークプールは、[ワークキュー](/v3/deploy/infrastructure-concepts/work-pools/#work-queues) を使用することで、フロー実行の優先順位付け（または制限）を行うことができます。
 
 <Tip>
-    **Choosing Between `flow.deploy()` and `flow.serve()`**
+**`flow.deploy()` と `flow.serve()` の選択**
 
-    For many use cases, `serve` is sufficient for scheduling and orchestration.
-    Work pools are great for complex infrastructure requirements. But they are optional.
-    You are not locked into one method and can combine approaches as needed.
+多くのユースケースでは、スケジューリングとオーケストレーションには `serve` で十分です。
+ワークプールは複雑なインフラストラクチャ要件に最適ですが、オプションです。
+1つの方法に限定されるわけではなく、必要に応じて複数のアプローチを組み合わせることができます。
 </Tip>
 
 
-Work pools have different operational modes, each designed to work with specific infrastructures and work delivery methods:
+ワークプールには異なる運用モードがあり、それぞれ特定のインフラストラクチャと作業配信方法に対応するように設計されています:
 
-1. Pull work pools: These require workers to actively poll for flow runs to execute.
-2. [Push work pools](/v3/deploy/infrastructure-examples/serverless): These submit runs directly to serverless infrastructure providers.
-3. [Managed work pools](/v3/deploy/infrastructure-examples/managed): These are administered by Prefect and handle both submission and execution of code.
+1. プルワークプール：ワーカーはフロー実行の実行を能動的にポーリングする必要があります。
+2. [プッシュワークプール](/v3/deploy/infrastructure-examples/serverless)：サーバーレスインフラストラクチャプロバイダーに実行を直接送信します。
+3. [マネージドワークプール](/v3/deploy/infrastructure-examples/managed)：Prefect によって管理され、コードの送信と実行の両方を処理します。
 
-Each type of work pool is optimized for different use cases, allowing you to choose the best fit for your specific infrastructure and workflow requirements. 
-By using work pools, you can efficiently manage the distribution and execution of your Prefect flows across environments and infrastructures.
+各タイプのワークプールは異なるユースケースに合わせて最適化されているため、特定のインフラストラクチャとワークフローの要件に最適なものを選択できます。
+ワークプールを使用することで、複数の環境とインフラストラクチャにわたる Prefect フローの分散と実行を効率的に管理できます。
 
 <Tip>
-**Work pools are like pub/sub topics**
+**ワークプールはPub/Subトピックに似ています**
 
-    Work pools help coordinate deployments with workers 
-    through a known channel: the pool itself. This is similar to how "topics" are used to connect producers and consumers in a 
-    pub/sub or message-based system. By switching a deployment's work pool, users can quickly change the worker that will execute their runs, 
-    making it easy to promote runs through environments — or even to debug locally.
+ワークプールは、プール自体という既知のチャネルを介して、ワーカーとデプロイメントの連携を支援します。これは、Pub/Subまたはメッセージベースのシステムでプロデューサーとコンシューマーを接続するために「トピック」が使用される方法に似ています。
+デプロイメントのワークプールを切り替えることで、ユーザーは実行を実行するワーカーを素早く変更できるため、環境間での実行のプロモートや、ローカルでのデバッグが容易になります。
 </Tip>
 
-Users can control aspects of work pool behavior, such as how many runs the pool allows to run concurrently. You can modify these options 
-at any time, and any workers requesting work for a specific pool only see matching flow runs.
+ユーザーは、プールで同時に実行できる実行数など、ワークプールの動作を制御できます。
+これらのオプションはいつでも変更でき、特定のプールの作業を要求するワーカーには、一致するフロー実行のみが表示されます。
 
-The following diagram provides a high-level overview of the conceptual elements involved in defining a work-pool based 
-deployment that is polled by a worker and executes a flow run based on that deployment.
+次の図は、ワーカーによってポーリングされ、そのデプロイメントに基づいてフロー実行を実行するワークプールベースのデプロイメントの定義に関係する概念要素の概要を示しています。
 
 ```mermaid
 %%{
@@ -83,17 +80,17 @@ flowchart LR
     E -.-> F
 ```
 
-### Work pool configuration
+### ワークプールの設定
 
-You can configure work pools by using the Prefect UI. 
+Prefect UI を使用してワークプールを設定できます。
 
-To manage work pools in the UI, click the **Work Pools** icon. This displays a list of currently configured work pools.
+UI でワークプールを管理するには、**ワークプール** アイコンをクリックします。現在設定されているワークプールのリストが表示されます。
 
-![The UI displays a list of configured work pools](/v3/img/ui/work-pool-list.png)
+![UI に設定されているワークプールのリストが表示されます](/v3/img/ui/work-pool-list.png)
 
-Select the **+** button to create a new work pool. You can specify the details about infrastructure created for this work pool.
+**+** ボタンを選択して新しいワークプールを作成します。このワークプール用に作成されるインフラストラクチャの詳細を指定できます。
 
-#### Using the CLI
+#### CLIの使用
 
 import { CLI } from "/snippets/resource-management/cli.mdx"
 import { work_pools } from "/snippets/resource-management/vars.mdx"
@@ -104,32 +101,31 @@ import { work_pools } from "/snippets/resource-management/vars.mdx"
 prefect work-pool create [OPTIONS] NAME
 ```
 
-`NAME` is a required, unique name for the work pool.
+`NAME` は、作業プールの必須の一意の名前です。
 
-Optional configuration parameters to filter work on the pool include:
-
-| Option                                             | Description                                                                                                                                                |
-| -------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `--paused`                                         | If provided, the work pool is created in a paused state.                                                                                              |
-| `--type`                                           | The type of infrastructure that can execute runs from this work pool.                                                             |
-| `--set-as-default`                                 | Whether to use the created work pool as the local default for deployment.                                         |
-| <span class="no-wrap">`--base-job-template`</span> | The path to a JSON file containing the base job template to use. If unspecified, Prefect uses the default base job template for the given worker type. |
-
-Optional configuration parameters you can specify to update the work pool include:
+プール上の作業をフィルタリングするためのオプションの設定パラメータは次のとおりです:
 
 | Option                                             | Description                                                                                                                                                |
 | -------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| <span class="no-wrap">`--base-job-template`</span> | The path to a JSON file containing the base job template to use. If unspecified, Prefect uses the default base job template for the given worker type. |
-| `--description`                                    | A description of the work pool.                                                                                                                            |
-| `--concurrency-limit`                              | The maximum number of flow runs to run simultaneously in the work pool.                                                                                    |
+| `--paused`                                         | 指定されている場合、作業プールは一時停止状態で作成されます。             |
+| `--type`                                           | この作業プールから実行できるインフラストラクチャのタイプ。  |
+| `--set-as-default`                                 | 作成された作業プールをデプロイメントのローカルデフォルトとして使用するかどうか。     |
+| <span class="no-wrap">`--base-job-template`</span> | 使用するベースジョブテンプレートを含むJSONファイルへのパス。指定されていない場合、Prefectは指定されたワーカータイプのデフォルトのベースジョブテンプレートを使用します。|
+
+作業プールを更新するために指定できるオプションの構成パラメータは次のとおりです:
+
+| Option                                             | Description                                                                                                                                                |
+| -------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| <span class="no-wrap">`--base-job-template`</span> | 使用するベースジョブテンプレートを含むJSONファイルへのパス。指定されていない場合、Prefectは指定されたワーカータイプのデフォルトのベースジョブテンプレートを使用します。 |
+| `--description`                                    | 作業プールの説明。 |
+| `--concurrency-limit`                              | 作業プールで同時に実行されるフロー実行の最大数。    |
 
 <Tip>
-**Managing work pools in CI/CD**
+**CI/CD でのワークプールの管理**
 
-  Version control your base job template by committing it as a JSON file to a git repository and control updates to your 
-  work pools' base job templates with the `prefect work-pool update` command in your CI/CD pipeline. 
-  
-  For example, use the following command to update a work pool's base job template to the contents of a file named `base-job-template.json`:
+ベースジョブテンプレートを JSON ファイルとして Git リポジトリにコミットすることでバージョン管理を行い、CI/CD パイプラインで `prefect work-pool update` コマンドを使用してワークプールのベースジョブテンプレートの更新を管理します。
+
+例えば、ワークプールのベースジョブテンプレートを `base-job-template.json` というファイルの内容に更新するには、次のコマンドを使用します。
 
     ```bash
     prefect work-pool update --base-job-template base-job-template.json my-work-pool
@@ -150,60 +146,60 @@ import { API } from "/snippets/resource-management/api.mdx"
 
 ### Work pool types
 
-The following work pool types are supported by Prefect:
+Prefect では次の作業プール タイプがサポートされています:
 
 <Tabs>
   <Tab title="Prefect Cloud">
 
     | Infrastructure Type                  | Description                                                                                                                |
     | ------------------------------       | -------------------------------------------------------------------------------------------------------------------------- |
-    | Process                              | Execute flow runs as subprocesses on a worker. Works well for local execution when first getting started.                    |
-    | AWS Elastic Container Service        | Execute flow runs within containers on AWS ECS. Works with EC2 and Fargate clusters. Requires an AWS account.               |
-    | Azure Container Instances            | Execute flow runs within containers on Azure's Container Instances service. Requires an Azure account.                      |
-    | Docker                               | Execute flow runs within Docker containers. Works well for managing flow execution environments through Docker images. Requires  access to a running Docker daemon.  |
-    | Google Cloud Run                     | Execute flow runs within containers on Google Cloud Run. Requires a Google Cloud Platform account.                          |
-    | Google Cloud Run V2                  | Execute flow runs within containers on Google Cloud Run (V2 API). Requires a Google Cloud Platform account.                 |
-    | Google Vertex AI                     | Execute flow runs within containers on Google Vertex AI. Requires a Google Cloud Platform account.                          |
-    | Kubernetes                           | Execute flow runs within jobs scheduled on a Kubernetes cluster. Requires a Kubernetes cluster.                             |
-    | Google Cloud Run - Push              | Execute flow runs within containers on Google Cloud Run. Requires a Google Cloud Platform account. Flow runs are pushed directly to your environment, without the need for a Prefect worker.  |
-    | AWS Elastic Container Service - Push | Execute flow runs within containers on AWS ECS. Works with existing ECS clusters and serverless execution through AWS Fargate. Requires an AWS account. Flow runs are pushed directly to your environment, without the need for a Prefect worker.   |
-    | Azure Container Instances - Push     | Execute flow runs within containers on Azure's Container Instances service. Requires an Azure account. Flow runs are pushed directly to your environment, without the need for a Prefect worker.    |
-    | Modal - Push                         | Execute [flow runs on Modal](/v3/deploy/infrastructure-examples/modal). Requires a Modal account. Flow runs are pushed directly to your Modal workspace, without the need for a Prefect worker.  |
-    | Coiled                               | Execute flow runs in the cloud platform of your choice with Coiled.  Makes it easy to run in your account without setting up Kubernetes or other cloud infrastructure.  | 
-    | Prefect Managed                      | Execute flow runs within containers on Prefect managed infrastructure.                                                      |
+    | Process                              | 実行フローはワーカー上のサブプロセスとして実行されます。初めて使用する場合は、ローカル実行に適しています。 |
+    | AWS Elastic Container Service        | AWS ECS上のコンテナ内でフローを実行します。EC2およびFargateクラスターで動作します。AWSアカウントが必要です。  |
+    | Azure Container Instances            | 実行フローは、Azure の Container Instances サービス上のコンテナー内で実行されます。Azure アカウントが必要です。  |
+    | Docker                               | Dockerコンテナ内でフローを実行します。Dockerイメージを介したフロー実行環境の管理に適しています。実行中のDockerデーモンへのアクセスが必要です。 |
+    | Google Cloud Run                     | Google Cloud Run 上のコンテナ内でフローを実行します。Google Cloud Platform アカウントが必要です。  |
+    | Google Cloud Run V2                  | Google Cloud Run（V2 API）上のコンテナ内でフローを実行します。Google Cloud Platform アカウントが必要です。    |
+    | Google Vertex AI                     | フロー実行は Google Vertex AI 上のコンテナ内で実行されます。Google Cloud Platform アカウントが必要です。         |
+    | Kubernetes                           | 実行フローは、Kubernetes クラスターでスケジュールされたジョブ内で実行されます。Kubernetes クラスターが必要です。    |
+    | Google Cloud Run - Push              | Google Cloud Run 上のコンテナ内でフロー実行を実行します。Google Cloud Platform アカウントが必要です。フロー実行は、Prefect Worker を必要とせず、環境に直接プッシュされます。 |
+    | AWS Elastic Container Service - Push | AWS ECS上のコンテナ内でフロー実行を実行します。既存のECSクラスターと連携し、AWS Fargateを介したサーバーレス実行も可能です。AWSアカウントが必要です。フロー実行はPrefectワーカーを必要とせず、環境に直接プッシュされます。  |
+    | Azure Container Instances - Push     | Azure Container Instances サービス上のコンテナ内でフロー実行を実行します。Azure アカウントが必要です。フロー実行は、Prefect Worker を必要とせず、環境に直接プッシュされます。  |
+    | Modal - Push                         | [フローはModal上で実行](/v3/deploy/infrastructure-examples/modal)を実行します。Modalアカウントが必要です。フロー実行はPrefectワーカーを必要とせず、Modalワークスペースに直接プッシュされます。  |
+    | Coiled                               | Coiled を使えば、任意のクラウドプラットフォームでフローを実行できます。Kubernetes やその他のクラウドインフラストラクチャをセットアップすることなく、アカウント内で簡単に実行できます。  | 
+    | Prefect Managed                      | Prefect 管理インフラストラクチャ上のコンテナ内でフロー実行を実行します。  |
   </Tab>
   <Tab title="Self-hosted Prefect server">
 
     | Infrastructure Type           | Description              |
     | ----------------------------  | ------------------------ |
-    | Process                       | Execute flow runs as subprocesses on a worker. Works well for local execution when first getting started.                       |
-    | AWS Elastic Container Service | Execute flow runs within containers on AWS ECS. Works with EC2 and Fargate clusters. Requires an AWS account.                  |
-    | Azure Container Instances     | Execute flow runs within containers on Azure's Container Instances service. Requires an Azure account.                         |
-    | Docker                        | Execute flow runs within Docker containers. Works well for managing flow execution environments through Docker images. Requires access to a running Docker daemon.    |
-    | Google Cloud Run              | Execute flow runs within containers on Google Cloud Run. Requires a Google Cloud Platform account.                             |
-    | Google Cloud Run V2           | Execute flow runs within containers on Google Cloud Run (V2 API). Requires a Google Cloud Platform account.                    |
-    | Google Vertex AI              | Execute flow runs within containers on Google Vertex AI. Requires a Google Cloud Platform account.                             |
-    | Kubernetes                    | Execute flow runs within jobs scheduled on a Kubernetes cluster. Requires a Kubernetes cluster.                                |
+    | Process                       | 実行フローはワーカー上のサブプロセスとして実行されます。初めて使用する場合は、ローカル実行に適しています。   |
+    | AWS Elastic Container Service | AWS ECS上のコンテナ内でフローを実行します。EC2およびFargateクラスターで動作します。AWSアカウントが必要です。 |
+    | Azure Container Instances     | 実行フローは、Azure の Container Instances サービス上のコンテナー内で実行されます。Azure アカウントが必要です。 |
+    | Docker                        | Dockerコンテナ内でフローを実行します。Dockerイメージを介したフロー実行環境の管理に適しています。実行中のDockerデーモンへのアクセスが必要です。  |
+    | Google Cloud Run              | Google Cloud Run 上のコンテナ内でフローを実行します。Google Cloud Platform アカウントが必要です。   |
+    | Google Cloud Run V2           | Google Cloud Run（V2 API）上のコンテナ内でフローを実行します。Google Cloud Platform アカウントが必要です。   |
+    | Google Vertex AI              | フロー実行は Google Vertex AI 上のコンテナ内で実行されます。Google Cloud Platform アカウントが必要です。  |
+    | Kubernetes                    | 実行フローは、Kubernetes クラスターでスケジュールされたジョブ内で実行されます。Kubernetes クラスターが必要です。      |
   </Tab>
 </Tabs>
 
-### View work pools
+### ワークプールの表示
 
-At any time, users can see and edit configured work pools in the Prefect UI.
+ユーザーはいつでも、Prefect UI で設定済みのワークプールを表示および編集できます。
 
-To view work pools with the Prefect CLI, you can:
+Prefect CLI でワークプールを表示するには、次の操作を行います。
 
-- List (`ls`) all available pools
-- Inspect (`inspect`) the details of a single pool
-- Preview (`preview`) scheduled work for a single pool
+- 利用可能なすべてのプールを一覧表示する (`ls`)
+- 特定のプールの詳細を確認する (`inspect`)
+- 特定のプールにスケジュールされている作業をプレビューする (`preview`)
 
-`prefect work-pool ls` lists all configured work pools for the server.
+`prefect work-pool ls` は、サーバーに設定されているすべてのワークプールを一覧表示します。
 
 ```bash
 prefect work-pool ls
 ```
 
-For example:
+例えば：
 
 ```bash
                                Work pools
@@ -217,13 +213,13 @@ ________________________________________________________________________________
                        (**) denotes a paused pool
 ```
 
-`prefect work-pool inspect` provides all configuration metadata for a specific work pool by ID.
+`prefect work-pool inspect` は、ID によって特定のワークプールのすべての構成メタデータを提供します。
 
 ```bash
 prefect work-pool inspect 'test-pool'
 ```
 
-Outputs information similar to the following:
+次のような情報を出力します:
 
 ```bash
 WorkPool(
@@ -238,7 +234,8 @@ WorkPool(
 )
 ```
 
-`prefect work-pool preview` displays scheduled flow runs for a specific work pool by ID for the upcoming hour. The optional `--hours` flag lets you specify the number of hours to look ahead.
+`prefect work-pool preview` は、特定のワークプールの今後1時間のスケジュールされたフロー実行をID別に表示します。
+オプションの `--hours` フラグを使用すると、先読みする時間数を指定できます。
 
 ```bash
 prefect work-pool preview 'test-pool' --hours 12
@@ -262,69 +259,65 @@ ________________________________________________________________________________
                                    (**) denotes a late run
 ```
 
-### Work pool status
+### ワークプールのステータス
 
-Work pools have three statuses:
+ワークプールには以下の3つのステータスがあります。
 
-- `READY`: A work pool has at least one online worker sending heartbeats to the work pool.
-- `NOT_READY`: A work pool has no online workers.
-- `PAUSED`: You can place a work pool in a paused status manually or through an automation. When a paused work pool is unpaused, it is reassigned the 
-appropriate status based on whether any workers are sending heartbeats.
+- `READY`: ワークプールに少なくとも1つのオンラインワーカーがいて、ハートビートを送信しています。
+- `NOT_READY`: ワークプールにオンラインワーカーがいません。
+- `PAUSED`: ワークプールは、手動または自動化によって一時停止状態にすることができます。一時停止中のワークプールが一時停止解除されると、ハートビートを送信しているワーカーの有無に基づいて、適切なステータスが再割り当てされます。
 
-### Pause and delete work pools
+### ワークプールの一時停止と削除
 
-You can pause a work pool at any time to stop the delivery of work to workers. Workers will not receive any work when polling a paused pool.
+ワークプールはいつでも一時停止して、ワーカーへの作業の配信を停止できます。一時停止中のプールをポーリングしても、ワーカーは作業を受け取りません。
 
-To pause a work pool through the Prefect CLI, use the `prefect work-pool pause` command:
+Prefect CLI 経由でワークプールを一時停止するには、「prefect work-pool pause」コマンドを使用します:
 
 ```bash
 prefect work-pool pause 'test-pool'
 ```
 
-To resume a work pool through the Prefect CLI, use the `prefect work-pool resume` command with the work pool name.
+Prefect CLI を介してワーク プールを再開するには、ワーク プール名を指定した `prefect work-pool resume` コマンドを使用します。
 
 <Note>
-**Pausing a work pool does not pause deployment schedules**
+**ワークプールを一時停止しても、デプロイメントスケジュールは一時停止されません**
 
-Pausing a work pool does **not** pause the schedules of deployments associated with that work pool. Flow runs for associated deployments will
-continue to be scheduled, but they will not run until the work pool is unpaused.
+ワークプールを一時停止しても、そのワークプールに関連付けられているデプロイメントのスケジュールは一時停止**されません**。
+関連付けられているデプロイメントのフロー実行は引き続きスケジュールされますが、ワークプールの一時停止が解除されるまで実行されません。
 </Note>
 
-To delete a work pool through the Prefect CLI, use the `prefect work-pool delete` command with the work pool name.
+Prefect CLI を使用してワーク プールを削除するには、ワーク プール名を指定した `prefect work-pool delete` コマンドを使用します。
 
-### Manage concurrency
+### 同時実行の管理
 
-Each work pool can optionally restrict concurrent runs of matching flows.
+各ワークプールは、オプションで、一致するフローの同時実行を制限できます。
 
-For example, a work pool with a concurrency limit of 5 only releases new work if fewer than five matching runs are in a 
-`Running` or `Pending` state. If three runs are `Running` or `Pending`, polling the pool for work only results in two new runs—
-even if there are many more available, to ensure that the concurrency limit is not exceeded.
+例えば、同時実行制限が5に設定されているワークプールでは、一致するフローのうち「実行中」または「保留中」の状態にあるフローが5つ未満の場合にのみ、新しいワークがリリースされます。
+「実行中」または「保留中」の状態にあるフローが3つある場合、プールでワークをポーリングしても、同時実行制限を超えないように、利用可能なフローがさらに多くあっても、新しいフローは2つしかリリースされません。
 
-When using the `prefect work-pool` Prefect CLI command to configure a work pool, the following subcommands set concurrency limits:
+Prefect CLI コマンド「prefect work-pool」を使用してワークプールを構成する場合、以下のサブコマンドで同時実行制限を設定します。
 
-- `set-concurrency-limit`  sets a concurrency limit on a work pool
-- `clear-concurrency-limit` clears any concurrency limits from a work pool
+- `set-concurrency-limit` は、ワークプールの同時実行制限を設定します。
+- `clear-concurrency-limit` は、ワークプールからすべての同時実行制限をクリアします。
 
-#### Base job template
+#### ベースジョブテンプレート
 
-Each work pool has a base job template that controls the behavior of the worker executing flow runs from the work pool.
+各ワークプールには、ワークプールからフロー実行を実行するワーカーの動作を制御するベースジョブテンプレートがあります。
 
-The base job template acts as a contract defining the configuration passed to the worker for each flow run and the options available 
-to deployment creators to customize worker behavior per deployment.
+ベースジョブテンプレートは、フロー実行ごとにワーカーに渡される構成と、デプロイメント作成者がデプロイメントごとにワーカーの動作をカスタマイズするために利用できるオプションを定義するコントラクトとして機能します。
 
-A base job template comprises a `job_configuration` section and a `variables` section.
+ベースジョブテンプレートは、`job_configuration` セクションと `variables` セクションで構成されます。
 
-The `variables` section defines the fields available that can be customized per deployment or flow run. The `variables` section follows the 
-[OpenAPI specification](https://swagger.io/specification/), which allows work pool creators to place limits on provided values 
-(for example, type, minimum, and maximum).
+`variables` セクションでは、デプロイメントまたはフロー実行ごとにカスタマイズできるフィールドを定義します。`variables` セクションは [OpenAPI 仕様](https://swagger.io/specification/) に準拠しており、ワークプール作成者は指定値（タイプ、最小値、最大値など）に制限を設定できます。
 
-The job configuration section is interpolated with the values provided in the variables section. The resulting document is used to configure 
-the environment created when executing a flow run. 
+ジョブ構成セクションは、variables セクションで指定された値で補間されます。
+作成されたドキュメントは、フロー実行の実行時に作成される環境を構成するために使用されます。
 
-The values in the `job_configuration` can use placeholders to reference values provided in the `variables` section or hard-coded values. 
-Declare placeholders with double curly braces, for example, `{{ variable_name }}`.
+`job_configuration` 内の値には、プレースホルダーを使用して、`variables` セクションで指定された値またはハードコードされた値を参照できます。
+プレースホルダーは二重の中括弧で宣言します（例：`{{variable_name}}`）。
 
-Here's an example of a base job template defined in JSON:
+JSON で定義されたベースジョブテンプレートの例を次に示します。
+
 ```json
 {
   "job_configuration": {
@@ -381,28 +374,28 @@ Here's an example of a base job template defined in JSON:
 }
 ```
 
-Each work pool type is configured with a default base job template, which is a good place to make initial modifications. 
-The default base template defines values that pass to every flow run, but you can override them on a per-deployment or per-flow run basis.
+各ワークプールタイプにはデフォルトのベースジョブテンプレートが設定されており、初期変更を行うのに適しています。
+デフォルトのベーステンプレートは、すべてのフロー実行に渡される値を定義しますが、デプロイメントごとまたはフロー実行ごとにオーバーライドできます。
 
-For example, these configuration options are available in the Prefect UI for `process` work pool:
+例えば、Prefect UI の「プロセス」ワークプールでは、次の設定オプションが利用可能です:
+
 ![process work pool configuration options](/v3/img/ui/process-work-pool-config.png)
 
-The default base job template allows you to:
-- set environment variables for spawned processes 
-- set the working directory to execute flows
-- control whether the flow run output is streamed to workers' standard output
+デフォルトのベースジョブテンプレートでは、以下の操作が可能です:
+- 生成されたプロセスの環境変数を設定する
+- フローを実行する作業ディレクトリを設定する
+- フロー実行の出力をワーカーの標準出力にストリーミングするかどうかを制御する
 
-You can examine the raw default base job template for a given worker type by running:
+以下のコマンドを実行することで、特定のワーカータイプのデフォルトのベースジョブテンプレートの生データを確認できます:
 
 ```bash
 prefect work-pool get-default-base-job-template --type process
 ```
 
-You can override each attribute on a per-deployment or per-flow run basis. When creating a deployment, you can 
-specify these overrides in the `deployments.work_pool.job_variables` section of a `prefect.yaml` file or in the `job_variables` 
-argument of a Python `flow.deploy` method.
+各属性は、デプロイメントごと、またはフロー実行ごとにオーバーライドできます。
+デプロイメントを作成する際に、`prefect.yaml` ファイルの `deployments.work_pool.job_variables` セクション、または Python の `flow.deploy` メソッドの `job_variables` 引数でこれらのオーバーライドを指定できます。
 
-For example, to turn off streaming output for a specific deployment, add the following to your `prefect.yaml`:
+たとえば、特定のデプロイメントのストリーミング出力をオフにするには、`prefect.yaml` に次のコードを追加します:
 
 ```yaml
 deployments:
@@ -417,76 +410,74 @@ deployments:
 Learn more about [customizing job variables](/v3/deploy/infrastructure-concepts/customize).
 
 <Tip>
-**Advanced customization of the base job template**
+**ベースジョブテンプレートの高度なカスタマイズ**
 
-    For advanced use cases, create work pools with fully customizable job templates. This customization is available when 
-    creating or editing a work pool on the 'Advanced' tab within the UI or when updating a work pool via the Prefect CLI.
+高度なユースケースでは、完全にカスタマイズ可能なジョブテンプレートを使用してワークプールを作成します。
+このカスタマイズは、UI 内の「詳細」タブでワークプールを作成または編集する場合、または Prefect CLI 経由でワークプールを更新する場合に利用できます。
 
-    Advanced customization is useful anytime the underlying infrastructure supports a high degree of customization. 
-    In these scenarios a work pool job template allows you to expose a minimal and easy-to-digest set of options to deployment authors. 
-    Additionally, these options are the _only_ customizable aspects for deployment infrastructure, which are useful for restricting 
-    capabilities in secure environments. For example, the `kubernetes` worker type allows users to specify a custom job template  
-    to configure the manifest that workers use to create jobs for flow execution.
+高度なカスタマイズは、基盤となるインフラストラクチャが高度なカスタマイズをサポートしている場合に役立ちます。
+このようなシナリオでは、ワークプールのジョブテンプレートを使用することで、デプロイメント作成者に最小限かつ分かりやすいオプションセットを提供できます。
+さらに、これらのオプションはデプロイメントインフラストラクチャでカスタマイズ可能な唯一の要素であり、セキュアな環境で機能を制限するのに役立ちます。
+例えば、`kubernetes` ワーカータイプでは、ユーザーはカスタムジョブテンプレートを指定して、ワーカーがフロー実行用のジョブを作成するために使用するマニフェストを構成できます。
 
-    See more information about [overriding a work pool's job variables](/v3/deploy/infrastructure-concepts/customize).
+[ワークプールのジョブ変数のオーバーライド](/v3/deploy/infrastructure-concepts/customize) の詳細については、こちらをご覧ください。
 </Tip>
 
-### Work queues
+### ワークキュー
 
-Work queues offer advanced control over how runs are executed. Each work pool has a "default" queue which is used if another  work queue name is not specified. 
-Add additional queues to a work pool to enable greater control over work delivery through fine-grained priority and concurrency. 
+ワークキューは、実行方法を詳細に制御する機能を提供します。
+各ワークプールには「デフォルト」キューがあり、別のワークキュー名が指定されていない場合に使用されます。
+ワークプールにキューを追加することで、きめ細かな優先度と同時実行性を実現し、作業の配信をより詳細に制御できます。
 
 
-#### Queue priority
+#### キューの優先度
 
-Each work queue has a priority indicated by a unique positive integer. Lower numbers take greater priority in the allocation of work with `1` being the highest priority. 
-You can add new queues without changing the rank of the higher-priority queues.
+各作業キューには、一意の正の整数で示される優先度があります。
+作業の割り当てにおいては、数値が小さいほど優先度が高くなり、「1」が最高優先度となります。
+優先度の高いキューのランクを変更せずに、新しいキューを追加できます。
 
-#### Queue concurrency limits
+#### キューの同時実行制限
 
-Work queues can also have their own concurrency limits. Each queue is also subject to the global work pool concurrency limit, 
-which cannot be exceeded.
+ワークキューにも独自の同時実行制限を設定できます。
+各キューには、グローバルワークプールの同時実行制限も適用され、この制限を超えることはできません。
 
-#### Precise control with priority and concurrency
+#### 優先度と同時実行による正確な制御
 
-Together, work queue priority and concurrency enable precise control over work. For example, a pool may have three queues: 
+作業キューの優先度と同時実行を組み合わせることで、作業を的確に制御できます。例えば、プールに次の3つのキューがあるとします。
 
-- a "low" queue with priority `10` and no concurrency limit
-- a "high" queue with priority `5` and a concurrency limit of `3` 
-- a "critical" queue with priority `1` and a concurrency limit of `1`
+- 優先度が「10」で同時実行制限のない「低」キュー
+- 優先度が「5」で同時実行制限が「3」の「高」キュー
+- 優先度が「1」で同時実行制限が「1」の「クリティカル」キュー
 
-This arrangement enables a pattern of two levels of priority: "high" and "low" for regularly scheduled flow runs, 
-with the remaining "critical" queue for unplanned, urgent work, such as a backfill.
+この構成により、2段階の優先度パターンが可能になります。「高」と「低」のキューは定期的にスケジュールされたフロー実行に使用し、残りの「クリティカル」キューはバックフィルなどの計画外の緊急作業に使用します。
 
-Priority determines the order of flow runs submitted for execution.
-If all flow runs are capable of being executed with no limitation due to concurrency or otherwise,
-priority is still used to determine order of submission, but there is no impact to execution.
+優先度は、実行のために送信されるフロー実行の順序を決定します。
 
-If not all flow runs can execute, usually as a result of concurrency limits, priority determines which queues receive 
-precedence to submit runs for execution.
+すべてのフロー実行が同時実行などの制限なしに実行可能な場合、優先度は送信順序の決定に使用されますが、実行には影響しません。
 
-Priority for flow run submission proceeds from the highest priority to the lowest priority. In the previous example, all work from the 
-"critical" queue (priority 1) is submitted, before any work is submitted from "high" (priority 5). Once all work is submitted 
-from priority queue "critical", work from the "high" queue begins submission.
+通常は同時実行制限の結果として、すべてのフロー実行を実行できない場合、優先度によってどのキューが実行のために優先的に送信されるかが決まります。
 
-If new flow runs are received on the "critical" queue while flow runs are still in scheduled on the "high" and "low" queues, flow run 
-submission goes back to ensuring all scheduled work is first satisfied. This happens from the highest priority queue, until it is empty, 
-in waterfall fashion.
+フロー実行の送信優先度は、最高優先度から最低優先度へと順に決定されます。
+前の例では、「critical」（優先度1）キューのすべての作業が送信され、「high」（優先度5）キューの作業が送信される前に送信されます。
+優先度キュー「critical」のすべての作業が送信されると、「high」キューの作業の送信が開始されます。
+
+フロー実行が「high」キューと「low」キューでまだ​​スケジュールされている間に、「critical」キューで新しいフロー実行が受信された場合、フロー実行の送信は、スケジュールされているすべての作業が最初に満たされるように行われます。これは、最高優先度キューから空になるまで、ウォーターフォール方式で行われます。
 
 <Tip>
-**Work queue status**
+**ワークキューのステータス**
 
-    A work queue has a `READY` status when it has been polled by a worker in the last 60 seconds. Pausing a work queue gives it a 
-    `PAUSED` status and means that it will accept no new work until it is unpaused. A user can control the work queue's paused status in the UI. 
-    Unpausing a work queue gives the work queue a `NOT_READY` status unless a worker has polled it in the last 60 seconds.
+ワークキューは、過去60秒間にワーカーによってポーリングされている場合、ステータスが「READY」になります。
+ワークキューを一時停止すると、ステータスは「PAUSED」になり、一時停止が解除されるまで新しい作業を受け付けなくなります。
+ユーザーはUIでワークキューの一時停止ステータスを制御できます。
+ワークキューの一時停止を解除すると、過去60秒間にワーカーによってポーリングされていない限り、ステータスは「NOT_READY」になります。
 </Tip>
 
-## Next steps 
+## 次のステップ
 
-- Learn more about [workers](/v3/deploy/infrastructure-concepts/workers) and how they interact with work pools
-- Learn how to [deploy flows](/v3/deploy/infrastructure-concepts/prefect-yaml) that run in work pools
-- Learn how to set up work pools for:
+- [ワーカー](/v3/deploy/infrastructure-concepts/workers) と、それらがワークプールとどのように連携するかについて詳しく学習します。
+- ワークプールで実行される [フローのデプロイ](/v3/deploy/infrastructure-concepts/prefect-yaml) の方法を学びます。
+- 以下のワークプールの設定方法を学びます。
   - [Kubernetes](/v3/deploy/infrastructure-examples/kubernetes)
   - [Docker](/v3/deploy/infrastructure-examples/docker)
-  - [Serverless platforms](/v3/deploy/infrastructure-examples/serverless)
-  - [Infrastructure managed by Prefect Cloud](/v3/deploy/infrastructure-examples/managed)
+  - [サーバーレス プラットフォーム](/v3/deploy/infrastructure-examples/serverless)
+  - [Prefect Cloud によって管理されるインフラストラクチャ](/v3/deploy/infrastructure-examples/managed)

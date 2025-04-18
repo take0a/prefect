@@ -1,48 +1,42 @@
 ---
-title: Define deployments with YAML
-description: Use YAML to schedule and trigger flow runs and manage your code and deployments.
+title: YAMLでデプロイメントを定義する
+description: YAML を使用してフロー実行をスケジュールおよびトリガーし、コードとデプロイメントを管理します。
 ---
 
-The `prefect.yaml` file is a YAML file describing base settings for your deployments, procedural steps for preparing deployments, 
-and instructions for preparing the execution environment for a deployment run.
+`prefect.yaml` ファイルは、デプロイメントの基本設定、デプロイメントの準備手順、デプロイメント実行のための実行環境の準備手順を記述した YAML ファイルです。
 
-Initialize your deployment configuration, which creates the `prefect.yaml` file, with the CLI command `prefect init` 
-in any directory or repository that stores your flow code.
+フローコードが保存されている任意のディレクトリまたはリポジトリで、CLI コマンド `prefect init` を使用して、`prefect.yaml` ファイルを作成するデプロイメント構成を初期化します。
 
 <Tip>
-**Deployment configuration recipes**
+**デプロイメント設定レシピ**
 
-Prefect ships with many off-the-shelf "recipes" that allow you to get started with more structure within 
-your `prefect.yaml` file. Run `prefect init` to be prompted with available recipes in your installation. 
-You can provide a recipe name in your initialization command with the `--recipe` flag, otherwise Prefect will attempt to 
-guess an appropriate recipe based on the structure of your working directory (for example if you initialize within a `git` 
-repository, Prefect will use the `git` recipe).
+Prefect には、`prefect.yaml` ファイル内でより構造化された設定を行える、多数の既製の「レシピ」が付属しています。
+`prefect init` を実行すると、インストール環境で利用可能なレシピが表示されます。
+初期化コマンドで `--recipe` フラグを使用してレシピ名を指定できます。指定しない場合は、Prefect は作業ディレクトリの構造に基づいて適切なレシピを推測します（例えば、`git` リポジトリ内で初期化した場合、Prefect は `git` レシピを使用します）。
 </Tip>
 
-The `prefect.yaml` file contains:
+`prefect.yaml` ファイルには、以下の内容が含まれています:
 
-- deployment configuration for deployments created from this file
-- default instructions for how to build and push any necessary code artifacts (such as Docker images)
-- default instructions for pulling a deployment in remote  execution environments (for example, cloning a GitHub repository).
+- このファイルから作成されるデプロイメントのデプロイメント構成
+- 必要なコード成果物（Docker イメージなど）をビルドおよびプッシュするためのデフォルトの手順
+- リモート実行環境でデプロイメントをプルするためのデフォルトの手順（GitHub リポジトリのクローン作成など）
 
-You can override any deployment configuration through options available on the `prefect deploy` CLI command when creating a deployment.
+デプロイメントの作成時に、`prefect deploy` CLI コマンドで使用可能なオプションを使用して、デプロイメント構成をオーバーライドできます。
 
 <Tip>
-**`prefect.yaml` file flexibility**
+**`prefect.yaml` ファイルの柔軟性**
 
-In older versions of Prefect, this file must be in the root of your repository or project directory and named `prefect.yaml`. 
-With Prefect 3, this file can be located in a directory outside the project or a subdirectory inside the project. 
-It can be named differently if the filename ends in `.yaml`. You can have multiple `prefect.yaml` files with the same name 
-in different directories. 
+以前のバージョンの Prefect では、このファイルはリポジトリまたはプロジェクトディレクトリのルートに `prefect.yaml` という名前で配置する必要がありました。
+Prefect 3 では、このファイルはプロジェクト外のディレクトリ、またはプロジェクト内のサブディレクトリに配置できます。
+ファイル名が `.yaml` で終わる場合は、別の名前でも構いません。同じ名前の `prefect.yaml` ファイルを複数のディレクトリに配置することも可能です。
 
-By default, `prefect deploy` uses a `prefect.yaml` file in the project's root directory. To use a custom deployment 
-configuration file, supply the new  `--prefect-file` CLI argument when running the `deploy` command from the root of your 
-project directory:
+デフォルトでは、`prefect deploy` はプロジェクトのルートディレクトリにある `prefect.yaml` ファイルを使用します。
+カスタムのデプロイメント構成ファイルを使用するには、プロジェクトディレクトリのルートから `deploy` コマンドを実行する際に、新しい `--prefect-file` CLI 引数を指定します。
 
 `prefect deploy --prefect-file path/to/my_file.yaml`
 </Tip>
 
-The base structure for `prefect.yaml` looks like this:
+`prefect.yaml` の基本構造は次のようになります:
 
 ```yaml
 # generic metadata
@@ -76,21 +70,23 @@ deployments:
     job_variables: {}
 ```
 
-The metadata fields are always pre-populated for you. These fields are for bookkeeping purposes only. The other sections are 
-pre-populated based on recipe; if no recipe is provided, Prefect attempts to guess an appropriate one based on local configuration.
+メタデータフィールドは常に事前に入力されています。
+これらのフィールドは記録目的のみに使用されます。
+その他のセクションはレシピに基づいて事前に入力されます。レシピが指定されていない場合、Prefect はローカル設定に基づいて適切なレシピを推測します。
 
-You can create deployments with the CLI command `prefect deploy` without altering the `deployments` section of your 
-`prefect.yaml` file. The `prefect deploy` command helps in deployment creation through interactive prompts. The `prefect.yaml` 
-file facilitates version-controlling your deployment configuration and managing multiple deployments.
+`prefect.yaml` ファイルの `deployments` セクションを変更することなく、CLI コマンド `prefect deploy` を使用してデプロイメントを作成できます。
+`prefect deploy` コマンドは、対話型プロンプトを通じてデプロイメントの作成を支援します。
+`prefect.yaml` ファイルは、デプロイメント設定のバージョン管理と複数のデプロイメントの管理を容易にします。
 
-### Deployment actions
+### デプロイメントアクション
 
-Deployment actions defined in your `prefect.yaml` file control the lifecycle of the creation and execution of your deployments.
-The three actions available are `build`, `push`, and `pull`.
-`pull` is the only required deployment action. It defines how Prefect pulls your deployment in remote execution 
-environments.
+`prefect.yaml` ファイルで定義されるデプロイメントアクションは、デプロイメントの作成と実行のライフサイクルを制御します。
+利用可能なアクションは、`build`、`push`、`pull` の 3 つです。
+`pull` は必須のデプロイメントアクションです。
+これは、Prefect がリモート実行環境でデプロイメントをプルする方法を定義します。
 
-Each action is defined as a list of steps executed in sequence. Each step has the following format:
+各アクションは、順番に実行されるステップのリストとして定義されます。
+各ステップの形式は次のとおりです。
 
 ```yaml
 section:
@@ -101,30 +97,27 @@ section:
   kwarg2: more-values
 ```
 
-Every step optionally provides a `requires` field. Prefect uses this to auto-install if the step is not  
-found in the current environment. Each step can specify an `id` to reference outputs in 
-future steps. The additional fields map directly to Python keyword arguments to the step function. Within a given section, 
-steps always run in their order within the `prefect.yaml` file.
+各ステップはオプションで `requires` フィールドを提供します。
+Prefect は、現在の環境でステップが見つからない場合に、このフィールドを使用して自動インストールを行います。
+各ステップでは、将来のステップで出力を参照するための `id` を指定できます。
+追加フィールドは、ステップ関数の Python キーワード引数に直接マッピングされます。
+特定のセクション内では、ステップは常に `prefect.yaml` ファイル内の順序で実行されます。
 
 <Tip> 
-**Deployment instruction overrides**
+**デプロイメント指示のオーバーライド**
 
-    You can override `build`, `push`, and `pull` sections on a per-deployment basis; define `build`, `push`, and `pull` 
-    fields within a deployment definition in the `prefect.yaml` file.
+`build`、`push`、`pull` セクションをデプロイメントごとにオーバーライドできます。`prefect.yaml` ファイルのデプロイメント定義内で `build`、`push`、`pull` フィールドを定義します。
 
-    The `prefect deploy` command uses any `build`, `push`, or `pull` instructions from the deployment's definition in the 
-    `prefect.yaml` file.
+`prefect deploy` コマンドは、`prefect.yaml` ファイル内のデプロイメント定義にある `build`、`push`、`pull` 指示を使用します。
 
-    This capability is useful for multiple deployments that require different deployment instructions.
+この機能は、異なるデプロイメント指示を必要とする複数のデプロイメントに役立ちます。
 </Tip>
 
-### The build action
+### ビルドアクション
 
-Use the build section of `prefect.yaml` to specify setup steps or dependencies, 
-(like creating a Docker image), required to run your deployments.
+`prefect.yaml` のビルドセクションを使用して、デプロイメントの実行に必要なセットアップ手順や依存関係（Docker イメージの作成など）を指定します。
 
-If you initialize with the Docker recipe, you are prompted to provide 
-required information, such as image name and tag:
+Docker レシピを使用して初期化する場合は、イメージ名やタグなどの必要な情報を入力するよう求められます。
 
 ```bash
 prefect init --recipe docker
@@ -133,12 +126,12 @@ prefect init --recipe docker
 ```
 
 <Tip>
-**Use `--field` to avoid the interactive experience**
+**対話型エクスペリエンスを回避するには `--field` を使用してください**
 
-    We recommend that you only initialize a recipe when first creating your deployment structure. Then store 
-    your configuration files within version control.
-    Sometimes you may need to initialize programmatically and avoid the interactive prompts.  
-    To do this, provide all required fields for your recipe using the `--field` flag:
+デプロイメント構造を初めて作成するときにのみ、レシピを初期化することをお勧めします。
+その後、設定ファイルをバージョン管理下に保存してください。
+場合によっては、プログラムで初期化し、対話型プロンプトを回避しなければならないこともあります。
+これを行うには、`--field` フラグを使用して、レシピに必要なすべてのフィールドを指定します。
 
     ```bash
     prefect init --recipe docker \
@@ -156,24 +149,22 @@ build:
 ```
 </Tip>
 
-Once you confirm that these fields are set to their desired values, this step automatically builds a Docker image with 
-the provided name and tag and pushes it to the repository referenced by the image name.  
-This step produces optional fields for future steps, or within `prefect.yaml` as template values.
+これらのフィールドが適切な値に設定されていることを確認すると、このステップは指定された名前とタグを持つ Docker イメージを自動的にビルドし、イメージ名で参照されるリポジトリにプッシュします。
+このステップでは、将来のステップで使用するためのオプションフィールド、またはテンプレート値として `prefect.yaml` 内にフィールドを生成します。
 
-We recommend using a templated `{{ image }}` within `prefect.yaml` (specifically in the work pool's `job_variables` section). 
-By avoiding hardcoded values, the build step and deployment specification won't have mismatched values.  
+`prefect.yaml` 内（具体的にはワークプールの `job_variables` セクション内）では、テンプレート化された `{{ image }}` を使用することをお勧めします。
+ハードコードされた値を避けることで、ビルドステップとデプロイメント仕様の値が一致しなくなります。  
 
 <Note>
-**Some steps require Prefect integrations**
+**一部のステップではPrefectの統合が必要です**
 
-In the build step example above, you relied on the `prefect-docker` package; in cases that deal with external services, 
-additional required packages are auto-installed for you.
+上記のビルドステップの例では、`prefect-docker`パッケージを使用していますが、外部サービスを扱う場合は、必要な追加パッケージが自動的にインストールされます。
 </Note>
 
-**Pass output to downstream steps**
+**出力を下流のステップに渡す**
 
-Each deployment action can be composed of multiple steps. For example, to build a Docker image tagged with the 
-current commit hash, use the `run_shell_script` step and feed the output into the `build_docker_image` step:
+各デプロイメントアクションは複数のステップで構成できます。
+たとえば、現在のコミットハッシュでタグ付けされた Docker イメージをビルドするには、`run_shell_script` ステップを使用し、その出力を `build_docker_image` ステップに渡します:
 
 ```yaml
 build:
@@ -188,24 +179,22 @@ build:
     dockerfile: auto
 ```
 
-The `id` field is used in the `run_shell_script` step to reference its output in the next step.
+`id` フィールドは `run_shell_script` ステップで使用され、次のステップでその出力を参照します。
 
-### The push action
+### プッシュアクション
 
-The push section is most critical for situations where code is not stored on persistent filesystems or in version control. 
-In this scenario, code is often pushed and pulled from a Cloud storage bucket (for example, S3, GCS, Azure Blobs). 
-The push section allows users to specify and customize the logic for pushing this code repository to arbitrary remote locations.
+プッシュセクションは、コードが永続ファイルシステムやバージョン管理下に保存されていない場合に最も重要です。
+このシナリオでは、コードはクラウドストレージバケット（S3、GCS、Azure Blob など）からプッシュおよびプルされることがよくあります。
+プッシュセクションでは、このコードリポジトリを任意のリモートロケーションにプッシュするためのロジックを指定およびカスタマイズできます。
 
-For example, a user who stores their code in an S3 bucket and relies on default worker settings for its runtime environment 
-could use the `s3` recipe:
+例えば、コードを S3 バケットに保存し、ランタイム環境にデフォルトのワーカー設定を使用しているユーザーは、`s3` レシピを使用できます。
 
 ```bash
 prefect init --recipe s3
 >> bucket: < insert bucket name here >
 ```
 
-In your newly created`prefect.yaml` file, you should find that the `push` and `pull` sections have been templated out 
-as follows:
+新しく作成された `prefect.yaml` ファイルでは、`push` セクションと `pull` セクションが次のようにテンプレート化されていることがわかります。
 
 ```yaml
 push:
@@ -224,12 +213,10 @@ pull:
     credentials: null
 ```
 
-The bucket is populated with the provided value (which also could have been provided with the `--field` flag); note that the 
-`folder` property of the `push` step is a template—the `pull_from_s3` step outputs both a `bucket` value as well as a `folder` 
-value for the template downstream steps. This helps you keep your steps consistent across edits.
+バケットには指定された値（`--field` フラグで指定することもできます）が入力されます。`push` ステップの `folder` プロパティはテンプレートであることに注意してください。`pull_from_s3` ステップは、テンプレートの下流ステップ用に `bucket` 値と `folder` 値の両方を出力します。
+これにより、編集間でステップの一貫性を保つことができます。
 
-As discussed above, if you use [blocks](/v3/develop/blocks/), you can template the credentials section with 
-a block reference for secure and dynamic credentials access:
+前述のように、[blocks](/v3/develop/blocks/) を使用する場合、ブロック参照を使用して認証情報セクションをテンプレート化し、安全で動的な認証情報アクセスを実現できます:
 
 ```yaml
 push:
@@ -240,28 +227,28 @@ push:
     credentials: "{{ prefect.blocks.aws-credentials.dev-credentials }}"
 ```
 
-Anytime you run `prefect deploy`, this `push` section executes upon successful completion of your `build` section.
+`prefect deploy` を実行するたびに、`build` セクションが正常に完了すると、この `push` セクションが実行されます。
 
-### The pull action
+### プルアクション
 
-The pull section is the most important section within the `prefect.yaml` file. It contains instructions for preparing your 
-flows for a deployment run. These instructions execute each time a deployment in this folder is run through a worker.
+プルセクションは、`prefect.yaml` ファイルの中で最も重要なセクションです。
+このセクションには、フローをデプロイ実行用に準備するための指示が含まれています。
+これらの指示は、このフォルダ内のデプロイがワーカーを介して実行されるたびに実行されます。
 
-There are three main types of steps that typically show up in a `pull` section:
+`pull` セクションには通常、3 種類の主要なステップがあります:
 
-- `set_working_directory`: this step sets the working directory for the process prior to importing your flow
-- `git_clone`: this step clones the provided repository on the provided branch
-- `pull_from_{cloud}`: this step pulls the working directory from a Cloud storage location (for example, S3)
+- `set_working_directory`: このステップは、フローをインポートする前に、プロセスの作業ディレクトリを設定します。
+- `git_clone`: このステップは、指定されたブランチに指定されたリポジトリをクローンします。
+- `pull_from_{cloud}`: このステップは、クラウドストレージの場所（例: S3）から作業ディレクトリをプルします。
 
 <Tip> 
-**Use block and variable references**
+**ブロック参照と変数参照を使用する**
 
-    All [block and variable references](#templating-options) within your pull step will remain unresolved until runtime and 
-    are pulled each time your deployment runs. This avoids storing sensitive information insecurely; it 
-    also allows you to manage certain types of configuration from the API and UI without having to rebuild your deployment every time.
+プルステップ内のすべての[ブロック参照と変数参照](#templating-options)は実行時まで未解決のままとなり、デプロイメントが実行されるたびにプルされます。
+これにより、機密情報が安全でない状態で保存されることを回避できます。また、デプロイメントを毎回再構築することなく、APIとUIから特定の種類の設定を管理できるようになります。
 </Tip>
 
-Below is an example of how to use an existing `GitHubCredentials` block to clone a private GitHub repository:
+以下は、既存の `GitHubCredentials` ブロックを使用してプライベート GitHub リポジトリを複製する方法の例です:
 
 ```yaml
 pull:
@@ -270,9 +257,9 @@ pull:
     credentials: "{{ prefect.blocks.github-credentials.my-credentials }}"
 ```
 
-Alternatively, you can specify a `BitBucketCredentials` or `GitLabCredentials` block to clone from Bitbucket or GitLab. In 
-lieu of a credentials block, you can also provide a GitHub, GitLab, or Bitbucket token directly to the 'access_token` field. 
-Use a Secret block to do this securely:
+あるいは、`BitBucketCredentials` または `GitLabCredentials` ブロックを指定して、Bitbucket または GitLab からクローンすることもできます。
+credentials ブロックの代わりに、GitHub、GitLab、または Bitbucket のトークンを 'access_token` フィールドに直接指定することもできます。
+これを安全に行うには、Secret ブロックを使用します:
 
 ```yaml
 pull:
@@ -281,16 +268,14 @@ pull:
     access_token: "{{ prefect.blocks.secret.bitbucket-token }}"
 ```
 
-### Utility steps
+### ユーティリティステップ
 
-Use utility steps within a build, push, or pull action to assist in managing the deployment lifecycle:
+ビルド、プッシュ、またはプルアクション内でユーティリティステップを使用すると、デプロイメントライフサイクルの管理が容易になります。
 
-- `run_shell_script` allows for the execution of one or more shell commands in a subprocess, and returns the standard output 
-and standard error of the script.
-This step is useful for scripts that require execution in a specific environment, or those which have specific input and output 
-requirements.
+- `run_shell_script` は、サブプロセス内で1つ以上のシェルコマンドを実行し、スクリプトの標準出力と標準エラーを返します。
+このステップは、特定の環境で実行する必要があるスクリプトや、特定の入出力要件を持つスクリプトに役立ちます。
 
-Here is an example of retrieving the short Git commit hash of the current repository to use as a Docker image tag:
+以下は、Docker イメージタグとして使用するために、現在のリポジトリの短い Git コミットハッシュを取得する例です:
 
 ```yaml
 build:
@@ -306,9 +291,9 @@ build:
 ```
 
 <Warning>
-**Provided environment variables are not expanded by default**
+**提供された環境変数はデフォルトでは展開されません**
 
-To expand environment variables in your shell script, set `expand_env_vars: true` in your `run_shell_script` step. For example:
+シェルスクリプトで環境変数を展開するには、`run_shell_script` ステップで `expand_env_vars: true` を設定します。例:
 
 ```yaml
 - prefect.deployments.steps.run_shell_script:
@@ -318,12 +303,12 @@ To expand environment variables in your shell script, set `expand_env_vars: true
     expand_env_vars: true
 ```
 
-Without `expand_env_vars: true`, the above step returns a literal string `$USER` instead of the current user.
+`expand_env_vars: true` がない場合、上記の手順では現在のユーザーではなくリテラル文字列 `$USER` が返されます。
 </Warning>
 
-- `pip_install_requirements` installs dependencies from a `requirements.txt` file within a specified directory.
+- `pip_install_requirements` は、指定されたディレクトリ内の `requirements.txt` ファイルから依存関係をインストールします。
 
-Here is an example of installing dependencies from a `requirements.txt` file after cloning:
+クローン後に `requirements.txt` ファイルから依存関係をインストールする例を以下に示します:
 
 ```yaml
 pull:
@@ -335,7 +320,7 @@ pull:
     requirements_file: requirements.txt
 ```
 
-Here is an example that retrieves an access token from a third party key vault and uses it in a private clone step:
+サードパーティのキー コンテナーからアクセス トークンを取得し、それをプライベート クローン ステップで使用する例を次に示します:
 
 ```yaml
 pull:
@@ -349,10 +334,9 @@ pull:
     access_token: "{{ get-access-token.stdout }}"
 ```
 
-You can also run custom steps by packaging them. In the example below, `retrieve_secrets` is a custom python module packaged 
-into the default working directory of a Docker image (which is /opt/prefect by default).
-`main` is the function entry point, which returns an access token (for example, `return {"access_token": access_token}`) like the 
-preceding example, but utilizing the Azure Python SDK for retrieval.
+カスタムステップをパッケージ化して実行することもできます。
+以下の例では、`retrieve_secrets` は Docker イメージのデフォルトの作業ディレクトリ (デフォルトでは /opt/prefect) にパッケージ化されたカスタム Python モジュールです。
+`main` は関数のエントリポイントで、前の例と同様にアクセストークンを返します (例: `return {"access_token": access_token}`)。ただし、取得には Azure Python SDK を使用します。
 
 ```yaml
 - retrieve_secrets.main:
@@ -363,23 +347,20 @@ preceding example, but utilizing the Azure Python SDK for retrieval.
     access_token: '{{ get-access-token.access_token }}'
 ```
 
-### Templating options
+### テンプレートオプション
 
-Values that you place within your `prefect.yaml` file can reference dynamic values in several different ways:
+`prefect.yaml` ファイル内に記述する値は、いくつかの方法で動的な値を参照できます。
 
-- **step outputs**: every step of both `build` and `push` produce named fields such as `image_name`; you can reference these 
-fields within `prefect.yaml` and `prefect deploy` will populate them with each call. References must be enclosed in double 
-brackets and in `"{{ field_name }}"` format
-- **blocks**: you can reference [Prefect blocks](/v3/develop/blocks) with the  
-`{{ prefect.blocks.block_type.block_slug }}` syntax. It is highly recommended that you use block references for any sensitive 
-information (such as a GitHub access token or any credentials) to avoid hardcoding these values in plaintext
-- **variables**: you can reference [Prefect variables](/v3/develop/variables) with the  
-`{{ prefect.variables.variable_name }}` syntax. Use variables to reference non-sensitive, reusable pieces of information 
-such as a default image name or a default work pool name.
-- **environment variables**: you can also reference environment variables with the special syntax `{{ $MY_ENV_VAR }}`. 
-This is especially useful for referencing environment variables that are set at runtime.
+- **ステップ出力**: `build` と `push` の両方のステップで、`image_name` などの名前付きフィールドが生成されます。`prefect.yaml` 内でこれらのフィールドを参照でき、`prefect deploy` は呼び出しごとにこれらのフィールドを設定します。
+参照は二重括弧で囲み、`"{{ field_name }}"` 形式で記述する必要があります。
+- **ブロック**: [Prefect ブロック](/v3/develop/blocks) は、`{{ prefect.blocks.block_type.block_slug }}` 構文で参照できます。
+機密情報（GitHub アクセストークンや認証情報など）には、プレーンテキストでハードコーディングされないように、ブロック参照を使用することを強くお勧めします。
+- **変数**: [Prefect 変数](/v3/develop/variables) は、`{{ prefect.variables.variable_name }}` 構文で参照できます。
+デフォルトのイメージ名やデフォルトのワークプール名など、機密性が低く再利用可能な情報を参照するには、変数を使用します。
+- **環境変数**: 環境変数は、特別な構文 `{{ $MY_ENV_VAR }}` で参照することもできます。
+これは、実行時に設定される環境変数を参照する場合に特に便利です。
 
-Here's a `prefect.yaml` file as an example:
+例として、`prefect.yaml` ファイルを示します。
 
 ```yaml
 build:
@@ -421,34 +402,30 @@ deployments:
       cluster_config: "{{ prefect.blocks.kubernetes-cluster-config.my-favorite-config }}"
 ```
 
-So long as your `build` steps produce fields called `image_name` and `tag`, every time you deploy a new version of our deployment, 
-the `{{ build-image.image }}` variable is dynamically populated with the relevant values.
+`build` ステップで `image_name` および `tag` というフィールドが生成される限り、新しいバージョンのデプロイメントをデプロイするたびに、`{{ build-image.image }}` 変数に関連する値が動的に入力されます。
 
 <Note>
-**Docker step**
+**Docker ステップ**
 
-The most commonly used build step is `prefect_docker.deployments.steps.build_docker_image` which produces both the `image_name` and `tag` fields.
+最もよく使用されるビルドステップは `prefect_docker.deployments.steps.build_docker_image` で、`image_name` フィールドと `tag` フィールドの両方を生成します。
 </Note>
 
-A `prefect.yaml` file can have multiple deployment configurations that control the behavior of several deployments.
-You can manage these deployments independently of one another, allowing you to deploy the same flow with different 
-configurations in the same codebase.
+`prefect.yaml` ファイルには、複数のデプロイメントの動作を制御する複数のデプロイメント構成を含めることができます。
+これらのデプロイメントは互いに独立して管理できるため、同じコードベース内で異なる構成で同じフローをデプロイできます。
 
-### Work with multiple deployments with prefect.yaml
+### prefect.yaml で複数のデプロイメントを扱う
 
-Prefect supports multiple deployment declarations within the `prefect.yaml` file. This method of declaring multiple 
-deployments supports version control for all deployments through a single command.
+Prefect は、`prefect.yaml` ファイル内で複数のデプロイメント宣言をサポートします。
+この複数のデプロイメント宣言方法により、単一のコマンドですべてのデプロイメントのバージョン管理が可能になります。
 
-Add new deployment declarations to the `prefect.yaml` file with a new entry to the `deployments` list. 
-Each deployment declaration must have a unique `name` field to select deployment declarations when using the 
-`prefect deploy` command.
+`deployments` リストに新しいエントリを追加することで、`prefect.yaml` ファイルに新しいデプロイメント宣言を追加します。
+`prefect deploy` コマンドを使用する際にデプロイメント宣言を選択するには、各デプロイメント宣言に固有の `name` フィールドが必要です。
 
 <Warning>
-    When using a `prefect.yaml` file that is in another directory or differently named, the value for
-    the deployment `entrypoint` must be relative to the root directory of the project.
+    別のディレクトリにある、または異なる名前が付けられた `prefect.yaml` ファイルを使用する場合、デプロイメント `entrypoint` の値はプロジェクトのルート ディレクトリを基準にする必要があります。
 </Warning>
 
-For example, consider the following `prefect.yaml` file:
+たとえば、次の `prefect.yaml` ファイルを考えてみましょう:
 
 ```yaml
 build: ...
@@ -478,69 +455,63 @@ deployments:
         work_queue_name: tertiary-queue
 ```
 
-This file has three deployment declarations, each referencing a different flow. Each deployment declaration has a unique `name` 
-field and can be deployed individually with the `--name` flag when deploying.
+このファイルには3つのデプロイメント宣言があり、それぞれ異なるフローを参照しています。
+各デプロイメント宣言には一意の「name」フィールドがあり、デプロイ時に「--name」フラグを使用して個別にデプロイできます。
 
-For example, to deploy `deployment-1`, run:
+例えば、「deployment-1」をデプロイするには、次のコマンドを実行します:
 
 ```bash
 prefect deploy --name deployment-1
 ```
 
-To deploy multiple deployments, provide multiple `--name` flags:
+複数のデプロイメントをデプロイするには、複数の `--name` フラグを指定します:
 
 ```bash
 prefect deploy --name deployment-1 --name deployment-2
 ```
 
-To deploy multiple deployments with the same name, prefix the deployment name with its flow name:
+同じ名前の複数のデプロイメントをデプロイするには、デプロイメント名の前にフロー名を付けます:
 
 ```bash
 prefect deploy --name my_flow/deployment-1 --name my_other_flow/deployment-1
 ```
 
-To deploy all deployments, use the `--all` flag:
+すべてのデプロイメントをデプロイするには、`--all` フラグを使用します:
 
 ```bash
 prefect deploy --all
 ```
 
-To deploy deployments that match a pattern, run:
+パターンに一致するデプロイメントをデプロイするには、次のコマンドを実行します:
 
 ```bash
 prefect deploy -n my-flow/* -n *dev/my-deployment -n dep*prod
 ```
 
-The above command deploys:
-- all deployments from the flow `my-flow`
-- all flows ending in `dev` with a deployment named 
-`my-deployment`
-- all deployments starting with `dep` and ending in `prod`.
+上記のコマンドは、以下のものをデプロイします。
+- フロー「my-flow」からのすべてのデプロイメント
+- 末尾が「dev」で、デプロイメント名が「my-deployment」であるすべてのフロー
+- 先頭が「dep」で末尾が「prod」であるすべてのデプロイメント
 
 <Note>
-**CLI Options When deploying multiple deployments**
+**複数のデプロイメントをデプロイする場合の CLI オプション**
 
-    When deploying more than one deployment with a single `prefect deploy` command, any additional attributes provided are ignored.
+単一の `prefect deploy` コマンドで複数のデプロイメントをデプロイする場合、指定された追加属性は無視されます。
 
-    To provide overrides to a deployment through the CLI, you must deploy that deployment individually.
+CLI を使用してデプロイメントにオーバーライドを指定するには、そのデプロイメントを個別にデプロイする必要があります。
 </Note>
 
-### Reuse configuration across deployments
+### デプロイメント間での設定の再利用
 
-Because a `prefect.yaml` file is a standard YAML file, you can use [YAML aliases](https://yaml.org/spec/1.2.2/#71-alias-nodes) 
-to reuse configuration across deployments.
+`prefect.yaml` ファイルは標準の YAML ファイルであるため、[YAML エイリアス](https://yaml.org/spec/1.2.2/#71-alias-nodes) を使用してデプロイメント間で設定を再利用できます。
 
-This capability allows multiple deployments to share the work pool configuration, deployment actions, or other 
-configurations.
+この機能により、複数のデプロイメントでワークプールの設定、デプロイメントアクション、その他の設定を共有できます。
 
-Declare a YAML alias with the `&{alias_name}` syntax and insert that alias elsewhere in the file with the `*{alias_name}` 
-syntax. When aliasing YAML maps, you can override specific fields of the aliased map with the `<<: *{alias_name}` syntax and 
-adding additional fields below.
+`&{alias_name}` 構文で YAML エイリアスを宣言し、`*{alias_name}` 構文を使用してファイル内の他の場所にそのエイリアスを挿入します。YAML マップにエイリアスを設定する場合、`<<: *{alias_name}` 構文を使用してエイリアスマップの特定のフィールドを上書きし、その下にフィールドを追加できます。
 
-We recommend adding a `definitions` section to your `prefect.yaml` file at the same level as the `deployments` section to store your 
-aliases.
+エイリアスを保存するために、`prefect.yaml` ファイルの `deployments` セクションと同じレベルに `definitions` セクションを追加することをお勧めします。
 
-For example:
+例:
 
 ```yaml
 build: ...
@@ -602,98 +573,97 @@ deployments:
 
 ```
 
-In the above example, YAML aliases reuse work pool, schedule, and build configuration across multiple deployments:
+上記の例では、YAML エイリアスは複数のデプロイメント間でワークプール、スケジュール、ビルド構成を再利用します。
 
-- `deployment-1` and `deployment-2` use the same work pool configuration
-- `deployment-1` and `deployment-3` use the same schedule
-- `deployment-1` and `deployment-2` use the same build deployment action, but `deployment-2` overrides the `dockerfile` field to use a custom Dockerfile
+- `deployment-1` と `deployment-2` は同じワークプール構成を使用します。
+- `deployment-1` と `deployment-3` は同じスケジュールを使用します。
+- `deployment-1` と `deployment-2` は同じビルド・デプロイメント・アクションを使用しますが、`deployment-2` は `dockerfile` フィールドをオーバーライドしてカスタム Dockerfile を使用します。
 
-### Deployment declaration reference
+### デプロイメント宣言リファレンス
 
-#### Deployment fields
+#### デプロイメントフィールド
 
-These are fields you can add to each deployment declaration.
+これらは、各デプロイメント宣言に追加できるフィールドです。
 
 | Property                                   | Description                                                                                                                                                                                                                                                                              |
 | ------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `name`                                     | The name to give to the created deployment. Used with the `prefect deploy` command to create or update specific deployments.                                                                                                                                                             |
-| `version`                                  | An optional version for the deployment.                                                                                                                                                                                                                                                  |
-| `tags`                                     | A list of strings to assign to the deployment as tags.                                                                                                                                                                                                                                   |
-| <span class="no-wrap">`description`</span> | An optional description for the deployment.                                                                                                                                                                                                                                              |
-| `schedule`                                 | An optional [schedule](/v3/automate/add-schedules) to assign to the deployment. Fields for this section are documented in the [Schedule Fields](#schedule-fields) section.                                                                                                                      |
-| `concurrency_limit`                        | An optional [deployment concurrency limit](/v3/deploy/index#concurrency-limiting). Fields for this section are documented in the [Concurrency Limit Fields](#concurrency-limit-fields) section.                                                                                                                      |
-| `triggers`                                  | An optional array of [triggers](/v3/automate/events/automations-triggers/#custom-triggers) to assign to the deployment |
-| `entrypoint`                               | Required path to the `.py` file containing the flow you want to deploy (relative to the root directory of your development folder) combined with the name of the flow function. In the format `path/to/file.py:flow_function_name`. |
-| `parameters`                               | Optional default values to provide for the parameters of the deployed flow. Should be an object with key/value pairs.                                                                                                                                                                    |
-| <span class="no-wrap">`enforce_parameter_schema`</span>                              | Boolean flag that determines whether the API should validate the parameters passed to a flow run against the parameter schema generated for the deployed flow.                                                                                                                                                                    |
-| `work_pool`                                | Information of where to schedule flow runs for the deployment. Fields for this section are documented in the [Work Pool Fields](#work-pool-fields) section.                                                                                                                              |
+| `name`                                     | 作成されたデプロイメントに付ける名前。特定のデプロイメントを作成または更新するために、`prefect deploy` コマンドで使用します。   |
+| `version`                                  | デプロイメントのオプション バージョン。  |
+| `tags`                                     | デプロイメントにタグとして割り当てる文字列のリスト。  |
+| <span class="no-wrap">`description`</span> | デプロイメントのオプションの説明。 |
+| `schedule`                                 | デプロイメントに割り当てるオプションの[スケジュール](/v3/automate/add-schedules)。このセクションのフィールドについては、[スケジュールフィールド](#schedule-fields)セクションを参照してください。 |
+| `concurrency_limit`                        | オプションの[デプロイメント同時実行制限](/v3/deploy/index#concurrency-limiting)。このセクションのフィールドについては、[同時実行制限フィールド](#concurrency-limit-fields)セクションに記載されています。 |
+| `triggers`                                  | デプロイメントに割り当てる [トリガー](/v3/automate/events/automations-triggers/#custom-triggers) のオプションの配列 |
+| `entrypoint`                               | デプロイするフローを含む `.py` ファイルへのパス（開発フォルダのルートディレクトリからの相対パス）とフロー関数名の組み合わせ。形式は `path/to/file.py:flow_function_name` です。 |
+| `parameters`                               | デプロイされたフローのパラメータに指定するオプションのデフォルト値。キーと値のペアを持つオブジェクトである必要があります。     |
+| <span class="no-wrap">`enforce_parameter_schema`</span>                              | デプロイされたフロー用に生成されたパラメータ スキーマに対して、フロー実行に渡されるパラメータを API が検証するかどうかを決定するブール フラグ。   |
+| `work_pool`                                | デプロイメントのフロー実行をスケジュールする場所に関する情報。このセクションのフィールドについては、[ワークプールフィールド](#work-pool-fields)セクションに記載されています。 |
 
-#### Schedule fields
+#### スケジュールフィールド
 
-These are fields you can add to a deployment declaration's `schedule` section.
-
-| Property                                   | Description                                                                                                                                                                                                            |
-| ------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `interval`                                 | Number of seconds indicating the time between flow runs. Cannot use them in conjunction with `cron` or `rrule`.                                                                                                         |
-| <span class="no-wrap">`anchor_date`</span> | Datetime string indicating the starting or "anchor" date to begin the schedule. If no `anchor_date` is supplied, the current UTC time is used. Can only use with `interval`.                                       |
-| `timezone`                                 | String name of a time zone, used to enforce localization behaviors like DST boundaries. See the [IANA Time Zone Database](https://www.iana.org/time-zones) for valid time zones.                                       |
-| `cron`                                     | A valid cron string. Cannot use in conjunction with `interval` or `rrule`.                                                                                                                                         |
-| `day_or`                                   | Boolean indicating how croniter handles day and day_of_week entries. Must use with `cron`. Defaults to `True`.                                                                                                     |
-| `rrule`                                    | String representation of an RRule schedule. See the [`rrulestr` examples](https://dateutil.readthedocs.io/en/stable/rrule.html#rrulestr-examples) for syntax. Cannot used them in conjunction with `interval` or `cron`. |
-
-#### Concurrency limit fields
-
-These are fields you can add to a deployment declaration's `concurrency_limit` section.
+これらは、デプロイメント宣言の「スケジュール」セクションに追加できるフィールドです。
 
 | Property                                   | Description                                                                                                                                                                                                            |
 | ------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `limit`                                    | The maximum number of concurrent flow runs for the deployment.                                                                                                                                                 |
-| `collision_strategy`                       | Configure the behavior for runs once the concurrency limit is reached. Options are `ENQUEUE`, and `CANCEL_NEW`. Defaults to `ENQUEUE`.                                                                                 |
+| `interval`                                 | フロー実行間隔を示す秒数。`cron` または `rrule` と組み合わせて使用​​することはできません。 |
+| <span class="no-wrap">`anchor_date`</span> | スケジュールの開始日（アンカー日）を示す日時文字列です。`anchor_date` が指定されていない場合は、現在のUTC時刻が使用されます。`interval` とのみ併用できます。  |
+| `timezone`                                 | タイムゾーンの文字列名。DST境界などのローカライズ動作を強制するために使用されます。有効なタイムゾーンについては、[IANAタイムゾーンデータベース](https://www.iana.org/time-zones)を参照してください。   |
+| `cron`                                     | 有効な cron 文字列。`interval` または `rrule` と組み合わせて使用​​することはできません。 |
+| `day_or`                                   | cron が日と曜日のエントリをどのように処理するかを示すブール値。`cron` と併用する必要があります。デフォルトは `True` です。  |
+| `rrule`                                    | RRuleスケジュールの文字列表現です。構文については[`rrulestr`の例](https://dateutil.readthedocs.io/en/stable/rrule.html#rrulestr-examples)を参照してください。`interval`や`cron`と組み合わせて使用​​することはできません。 |
+
+#### 同時実行制限フィールド
+
+これらは、デプロイメント宣言の `concurrency_limit` セクションに追加できるフィールドです。
+
+| Property                                   | Description                                                                                                                                                                                                            |
+| ------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `limit`                                    | デプロイメントにおける同時フロー実行の最大数。  |
+| `collision_strategy`                       | 同時実行制限に達した場合の実行時の動作を設定します。オプションは `ENQUEUE` と `CANCEL_NEW` です。デフォルトは `ENQUEUE` です。  |
 
 
-#### Work pool fields
+#### ワークプールフィールド
 
-These are fields you can add to a deployment declaration's `work_pool` section.
+これらは、デプロイメント宣言の「work_pool」セクションに追加できるフィールドです。
 
 | Property                                       | Description                                                                                                                                                                                               |
 | ---------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `name`                                         | The name of the work pool to schedule flow runs in for the deployment.                                                                                                                                    |
-| <span class="no-wrap">`work_queue_name`</span> | The name of the work queue within the specified work pool to schedule flow runs in for the deployment. If not provided, the default queue for the specified work pool is used.                       |
-| `job_variables`                                | Values used to override the default values in the specified work pool's [base job template](/v3/deploy/infrastructure-concepts/work-pools/#base-job-template). Maps directly to a created deployments `infra_overrides` attribute. |
+| `name`                                         | デプロイメントのフロー実行をスケジュールする作業プールの名前。 |
+| <span class="no-wrap">`work_queue_name`</span> | デプロイメントのフロー実行をスケジュールする、指定されたワークプール内のワークキューの名前。指定されていない場合は、指定されたワークプールのデフォルトのキューが使用されます。 |
+| `job_variables`                                | 指定されたワークプールの[ベースジョブテンプレート](/v3/deploy/infrastructure-concepts/work-pools/#base-job-template)のデフォルト値をオーバーライドするために使用される値。作成されたデプロイメントの`infra_overrides`属性に直接マッピングされます。 |
 
-#### Deployment mechanics
+#### デプロイメントの仕組み
 
-Anytime you run `prefect deploy` in a directory that contains a `prefect.yaml` file, the following actions take place in order:
+`prefect.yaml` ファイルを含むディレクトリで `prefect deploy` を実行すると、以下のアクションが順番に実行されます。
 
-- The `prefect.yaml` file load. First, the `build` section loads and all variable and block references resolve. The steps then run in the order provided.
-- Next, the `push` section loads and all variable and block references resolve; the steps within this section then run in the order provided.
-- Next, the `pull` section is templated with any step outputs but _is not run_. Block references are _not_ hydrated for security purposes: they are always resolved at runtime.
-- Next, all variable and block references resolve with the deployment declaration. All flags provided through the `prefect deploy` CLI are then overlaid on the values loaded from the file.
-- The final step occurs when the fully realized deployment specification is registered with the Prefect API.
+- `prefect.yaml` ファイルがロードされます。まず、`build` セクションがロードされ、すべての変数とブロック参照が解決されます。その後、ステップが指定された順序で実行されます。
+- 次に、`push` セクションがロードされ、すべての変数とブロック参照が解決されます。その後、このセクション内のステップが指定された順序で実行されます。
+- 次に、`pull` セクションがステップの出力でテンプレート化されますが、実行されません。ブロック参照はセキュリティ上の理由からハイドレートされません。常に実行時に解決されます。
+- 次に、すべての変数とブロック参照がデプロイメント宣言で解決されます。`prefect deploy` CLI で指定されたすべてのフラグが、ファイルからロードされた値にオーバーレイされます。
+- 最終ステップは、完成したデプロイメント仕様が Prefect API に登録されるときに発生します。
 
 <Tip>
-**Deployment instruction overrides**
+**デプロイメント指示のオーバーライド**
 
-The `build`, `push`, and `pull` sections in deployment definitions take precedence over the corresponding sections above them in 
-`prefect.yaml`.
+デプロイメント定義内の `build`、`push`、`pull` セクションは、`prefect.yaml` 内の対応するセクションよりも優先されます。
 </Tip>
 
-Each time a step runs, the following actions take place in order:
+ステップが実行されるたびに、以下のアクションが順番に実行されます:
 
-- The step's inputs and block / variable references resolve.
-- The step's function is imported; if it cannot be found, the special `requires` keyword installs the necessary packages.
-- The step's function is called with the resolved inputs.
-- The step's output is returned and used to resolve inputs for subsequent steps.
+- ステップの入力とブロック/変数参照が解決されます。
+- ステップの関数がインポートされます。見つからない場合は、特別なキーワード「requires」によって必要なパッケージがインストールされます。
+- ステップの関数が、解決された入力で呼び出されます。
+- ステップの出力が返され、後続のステップの入力を解決するために使用されます。
 
-## Update a deployment
+## デプロイメントの更新
 
-To update a deployment, make any desired changes to the `prefect.yaml` file, and run `prefect deploy`. Running just this command will prompt you to select a deployment interactively, or you may specify the deployment to update with `--name your-deployment`.
+デプロイメントを更新するには、`prefect.yaml` ファイルに必要な変更を加え、`prefect deploy` を実行します。このコマンドを実行すると、対話形式でデプロイメントを選択するように求められます。また、`--name your-deployment` を使用して更新するデプロイメントを指定することもできます。
 
-## Next steps
+## 次のステップ
 
-Now that you are familiar with creating deployments, you can explore infrastructure options for running your deployments:
+デプロイメントの作成方法を理解したら、次はデプロイメントを実行するためのインフラストラクチャ オプションを検討してみましょう。
 
-- [Managed work pools](/v3/deploy/infrastructure-examples/managed/)
-- [Push work pools](/v3/deploy/infrastructure-examples/serverless/)
-- [Kubernetes work pools](/v3/deploy/infrastructure-examples/kubernetes/)
-- [Serverless hybrid work pools](/v3/deploy/infrastructure-examples/docker/)
+- [マネージド ワークプール](/v3/deploy/infrastructure-examples/managed/)
+- [Push ワークプール](/v3/deploy/infrastructure-examples/serverless/)
+- [Kubernetes ワークプール](/v3/deploy/infrastructure-examples/kubernetes/)
+- [サーバーレス ハイブリッド ワークプール](/v3/deploy/infrastructure-examples/docker/)

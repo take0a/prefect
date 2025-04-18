@@ -1,15 +1,15 @@
 ---
-title: Learn about workers
-description: Prefect workers poll work pools for new runs to execute.
+title: ワーカーについて学ぶ
+description: Prefect ワーカーは、新しい実行のためにワークプールをポーリングします。
 ---
 
-Workers are lightweight polling services that retrieve scheduled runs from a work pool and execute them.
+ワーカーは、ワークプールからスケジュールされた実行を取得して実行する軽量ポーリングサービスです。
 
-Workers each have a type corresponding to the execution environment to submit flow runs to.
-Workers can only poll work pools that match their type.
-As a result, when deployments are assigned to a work pool, you know in which execution environment scheduled flow runs for that deployment will run.
+ワーカーにはそれぞれ、フロー実行を送信する実行環境に対応するタイプがあります。
+ワーカーは、自身のタイプに一致するワークプールのみをポーリングできます。
+そのため、デプロイメントがワークプールに割り当てられると、そのデプロイメントに対してスケジュールされたフロー実行がどの実行環境で実行されるかがわかります。
 
-The following diagram summarizes the architecture of a worker-based work pool deployment:
+次の図は、ワーカーベースのワークプールデプロイメントのアーキテクチャをまとめたものです:
 
 ```mermaid
 %%{
@@ -42,108 +42,110 @@ flowchart TD
     worker --> |creates| flow_run_infra_2
 ```
 
-The worker is in charge of provisioning the _flow run infrastructure_.   
+ワーカーは、_フロー実行インフラストラクチャ_のプロビジョニングを担当します。
 
-### Worker types
+### ワーカータイプ
 
-Below is a list of available worker types. Most worker types require installation of an additional package.
+利用可能なワーカータイプのリストを以下に示します。
+ほとんどのワーカータイプでは、追加パッケージのインストールが必要です。
 
 | Worker Type | Description | Required Package |
 | --- | --- | --- |
-| [`process`](https://reference.prefect.io/prefect/workers/process/) | Executes flow runs in subprocesses | |
-| [`kubernetes`](https://reference.prefect.io/prefect_kubernetes/worker/) | Executes flow runs as Kubernetes jobs | `prefect-kubernetes` |
-| [`docker`](https://reference.prefect.io/prefect_docker/worker/) | Executes flow runs within Docker containers | `prefect-docker` |
-| [`ecs`](https://reference.prefect.io/prefect_aws/workers/ecs_worker/) | Executes flow runs as ECS tasks | `prefect-aws` |
-| [`cloud-run-v2`](https://reference.prefect.io/prefect_gcp/workers/cloud_run_v2/) | Executes flow runs as Google Cloud Run jobs | `prefect-gcp` |
-| [`vertex-ai`](https://reference.prefect.io/prefect_gcp/workers/vertex/) | Executes flow runs as Google Cloud Vertex AI jobs | `prefect-gcp` |
-| [`azure-container-instance`](https://reference.prefect.io/prefect_azure/workers/container_instance/) | Execute flow runs in ACI containers | `prefect-azure` |
-| [`coiled`](https://github.com/coiled/prefect-worker/blob/main/example/README.md) | Execute flow runs in your cloud with Coiled | `prefect-coiled` |
+| [`process`](https://reference.prefect.io/prefect/workers/process/) | サブプロセスでフロー実行を行います | |
+| [`kubernetes`](https://reference.prefect.io/prefect_kubernetes/worker/) | フロー実行をKubernetesジョブとして実行する | `prefect-kubernetes` |
+| [`docker`](https://reference.prefect.io/prefect_docker/worker/) | Dockerコンテナ内でフロー実行を実行します | `prefect-docker` |
+| [`ecs`](https://reference.prefect.io/prefect_aws/workers/ecs_worker/) | フロー実行をECSタスクとして実行する | `prefect-aws` |
+| [`cloud-run-v2`](https://reference.prefect.io/prefect_gcp/workers/cloud_run_v2/) | フロー実行を Google Cloud Run ジョブとして実行する | `prefect-gcp` |
+| [`vertex-ai`](https://reference.prefect.io/prefect_gcp/workers/vertex/) | フロー実行を Google Cloud Vertex AI ジョブとして実行します | `prefect-gcp` |
+| [`azure-container-instance`](https://reference.prefect.io/prefect_azure/workers/container_instance/) | ACIコンテナでフローを実行する| `prefect-azure` |
+| [`coiled`](https://github.com/coiled/prefect-worker/blob/main/example/README.md) | Coiledを使用してクラウドでフローを実行する | `prefect-coiled` |
 
-If you don't see a worker type that meets your needs, consider 
-[developing a new worker type](/contribute/develop-a-new-worker-type/).
+ニーズを満たすワーカー タイプが見つからない場合は、[新しいワーカー タイプの開発](/contribute/develop-a-new-worker-type/)を検討してください。
 
-### Worker options
+### ワーカーオプション
 
-Workers poll for work from one or more queues within a work pool. If the worker references a work queue that doesn't exist, it is created automatically.
-The worker CLI infers the worker type from the work pool.
-Alternatively, you can specify the worker type explicitly.
-If you supply the worker type to the worker CLI, a work pool is created automatically if it doesn't exist (using default job settings).
+ワーカーは、ワークプール内の1つ以上のキューから作業をポーリングします。
+ワーカーが参照するワークキューが存在しない場合には、自動的に作成されます。
+ワーカーCLIは、ワークプールからワーカータイプを推測します。
+ワーカータイプを明示的に指定することもできます。
+ワーカーCLIにワーカータイプを指定すると、ワークプールが存在しない場合は自動的に作成されます（デフォルトのジョブ設定を使用）。
 
-Configuration parameters you can specify when starting a worker include:
+ワーカーを起動するときに指定できる構成パラメータは次のとおりです:
 
 | Option                                            | Description                                                                                                                                 |
 | ------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------- |
-| `--name`, `-n`                                    | The name to give to the started worker. If not provided, a unique name will be generated.                                                   |
-| `--pool`, `-p`                                    | The work pool the started worker should poll.                                                                                               |
-| `--work-queue`, `-q`                              | One or more work queue names for the worker to pull from. If not provided, the worker pulls from all work queues in the work pool.      |
-| `--type`, `-t`                                    | The type of worker to start. If not provided, the worker type is inferred from the work pool.                                          |
-| <span class="no-wrap">`--prefetch-seconds`</span> | The amount of time before a flow run's scheduled start time to begin submission. Default is the value of `PREFECT_WORKER_PREFETCH_SECONDS`. |
-| `--run-once`                                      | Only run worker polling once. By default, the worker runs forever.                                                                          |
-| `--limit`, `-l`                                   | The maximum number of flow runs to start simultaneously.                                                                                    |
-| `--with-healthcheck`                                   | Start a healthcheck server for the worker.                                                                                    |
-| `--install-policy`                                   | Install policy to use workers from Prefect integration packages.                                                                                    |
+| `--name`, `-n`                                    | 開始したワーカーに付ける名前。指定しない場合は、一意の名前が生成されます。  |
+| `--pool`, `-p`                                    | 開始されたワーカーがポーリングする必要がある作業プール。   |
+| `--work-queue`, `-q`                              | ワーカーがプルする1つ以上のワークキュー名。指定しない場合、ワーカーはワークプール内のすべてのワークキューからプルします。   |
+| `--type`, `-t`                                    | 開始するワーカーのタイプ。指定しない場合は、ワーカータイプはワークプールから推測されます。   |
+| <span class="no-wrap">`--prefetch-seconds`</span> | フロー実行の予定開始時刻の何時間前に送信を開始するかを指定します。デフォルトは `PREFECT_WORKER_PREFETCH_SECONDS` の値です。 |
+| `--run-once`                                      | ワーカーポーリングは 1 回だけ実行します。デフォルトでは、ワーカーは永久に実行されます。 |
+| `--limit`, `-l`                                   | 同時に開始するフロー実行の最大数。   |
+| `--with-healthcheck`                                   | ワーカーのヘルスチェック サーバーを起動します。   |
+| `--install-policy`                                   | Prefect 統合パッケージのワーカーを使用するためのポリシーをインストールします。  |
 
-You must start a worker within an environment to access or create the required infrastructure to execute flow runs. 
-The worker will deploy flow runs to the infrastructure corresponding to the worker type. For example, if you start a worker with 
-type `kubernetes`, the worker deploys flow runs to a Kubernetes cluster.
+フロー実行に必要なインフラストラクチャにアクセスまたは作成するには、環境内でワーカーを起動する必要があります。
+ワーカーは、ワーカータイプに対応するインフラストラクチャにフロー実行をデプロイします。
+例えば、タイプ「kubernetes」でワーカーを起動すると、ワーカーはフロー実行をKubernetesクラスターにデプロイします。
 
-Prefect must be installed in any environment (for example, virtual environment, Docker container) where you intend to run the worker or 
-execute a flow run.
+ワーカーを実行したりフロー実行を実行したりする環境（仮想環境、Dockerコンテナなど）には、Prefectがインストールされている必要があります。
 
 <Tip>
-**`PREFECT_API_URL` and `PREFECT_API_KEY`settings for workers**
+**ワーカーの `PREFECT_API_URL` と `PREFECT_API_KEY` の設定**
 
-    `PREFECT_API_URL` must be set for the environment where your worker is running. You must also have a user or service account 
-    with the `Worker` role, which you can configure by setting the `PREFECT_API_KEY`.
+ワーカーが実行される環境に合わせて `PREFECT_API_URL` を設定する必要があります。
+また、`Worker` ロールを持つユーザーまたはサービスアカウントも必要です。これは `PREFECT_API_KEY` を設定することで設定できます。
 </Tip>
 
-### Worker status
+### ワーカーのステータス
 
-Workers have two statuses: `ONLINE` and `OFFLINE`. A worker is online if it sends regular heartbeat messages to the Prefect API. 
-If a worker misses three heartbeats, it is considered offline. By default, a worker is considered offline a maximum of 90 seconds 
-after it stopped sending heartbeats, but you can configure the threshold with the `PREFECT_WORKER_HEARTBEAT_SECONDS` setting.
+ワーカーには「ONLINE」と「OFFLINE」の2つのステータスがあります。
+ワーカーがPrefect APIに定期的にハートビートメッセージを送信している場合、そのワーカーはオンライン状態です。
+ワーカーがハートビートを3回受信できなかった場合、オフライン状態とみなされます。
+デフォルトでは、ワーカーはハートビートの送信を停止してから最大90秒間オフライン状態とみなされますが、「PREFECT_WORKER_HEARTBEAT_SECONDS」設定でしきい値を設定できます。
 
-### Worker logs
-<span class="badge cloud"></span> Workers send logs to the Prefect Cloud API if you're connected to Prefect Cloud.
+### ワーカーログ
+<span class="badge cloud"></span> Prefect Cloud に接続している場合、ワーカーはログを Prefect Cloud API に送信します。
 
-- All worker logs are automatically sent to the Prefect Cloud API
-- Logs are accessible through both the Prefect Cloud UI and API
-- Each flow run will include a link to its associated worker's logs
+- すべてのワーカーログは自動的に Prefect Cloud API に送信されます。
+- ログは Prefect Cloud UI と API の両方からアクセスできます。
+- 各フロー実行には、関連するワーカーログへのリンクが含まれます。
 
-### Worker details
-<span class="badge cloud"></span> The **Worker Details** page shows you three key areas of information:
+### ワーカーの詳細
+<span class="badge cloud"></span> **ワーカーの詳細** ページには、以下の 3 つの主要な情報が表示されます。
 
-- Worker status
-- Installed Prefect version
-- Installed Prefect integrations (e.g., `prefect-aws`, `prefect-gcp`)
-- Live worker logs (if worker logging is enabled)
+- ワーカーのステータス
+- インストールされている Prefect のバージョン
+- インストールされている Prefect の統合 (例: `prefect-aws`、`prefect-gcp`)
+- 稼働中のワーカーログ (ワーカーのログ記録が有効になっている場合)
 
-Access a worker's details by clicking on the worker's name in the Work Pool list.
+ワーカーの詳細にアクセスするには、ワークプールリストでワーカーの名前をクリックします。
 
-### Start a worker
+### ワーカーを起動します
 
-Use the `prefect worker start` CLI command to start a worker. You must pass at least the work pool name. 
-If the work pool does not exist, it will be created if the `--type` flag is used.
+ワーカーを起動するには、CLI コマンド「prefect worker start」を使用します。
+少なくともワークプール名を渡す必要があります。
+ワークプールが存在しない場合は、「--type」フラグを使用して作成されます。
 
 ```bash
 prefect worker start -p [work pool name]
 ```
 
-For example:
+例えば：
 
 ```bash
 prefect worker start -p "my-pool"
 ```
 
-Results in output like this:
+出力は次のようになります:
 
 ```bash
 Discovered worker type 'process' for work pool 'my-pool'.
 Worker 'ProcessWorker 65716280-96f8-420b-9300-7e94417f2673' started!
 ```
 
-In this case, Prefect automatically discovered the worker type from the work pool.
-To create a work pool and start a worker in one command, use the `--type` flag:
+この場合、Prefect はワークプールからワーカータイプを自動的に検出しました。
+1 つのコマンドでワークプールを作成し、ワーカーを起動するには、`--type` フラグを使用します:
 
 ```bash
 prefect worker start -p "my-pool" --type "process"
@@ -154,48 +156,46 @@ Worker 'ProcessWorker d24f3768-62a9-4141-9480-a056b9539a25' started!
 06:57:53.289 | INFO    | prefect.worker.process.processworker d24f3768-62a9-4141-9480-a056b9539a25 - Worker pool 'my-pool' created.
 ```
 
-In addition, workers can limit the number of flow runs to start simultaneously with the `--limit` flag.
-For example, to limit a worker to five concurrent flow runs:
+さらに、ワーカーは `--limit` フラグを使用して、同時に開始するフロー実行の数を制限できます。
+たとえば、ワーカーの同時フロー実行を 5 つに制限するには、次のようにします:
 
 ```bash
 prefect worker start --pool "my-pool" --limit 5
 ```
 
-### Configure prefetch
+### プリフェッチの設定
 
-By default, the worker submits flow runs 10 seconds before they are scheduled to run. 
-This allows time for the infrastructure to be created so the flow run can start on time.
+デフォルトでは、ワーカーはフロー実行をスケジュールされた実行時刻の10秒前に送信します。
+これにより、インフラストラクチャの作成に時間をかけることができ、フロー実行が時間どおりに開始されます。
 
-In some cases, infrastructure takes longer than 10 seconds to start the flow run. You can increase the prefetch time with the
-`--prefetch-seconds` option or the `PREFECT_WORKER_PREFETCH_SECONDS` setting.
+場合によっては、インフラストラクチャがフロー実行を開始するまでに10秒以上かかることがあります。
+`--prefetch-seconds` オプションまたは `PREFECT_WORKER_PREFETCH_SECONDS` 設定を使用して、プリフェッチ時間を増やすことができます。
 
-If this value is _more_ than the amount of time it takes for the infrastructure to start, the flow run will _wait_ until its 
-scheduled start time.
+この値がインフラストラクチャの起動にかかる時間よりも大きい場合、フロー実行はスケジュールされた開始時刻まで待機します。
 
-### Polling for work
+### 作業のポーリング
 
-Workers poll for work every 15 seconds by default. You can configure this interval in your [profile settings](/v3/develop/settings-and-profiles/) 
-with the
-`PREFECT_WORKER_QUERY_SECONDS` setting.
+ワーカーはデフォルトで15秒ごとに作業をポーリングします。
+この間隔は、[プロファイル設定](/v3/develop/settings-and-profiles/)の`PREFECT_WORKER_QUERY_SECONDS`設定で設定できます。
 
-### Install policy
+### インストールポリシー
 
-The Prefect CLI can install the required package for Prefect-maintained worker types automatically. Configure this behavior 
-with the `--install-policy` option. The following are valid install policies:
+Prefect CLI は、Prefect が管理するワーカータイプに必要なパッケージを自動的にインストールできます。この動作は `--install-policy` オプションで設定できます。有効なインストールポリシーは次のとおりです。
 
 | Install Policy | Description |
 | --- | --- |
-| `always` | Always install the required package. Updates the required package to the most recent version if already installed. |
-| `if-not-present` | Install the required package if it is not already installed. |
-| `never` | Never install the required package. |
-| `prompt` | Prompt the user to choose whether to install the required package. This is the default install policy. 
-If `prefect worker start` is run non-interactively, the `prompt` install policy behaves the same as `never`. |
+| `always` | 必要なパッケージを常にインストールします。必要なパッケージが既にインストールされている場合は、最新バージョンに更新します。 |
+| `if-not-present` | 必要なパッケージがまだインストールされていない場合はインストールしてください。 |
+| `never` | 必要なパッケージはインストールしないでください。 |
+| `prompt` | 必要なパッケージをインストールするかどうかをユーザーに確認します。
+これがデフォルトのインストールポリシーです。
+`prefect worker start` が非対話型で実行された場合、`prompt` インストールポリシーは `never` と同じように動作します。 |
 
-### Additional resources
+### 追加リソース
 
-See how to [daemonize a Prefect worker](/v3/deploy/daemonize-processes/).
+[Prefectワーカーをデーモン化する方法](/v3/deploy/daemonize-processes/)をご覧ください。
 
-See more information on [overriding a work pool's job variables](/v3/deploy/infrastructure-concepts/customize).
+[ワークプールのジョブ変数のオーバーライド](/v3/deploy/infrastructure-concepts/customize)に関する詳細情報をご覧ください。
 
 import { HELM } from "/snippets/resource-management/helm.mdx"
 import { workers } from "/snippets/resource-management/vars.mdx"

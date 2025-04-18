@@ -1,15 +1,14 @@
 ---
-title: Run flows in local processes
-description: Create a deployment for a flow by calling the `serve` method.
+title: ローカルプロセスでフローを実行する
+description: "`serve` メソッドを呼び出して、フローのデプロイメントを作成します。"
 ---
 
-The simplest way to create a [deployment](/v3/deploy/infrastructure-examples/docker/) for your flow is by calling its `serve` method.
+フローの[デプロイメント](/v3/deploy/infrastructure-examples/docker/)を作成する最も簡単な方法は、その `serve` メソッドを呼び出すことです。
 
-## Serve a flow
+## フローを実行する
 
-The serve method creates a deployment for the flow and starts a long-running process 
-that monitors for work from the Prefect server.
-When work is found, it is executed within its own isolated subprocess.
+serve メソッドは、フローのデプロイメントを作成し、Prefect サーバーからの作業を監視する長期実行プロセスを開始します。
+作業が見つかった場合、独立したサブプロセス内で実行されます。
 
 ```python hello_world.py
 from prefect import flow
@@ -34,23 +33,19 @@ if __name__ == "__main__":
     )
 ```
 
-This interface provides the configuration for a deployment (with no 
-strong infrastructure requirements), such as:
+このインターフェースは、（強力なインフラストラクチャ要件のない）デプロイメント用の構成を提供します。たとえば、次のような構成です。
 
-- schedules
-- event triggers
-- metadata such as tags and description
-- default parameter values
+- スケジュール
+- イベントトリガー
+- タグや説明などのメタデータ
+- デフォルトのパラメータ値
 
 <Tip>
-**Schedules are auto-paused on shutdown**
+**シャットダウン時にスケジュールは自動的に一時停止されます**
 
-By default, stopping the process running `flow.serve` will pause the schedule 
-for the deployment (if it has one).
+デフォルトでは、`flow.serve` を実行しているプロセスを停止すると、デプロイメントのスケジュール（存在する場合）も一時停止されます。
 
-When running this in environments where restarts are expected use the 
-
-`pause_on_shutdown=False` flag to prevent this behavior:
+再起動が予想される環境でこれを実行する場合は、`pause_on_shutdown=False` フラグを使用してこの動作を回避してください。
 
 ```python
 if __name__ == "__main__":
@@ -62,20 +57,17 @@ if __name__ == "__main__":
 ```
 </Tip>
 
-## Additional serve options
+## 追加のサーブオプション
 
-The `serve` method on flows exposes many options for the deployment.
-Here's how to use some of those options:
+フローの `serve` メソッドは、デプロイメントに関する多くのオプションを公開します。
+以下に、これらのオプションのいくつかの使用方法を示します。
 
-- `cron`: a keyword that allows you to set a cron string schedule for the deployment; see 
-[schedules](/v3/automate/add-schedules/) for more advanced scheduling options
-- `tags`: a keyword that allows you to tag this deployment and its runs for bookkeeping and filtering purposes
-- `description`: a keyword that allows you to document what this deployment does; by default the 
-description is set from the docstring of the flow function (if documented)
-- `version`: a keyword that allows you to track changes to your deployment; uses a hash of the 
-file containing the flow by default; popular options include semver tags or git commit hashes
+- `cron`: デプロイメントの cron 文字列スケジュールを設定できるキーワード。より高度なスケジュールオプションについては、[schedules](/v3/automate/add-schedules/) を参照してください。
+- `tags`: 記録管理とフィルタリングのために、このデプロイメントとその実行にタグを付けることができるキーワード。
+- `description`: このデプロイメントの動作をドキュメント化できるキーワード。デフォルトでは、フロー関数の docstring から説明が設定されます（ドキュメント化されている場合）。
+- `version`: デプロイメントの変更を追跡できるキーワード。デフォルトでは、フローを含むファイルのハッシュを使用します。一般的なオプションには、semver タグや Git コミットハッシュなどがあります。
 
-Next, add these options to your deployment:
+次に、デプロイメントに以下のオプションを追加します。
 
 ```python
 if __name__ == "__main__":
@@ -88,18 +80,17 @@ if __name__ == "__main__":
     )
 ```
 
-When you rerun this script, you will find an updated deployment in the UI that is actively scheduling work.
-Stop the script in the CLI using `CTRL+C` and your schedule automatically pauses.
+このスクリプトを再実行すると、UI に更新されたデプロイメントが表示され、作業がアクティブにスケジュールされていることがわかります。CLI で `CTRL+C` を使用してスクリプトを停止すると、スケジュールが自動的に一時停止されます。
 
 <Note>
-**`serve()` is a long-running process**
+**`serve()` は長時間実行されるプロセスです**
 
-To execute remotely triggered or scheduled runs, your script with `flow.serve` must be actively running.
+リモートでトリガーまたはスケジュールされた実行を実行するには、`flow.serve` を含むスクリプトがアクティブに実行されている必要があります。
 </Note>
 
-## Serve multiple flows at once
+## 複数のフローを一度に処理する
 
-Serve multiple flows with the same process using the `serve` utility along with the `to_deployment` method of flows:
+`serve` ユーティリティとフローの `to_deployment` メソッドを使用して、同じプロセスで複数のフローを処理します。
 
 ```python serve_two_flows.py
 import time
@@ -124,39 +115,35 @@ if __name__ == "__main__":
     serve(slow_deploy, fast_deploy)
 ```
 
-The behavior and interfaces are identical to the single flow case.
-A few things to note:
+動作とインターフェースは、単一フローの場合と同じです。
+いくつか注意すべき点があります。
 
-- the `flow.to_deployment` interface exposes the *exact same* options as `flow.serve`; this method 
-produces a deployment object
-- the deployments are only registered with the API once `serve(...)` is called
-- when serving multiple deployments, the only requirement is that they share a Python environment; 
-they can be executed and scheduled independently of each other
+- `flow.to_deployment` インターフェースは `flow.serve` と*全く同じ*オプションを公開します。このメソッドはデプロイメントオブジェクトを生成します。
+- デプロイメントは `serve(...)` が呼び出された時点でのみ API に登録されます。
+- 複数のデプロイメントを処理する場合、唯一の要件は Python 環境を共有することです。デプロイメントはそれぞれ独立して実行およびスケジュールできます。
 
-A few optional steps for exploration include:
+探索のためのオプション手順は次のとおりです。
 
-- pause and unpause the schedule for the "sleeper" deployment
-- use the UI to submit ad-hoc runs for the "sleeper" deployment with different values for `sleep`
-- cancel an active run for the "sleeper" deployment from the UI
+- 「sleeper」デプロイメントのスケジュールを一時停止および再開する。
+- UI を使用して、`sleep` に異なる値を指定して、「sleeper」デプロイメントのアドホック実行を送信する。
+- UI から、「sleeper」デプロイメントのアクティブな実行をキャンセルする。
 
 <Tip>
-**Hybrid execution option**
+**ハイブリッド実行オプション**
 
-Prefect's deployment interface allows you to choose a hybrid execution model.
-Whether you use Prefect Cloud or self-host Prefect server, you can run workflows in the 
-environments best suited to their execution.
-This model enables efficient use of your infrastructure resources while maintaining the privacy 
-of your code and data.
-There is no ingress required.
-Read more about our [hybrid model](https://www.prefect.io/security/overview/#hybrid-model).
+Prefect のデプロイメントインターフェースでは、ハイブリッド実行モデルを選択できます。
+Prefect Cloud を使用する場合でも、セルフホストの Prefect Server を使用する場合でも、ワークフローは実行に最適な環境で実行できます。
+このモデルにより、コードとデータのプライバシーを維持しながら、インフラストラクチャリソースを効率的に活用できます。
+イングレスは不要です。
+[ハイブリッドモデル](https://www.prefect.io/security/overview/#hybrid-model) の詳細については、こちらをご覧ください。
 </Tip>
 
 
-## Retrieve a flow from remote storage
+## リモートストレージからフローを取得する
 
-You can retrieve flows from remote storage with the `flow.from_source` method.
+`flow.from_source` メソッドを使用して、リモートストレージからフローを取得できます。
 
-`flow.from_source` can accept a git repository URL and an entrypoint pointing to the flow to load from the repository:
+`flow.from_source` メソッドは、Git リポジトリの URL と、リポジトリから読み込むフローを指すエントリポイントを指定できます。
 
 ```python load_from_url.py
 from prefect import flow
@@ -178,14 +165,14 @@ if __name__ == "__main__":
 16:40:34.706 | INFO    | Flow run 'muscular-perch' - Finished in state Completed()
 ```
 
-A flow entrypoint is the path to the file where the flow is located, and the name of the flow function separated by a colon.
+フローエントリポイントは、フローが配置されているファイルへのパスと、フロー関数の名前をコロンで区切って指定します。
 
-For more ways to store and access flow code, see the [Retrieve code from storage page](/v3/deploy/infrastructure-concepts/store-flow-code).
+フローコードを保存およびアクセスするその他の方法については、[ストレージからコードを取得する](/v3/deploy/infrastructure-concepts/store-flow-code)ページをご覧ください。
 
 <Tip>
-**You can serve loaded flows**
+**ロードされたフローを提供できます**
 
-You can serve a flow loaded from remote storage with the same [`serve`](#serve-a-flow) method as a local flow:
+リモートストレージからロードされたフローは、ローカルフローと同じ [`serve`](#serve-a-flow) メソッドを使用して提供できます。
 
 ```python serve_loaded_flow.py
 from prefect import flow
@@ -199,19 +186,19 @@ if __name__ == "__main__":
 ```
 </Tip>
 
-When you serve a flow loaded from remote storage, the serving process periodically polls your remote storage for updates to the flow's code. 
-This pattern allows you to update your flow code without restarting the serving process.
-Note that if you change the parameters to your flow, you'll need to restart the serving process.
+リモートストレージから読み込まれたフローを提供する際、提供プロセスは定期的にリモートストレージをポーリングし、フローのコードが更新されていないか確認します。
+このパターンにより、提供プロセスを再起動せずにフローコードを更新できます。
+フローのパラメータを変更した場合は、提供プロセスを再起動する必要があることに注意してください。
 
-## If you need dynamic infrastructure
+## 動的なインフラストラクチャが必要な場合
 
-For more configuration, you can create a deployment that uses a work pool. 
-Reasons to create a work-pool based deployment include:
+より詳細な構成が必要な場合は、ワークプールを使用するデプロイメントを作成できます。
+ワークプールベースのデプロイメントを作成する理由としては、次のようなものが挙げられます。
 
-- Wanting to run your flow on dynamically provisioned infrastructure
-- Needing more control over the execution environment on a per-flow run basis
-- Creating an infrastructure template to use across deployments
+- 動的にプロビジョニングされたインフラストラクチャ上でフローを実行したい場合
+- フロー実行ごとに実行環境をより細かく制御する必要がある場合
+- デプロイメント全体で使用できるインフラストラクチャテンプレートを作成する場合
 
-Work pools are popular with data platform teams because they allow you to manage infrastructure configuration across an organization.
+ワークプールは、組織全体のインフラストラクチャ構成を管理できるため、データプラットフォームチームに人気があります。
 
-Learn more about work-pool based deployments on the [Configure dynamic infrastructure with work pools page](/v3/deploy/infrastructure-concepts/work-pools)
+ワークプールベースのデプロイメントの詳細については、[ワークプールを使用した動的なインフラストラクチャの構成](/v3/deploy/infrastructure-concepts/work-pools)をご覧ください。

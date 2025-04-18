@@ -1,67 +1,68 @@
 ---
-title: Deploy flows with Python
-description: Learn how to use the Python SDK to deploy flows to run in work pools.
+title: Pythonでフローをデプロイする
+description: Python SDK を使用してフローをデプロイし、作業プールで実行する方法を学習します。
 ---
 
-Prefect offers a flexible way to deploy flows to dynamic infrastructure using the Python SDK. 
-This approach allows you to target specific work pools and utilize dynamically provisioned infrastructure.
+Prefect は、Python SDK を使用して、動的インフラストラクチャにフローを柔軟にデプロイする方法を提供します。
+このアプローチにより、特定のワークプールをターゲットにし、動的にプロビジョニングされたインフラストラクチャを活用できます。
 
-Deploying flows to dynamic infrastructure offers a flexible and programmatic approach to managing your 
-Prefect workflows. While `flow.serve` remains a valid and straightforward method for deploying flows to persistent 
-infrastructure, there are scenarios where you might need to leverage dynamic, scalable resources. In these cases, 
-`flow.deploy` provides a powerful alternative that allows you to target specific work pools and utilize dynamically 
-provisioned infrastructure.
+動的インフラストラクチャにフローをデプロイすることで、Prefect ワークフローを柔軟かつプログラム的に管理できます。
+`flow.serve` は、永続的なインフラストラクチャにフローをデプロイするための有効かつ簡単な方法ですが、動的でスケーラブルなリソースを活用する必要があるシナリオもあります。
+このような場合、`flow.deploy` は、特定のワークプールをターゲットにし、動的にプロビジョニングされたインフラストラクチャを活用できる強力な代替手段となります。
 
-## When to consider `flow.deploy` over `flow.serve`
+## `flow.deploy` と `flow.serve` のどちらを検討すべきか
 
-The `flow.serve` method is an excellent choice for many use cases, especially when you have readily available, persistent infrastructure. However, you might want to consider using `flow.deploy` in the following situations:
+`flow.serve` メソッドは、多くのユースケース、特にすぐに利用可能な永続的なインフラストラクチャがある場合に最適な選択肢です。
+ただし、以下の状況では `flow.deploy` の使用を検討することをお勧めします。
 
-1. Cost optimization: Dynamic infrastructure can help reduce costs by scaling resources up or down based on demand.
-2. Resource scarcity: If you have limited persistent infrastructure, dynamic provisioning can help manage resource allocation more efficiently.
-3. Varying workloads: For workflows with inconsistent resource needs, dynamic infrastructure can adapt to changing requirements.
-4. Cloud-native deployments: When working with cloud providers that offer serverless or auto-scaling options.
+1. コスト最適化：動的インフラストラクチャは、需要に応じてリソースをスケールアップまたはスケールダウンすることでコスト削減に役立ちます。
+2. リソース不足：永続的なインフラストラクチャが限られている場合、動的プロビジョニングによってリソース割り当てをより効率的に管理できます。
+3. 変化するワークロード：リソースニーズが一定でないワークフローの場合、動的インフラストラクチャは変化する要件に適応できます。
+4. クラウドネイティブなデプロイメント：サーバーレスまたは自動スケーリングオプションを提供するクラウドプロバイダーと連携する場合。
 
-By using `flow.deploy`, you can take advantage of Prefect's work pool system, which provides a layer of abstraction between your flows and the underlying infrastructure. This approach offers greater flexibility and efficiency in running your workflows when dynamic infrastructure is needed.
+`flow.deploy` を使用すると、フローと基盤となるインフラストラクチャの間に抽象化レイヤーを提供する Prefect のワークプールシステムを活用できます。
+このアプローチは、動的インフラストラクチャが必要な場合にワークフローを実行する際の柔軟性と効率性を高めます。
 
-Let's explore how to create a deployment using the Python SDK and leverage dynamic infrastructure through work pools.
+Python SDK を使用してデプロイメントを作成し、ワークプールを通じて動的なインフラストラクチャを活用する方法を見てみましょう。
 
-## Prerequisites
+## 前提条件
 
-Before deploying your flow using `flow.deploy`, ensure you have the following:
+`flow.deploy` を使用してフローをデプロイする前に、以下の要件を満たしていることを確認してください。
 
-1. A running Prefect server or Prefect Cloud workspace: You can either run a Prefect server locally or use a Prefect Cloud workspace. 
-To start a local server, run `prefect server start`. To use Prefect Cloud, sign up for an account at [app.prefect.cloud](https://app.prefect.cloud) 
-and follow the [Connect to Prefect Cloud](/v3/manage/cloud/connect-to-cloud/) guide.
+1. 稼働中の Prefect サーバーまたは Prefect Cloud ワークスペース：Prefect サーバーをローカルで実行することも、Prefect Cloud ワークスペースを使用することもできます。
+ローカルサーバーを起動するには、`prefect server start` を実行します。
+Prefect Cloud を使用するには、[app.prefect.cloud](https://app.prefect.cloud) でアカウントを登録し、[Prefect Cloud への接続](/v3/manage/cloud/connect-to-cloud/) ガイドに従ってください。
 
-2. A Prefect flow: You should have a flow defined in your Python script. If you haven't created a flow yet, refer to the 
-[Write Flows](/v3/develop/write-flows/) guide.
+2. Prefect フロー：Python スクリプトでフローを定義しておく必要があります。
+フローをまだ作成していない場合は、[フローの記述](/v3/develop/write-flows/) ガイドを参照してください。
 
-3. A work pool: You need a work pool to manage the infrastructure for running your flow. If you haven't created a work pool, you can do so through 
-the Prefect UI or using the Prefect CLI. For more information, see the [Work Pools](/v3/deploy/infrastructure-concepts/work-pools/) guide. 
+3. ワークプール：フローを実行するためのインフラストラクチャを管理するには、ワークプールが必要です。
+ワークプールを作成していない場合は、Prefect UI または Prefect CLI を使用して作成できます。
+詳細については、[ワークプール](/v3/deploy/infrastructure-concepts/work-pools/) ガイドをご覧ください。
 
-    For examples in this guide, we'll use a Docker work pool created by running:
+    このガイドの例では、以下を実行して作成した Docker ワークプールを使用します:
+
     ```bash
     prefect work-pool create --type docker my-work-pool
     ```
 
-4. Docker: Docker will be used to build and store the image containing your flow code. You can download and install
-Docker from the [official Docker website](https://www.docker.com/get-started/). If you don't want to use Docker, you 
-can see other options in the [Use remote code storage](#use-remote-code-storage) section.
+4. Docker: フローコードを含むイメージのビルドと保存には Docker を使用します。
+Docker は [Docker 公式ウェブサイト](https://www.docker.com/get-started/) からダウンロードしてインストールできます。
+Docker を使用しない場合は、[リモートコードストレージの使用](#use-remote-code-storage) セクションで他のオプションを確認してください。
 
-5. (Optional) A Docker registry account: While not strictly necessary for local development, having an account with a Docker registry (such as 
-Docker Hub) is recommended for storing and sharing your Docker images.
+5. (オプション) Docker レジストリアカウント: ローカル開発には必須ではありませんが、Docker イメージの保存と共有には Docker レジストリ (Docker Hub など) のアカウントが推奨されます。
 
-
-With these prerequisites in place, you're ready to deploy your flow using `flow.deploy`.
+これらの前提条件が満たされれば、`flow.deploy` を使用してフローをデプロイする準備が整います。
 
 
-## Deploy a flow with `flow.deploy`
+## `flow.deploy` でフローをデプロイする
 
-To deploy a flow using `flow.deploy` and Docker, follow these steps:
+`flow.deploy` と Docker を使用してフローをデプロイするには、次の手順に従います。
 
 <Steps>
-    <Step title="Write a flow">
-        Ensure your flow is defined in a Python file. Let's use a simple example:
+    <Step title="フローを書く">
+        フローがPythonファイルで定義されていることを確認してください。簡単な例を見てみましょう:
+
         ```python example.py
         from prefect import flow
 
@@ -71,8 +72,9 @@ To deploy a flow using `flow.deploy` and Docker, follow these steps:
             print(f"Hello, {name}!")
         ```
     </Step>
-    <Step title="Add deployment configuration">
-        Add a call to `flow.deploy` to tell Prefect how to deploy your flow.
+    <Step title="デプロイメント構成を追加する">
+        フローのデプロイ方法を Prefect に指示するには、`flow.deploy` への呼び出しを追加します。
+
         ```python example.py
         from prefect import flow
 
@@ -92,55 +94,59 @@ To deploy a flow using `flow.deploy` and Docker, follow these steps:
         ```
     </Step>
     <Step title="Deploy!">
-        Run your script to deploy your flow.
+        スクリプトを実行してフローをデプロイします。
+
         ```bash
         python example.py
         ```
 
-        Running this script will:
+        このスクリプトを実行すると、次の処理が実行されます。
 
-        1. Build a Docker image containing your flow code and dependencies.
-        2. Create a deployment associated with the specified work pool and image.
+        1. フローコードと依存関係を含む Docker イメージをビルドします。
+        2. 指定したワークプールとイメージに関連付けられたデプロイメントを作成します。
     </Step>
 </Steps>
 
-Building a Docker image for our flow allows us to have a consistent environment for our flow to run in. Workers for our work pool will use the image to run our flow.
-In this example, we set `push=False` to skip pushing the image to a registry. This is useful for local development, and you can push your image to a registry such as Docker Hub in a production environment.
+フロー用の Docker イメージをビルドすることで、フローを実行するための一貫した環境を構築できます。
+ワークプールのワーカーは、このイメージを使用してフローを実行します。
+この例では、レジストリへのイメージのプッシュをスキップするために `push=False` を設定しています。
+これはローカル開発に便利で、本番環境では Docker Hub などのレジストリにイメージをプッシュできます。
 
 <Note>
-**Where's the Dockerfile?**
+**Dockerfile はどこにありますか？**
 
-In the above example, we didn't specify a Dockerfile. By default, Prefect will generate a Dockerfile for us that copies the flow code into an image and installs 
-any additional dependencies.
+上記の例では、Dockerfile を指定していません。
+デフォルトでは、Prefect はフローコードをイメージにコピーし、追加の依存関係をインストールする Dockerfile を生成します。
 
-If you want to write and use your own Dockerfile, you can do so by passing a `dockerfile` parameter to `flow.deploy`.
+独自の Dockerfile を作成して使用したい場合は、`flow.deploy` に `dockerfile` パラメータを渡してください。
 </Note>
 
-### Trigger a run
+### 実行をトリガーする
 
-Now that we have our flow deployed, we can trigger a run via either the Prefect CLI or UI.
+フローをデプロイしたので、Prefect CLI または UI から実行をトリガーできます。
 
-First, we need to start a worker to run our flow:
+まず、フローを実行するためのワーカーを起動する必要があります:
 
 ```bash
 prefect worker start --pool my-work-pool
 ```
 
-Then, we can trigger a run of our flow using the Prefect CLI:
+次に、Prefect CLI を使用してフローの実行をトリガーできます:
 
 ```bash
 prefect deployment run 'my-flow/my-deployment'
 ```
 
-After a few seconds, you should see logs from your worker showing that the flow run has started and see the state update in the UI.
+数秒後、フロー実行が開始されたことを示すワーカーからのログが表示され、UI で状態の更新が表示されます。
 
-## Deploy with a schedule
+## スケジュールに従ってデプロイする
 
-To deploy a flow with a schedule, you can use one of the following options:
+フローをスケジュールに従ってデプロイするには、次のいずれかのオプションを使用します:
 
 - `interval`
 
-    Defines the interval at which the flow should run. Accepts an integer or float value representing the number of seconds between runs or a `datetime.timedelta` object.
+    フローを実行する間隔を定義します。
+    実行間隔の秒数を表す整数値または浮動小数点値、あるいは `datetime.timedelta` オブジェクトを受け入れます。
 
     <Expandable title="Example">
     ```python interval.py
@@ -167,7 +173,8 @@ To deploy a flow with a schedule, you can use one of the following options:
 
 - `cron`
 
-    Defines when a flow should run using a cron string.
+    cron 文字列を使用してフローをいつ実行するかを定義します。
+
     <Expandable title="Example">
     ```python cron.py
     from prefect import flow
@@ -192,7 +199,7 @@ To deploy a flow with a schedule, you can use one of the following options:
 
 - `rrule`
 
-    Defines a complex schedule using an `rrule` string.
+    `rrule` 文字列を使用して複雑なスケジュールを定義します。
 
     <Expandable title="Example">
     ```python rrule.py
@@ -218,10 +225,10 @@ To deploy a flow with a schedule, you can use one of the following options:
 
 - `schedules`
 
-    Defines multiple schedules for a deployment. This option provides flexibility for:
-        - Setting up various recurring schedules
-        - Implementing complex scheduling logic
-        - Applying timezone offsets to schedules
+    デプロイメントに複数のスケジュールを定義します。このオプションにより、以下の柔軟性が得られます。
+        - 様々な定期スケジュールの設定
+        - 複雑なスケジュールロジックの実装
+        - スケジュールへのタイムゾーンオフセットの適用
 
     <Expandable title="Example">
     ```python schedules.py
@@ -254,29 +261,29 @@ To deploy a flow with a schedule, you can use one of the following options:
     ```
     </Expandable>
 
-    Learn more about schedules [here](/v3/automate/add-schedules).
+    スケジュールの詳細については、[こちら](/v3/automate/add-schedules) をご覧ください。
 
 
-## Use remote code storage
+## リモートコードストレージの使用
 
-In addition to storing your  code in a Docker image, Prefect also supports deploying your code to remote storage. This approach allows you to 
-store your flow code in a remote location, such as a Git repository or cloud storage service.
+Prefect は、Docker イメージへのコード保存に加えて、リモートストレージへのコードのデプロイもサポートしています。
+このアプローチにより、Git リポジトリやクラウドストレージサービスなどのリモートの場所にフローコードを保存できます。
 
-Using remote storage for your code has several advantages:
+リモートストレージにコードを保存することには、いくつかの利点があります。
 
-1. Faster iterations: You can update your flow code without rebuilding Docker images.
-2. Reduced storage requirements: You don't need to store large Docker images for each code version.
-3. Flexibility: You can use different storage backends based on your needs and infrastructure.
+1. イテレーションの高速化: Docker イメージを再構築することなく、フローコードを更新できます。
+2. ストレージ要件の削減: コードバージョンごとに大きな Docker イメージを保存する必要がありません。
+3. 柔軟性: ニーズやインフラストラクチャに応じて、異なるストレージバックエンドを使用できます。
 
-Using an existing remote Git repository like GitHub, GitLab, or Bitbucket works really well as remote code storage because:
+GitHub、GitLab、Bitbucket などの既存のリモート Git リポジトリを使用することは、以下の理由からリモートコードストレージとして非常に効果的です。
 
-1. Your code is already there.
-2. You can deploy to multiple environments via branches and tags.
-3. You can roll back to previous versions of your flows.
+1. コードが既にそこに保存されている。
+2. ブランチとタグを使用して複数の環境にデプロイできる。
+3. フローを以前のバージョンにロールバックできる。
 
-To deploy using remote storage, you'll need to specify where your code is stored by using `flow.from_source` to first load your flow code from a remote location.
+リモートストレージを使用してデプロイするには、まず `flow.from_source` を使用してリモートの場所からフローコードを読み込み、コードの保存場所を指定する必要があります。
 
-Here's an example of loading a flow from a Git repository and deploying it:
+以下は、Git リポジトリからフローを読み込んでデプロイする例です。
 
 ```python git-deploy.py
 from prefect import flow
@@ -292,20 +299,20 @@ if __name__ == "__main__":
     )
 ```
 
-The `source` parameter can accept a variety of remote storage options including:
+`source` パラメータには、以下のリモートストレージオプションを指定できます。
 
-- Git repositories
-- S3 buckets (using the `s3://` scheme)
-- Google Cloud Storage buckets (using the `gs://` scheme)
-- Azure Blob Storage (using the `az://` scheme)
+- Git リポジトリ
+- S3 バケット (`s3://` スキームを使用)
+- Google Cloud Storage バケット (`gs://` スキームを使用)
+- Azure Blob Storage (`az://` スキームを使用)
 
-The `entrypoint` parameter is the path to the flow function within your repository combined with the name of the flow function.
+`entrypoint` パラメータは、リポジトリ内のフロー関数へのパスとフロー関数の名前を組み合わせたものです。
 
-Learn more about remote code storage [here](/v3/deploy/infrastructure-concepts/store-flow-code/).
+リモートコードストレージの詳細については、[こちら](/v3/deploy/infrastructure-concepts/store-flow-code/) をご覧ください。
 
-## Set default parameters
+## デフォルトパラメータの設定
 
-You can set default parameters for a deployment using the `parameters` keyword argument in `flow.deploy`.
+`flow.deploy` の `parameters` キーワード引数を使用して、デプロイメントのデフォルトパラメータを設定できます。
 
 ```python default-parameters.py
 from prefect import flow
@@ -327,12 +334,12 @@ if __name__ == "__main__":
     )
 ```
 
-Note these parameters can still be overridden on a per-deployment basis.
+これらのパラメータはデプロイメントごとに上書きできることに注意してください。
 
-## Set job variables
+## ジョブ変数の設定
 
-You can set default job variables for a deployment using the `job_variables` keyword argument in `flow.deploy`. 
-The job variables provided will override the values set on the work pool.
+`flow.deploy` の `job_variables` キーワード引数を使用して、デプロイメントのデフォルトのジョブ変数を設定できます。
+指定されたジョブ変数は、ワークプールに設定された値をオーバーライドします。
 
 ```python job-variables.py
 import os
@@ -356,14 +363,14 @@ if __name__ == "__main__":
     )
 ```
 
-Job variables can be used to customize environment variables, resources limits, and other infrastructure options, allowing fine-grained control over your infrastructure on a per-deployment or per-flow-run basis.
-Any variable defined in the base job template of the associated work pool can be overridden by a job variable.
+ジョブ変数を使用すると、環境変数、リソース制限、その他のインフラストラクチャオプションをカスタマイズできるため、デプロイメントごとまたはフロー実行ごとにインフラストラクチャをきめ細かく制御できます。
+関連するワークプールのベースジョブテンプレートで定義された変数は、ジョブ変数によってオーバーライドできます。
 
-You can learn more about job variables [here](/v3/deploy/infrastructure-concepts/customize).
+ジョブ変数の詳細については、[こちら](/v3/deploy/infrastructure-concepts/customize) をご覧ください。
 
-## Deploy multiple flows
+## 複数のフローをデプロイする
 
-To deploy multiple flows at once, use the `deploy` function.
+複数のフローを一度にデプロイするには、`deploy` 関数を使用します。
 
 ```python multi-deploy.py
 from prefect import flow, deploy
@@ -394,16 +401,16 @@ if __name__ == "__main__":
 ```
 
 
-When we run the above script, it will build a single Docker image for both deployments.
-This approach offers the following benefits:
+上記のスクリプトを実行すると、両方のデプロイメントに対して単一のDockerイメージがビルドされます。
+このアプローチには、以下の利点があります。
 
-    - Saves time and resources by avoiding redundant image builds.
-    - Simplifies management by maintaining a single image for multiple flows.
+    - 冗長なイメージビルドを回避することで、時間とリソースを節約できます。
+    - 複数のフローに対して単一のイメージを維持することで、管理を簡素化できます。
 
-## Additional resources
+## 追加リソース
 
-- [Work Pools](/v3/deploy/infrastructure-concepts/work-pools/)
-- [Store Flow Code](/v3/deploy/infrastructure-concepts/store-flow-code/)
-- [Customize Infrastructure](/v3/deploy/infrastructure-concepts/customize/)
-- [Schedules](/v3/automate/add-schedules/)
-- [Write Flows](/v3/develop/write-flows/)
+- [ワークプール](/v3/deploy/infrastructure-concepts/work-pools/)
+- [ストアフローコード](/v3/deploy/infrastructure-concepts/store-flow-code/)
+- [インフラストラクチャのカスタマイズ](/v3/deploy/infrastructure-concepts/customize/)
+- [スケジュール](/v3/automate/add-schedules/)
+- [書き込みフロー](/v3/develop/write-flows/)

@@ -1,49 +1,50 @@
 ---
-title: Retrieve code from storage
-description: Learn about where to store your flow code.
+title: ストレージからコードを取得する
+description: フローコードを保存する場所について説明します。
 ---
 
-When a deployment runs, the execution environment needs access to the flow code.
-Flow code is not stored in Prefect server or Prefect Cloud.
+デプロイメントを実行する際、実行環境はフローコードにアクセスする必要があります。
+フローコードはPrefectサーバーやPrefect Cloudには保存されません。
 
-You have several flow code storage options for remote execution:
-- Git-based storage (GitHub, GitLab, Bitbucket)
-- Docker image-based storage
-- Cloud-provider storage (AWS S3, Azure Blob Storage, GCP GCS)
+リモート実行には、フローコードの保存オプションがいくつかあります。
+- Gitベースのストレージ (GitHub、GitLab、Bitbucket)
+- Dockerイメージベースのストレージ
+- クラウドプロバイダーのストレージ (AWS S3、Azure Blob Storage、GCP GCS)
 
-Each of these options is popular - your choice will depend upon your team's needs and tools.
+これらのオプションはどれも人気があり、チームのニーズとツールに応じて選択してください。
 
-Local storage is also an option for deployments that run locally.
+ローカルで実行されるデプロイメントには、ローカルストレージも選択肢となります。
 
-In the examples below, we show how to create a work pool-based deployment for each of these storage options. 
+以下の例では、これらのストレージオプションごとにワークプールベースのデプロイメントを作成する方法を示します。
 
-## Deployment creation options
-You can create a deployment through [Python code with the `flow.deploy` method](/v3/deploy/infrastructure-concepts/deploy-via-python) or through a [YAML specification defined in a `prefect.yaml` file](/v3/deploy/infrastructure-concepts/prefect-yaml).
+## デプロイメント作成オプション
+[`flow.deploy` メソッドを使用した Python コード](/v3/deploy/infrastructure-concepts/deploy-via-python) または [`prefect.yaml` ファイルで定義された YAML 仕様](/v3/deploy/infrastructure-concepts/prefect-yaml) を使用してデプロイメントを作成できます。
 
-When using the Python `deploy` method specify a flow storage location other than a Docker image requires the `flow.from_source` method. The `source` and `entrypoint` arguments are required. 
+Python の `deploy` メソッドを使用する場合、Docker イメージ以外のフローの保存場所を指定するには `flow.from_source` メソッドが必要です。`source` 引数と `entrypoint` 引数は必須です。
 
-The `entrypoint` is the path to the file the flow is located in and the function name, separated by a colon.
+`entrypoint` は、フローが配置されているファイルへのパスと関数名をコロンで区切って指定します。
 
-The `source` is either a URL to a git repository or a storage object.
+`source` は、Git リポジトリへの URL またはストレージオブジェクトのいずれかです。
 
-To create a `prefect.yaml` file interactively, run `prefect deploy` from the CLI and select the appropriate storage option.
+`prefect.yaml` ファイルを対話形式で作成するには、CLI から `prefect deploy` を実行し、適切なストレージオプションを選択します。
 
-## Git-based storage
+## Git ベースのストレージ
 
-Git-based version control platforms provide redundancy, version control, and collaboration capabilities. Prefect supports:
+Git ベースのバージョン管理プラットフォームは、冗長性、バージョン管理、そしてコラボレーション機能を提供します。Prefect は以下のプラットフォームをサポートしています。
 
 - [GitHub](https://github.com/)
 - [GitLab](https://www.gitlab.com)
 - [Bitbucket](https://bitbucket.org/)
 
-For a public repository, you can use the repository URL directly.
+パブリックリポジトリの場合は、リポジトリ URL を直接使用できます。
 
-If you are using a private repository and are authenticated in your environment at deployment creation and deployment execution, you can use the repository URL directly.
+プライベートリポジトリを使用しており、デプロイメントの作成時と実行時に環境内で認証されている場合は、リポジトリ URL を直接使用できます。
 
-Alternatively, for a private repository, you can create a `Secret` block or create a credentials block specific to your git-based version control platform to store your credentials. 
-Then you can reference the block in the Python `deploy` method or the `prefect.yaml` file pull step.
+あるいは、プライベートリポジトリの場合は、`Secret` ブロックを作成するか、Git ベースのバージョン管理プラットフォーム固有の credentials ブロックを作成して認証情報を保存することもできます。
 
-If using the Python `deploy` method with a private repository that references a block, provide a [`GitRepository`](https://reference.prefect.io/prefect/flows/#prefect.runner.storage.GitRepository) object instead of a URL, as shown below.
+その後、Python の `deploy` メソッドまたは `prefect.yaml` ファイルの pull ステップで、このブロックを参照できます。
+
+ブロックを参照するプライベート リポジトリで Python の `deploy` メソッドを使用する場合は、以下に示すように、URL ではなく [`GitRepository`](https://reference.prefect.io/prefect/flows/#prefect.runner.storage.GitRepository) オブジェクトを指定します。
 
 <Tabs>
   <Tab title="GitHub">
@@ -121,23 +122,22 @@ If using the Python `deploy` method with a private repository that references a 
     ```
     </CodeGroup>
 
-    For accessing a private repository, we suggest creating a personal access token.
-    We recommend using HTTPS with [fine-grained Personal Access Tokens](https://docs.github.com/en/authentication/keeping-your-account-and-data-secure/managing-your-personal-access-tokens#creating-a-fine-grained-personal-access-token) to limit access by repository. 
-    
-    See the GitHub docs for [Personal Access Tokens (PATs)](https://docs.github.com/en/github/authenticating-to-github/creating-a-personal-access-token).
+プライベートリポジトリにアクセスするには、個人用アクセストークンを作成することをお勧めします。
+リポジトリごとにアクセスを制限するには、[きめ細かな個人用アクセストークン](https://docs.github.com/en/authentication/keeping-your-account-and-data-secure/managing-your-personal-access-tokens#creating-a-fine-grained-personal-access-token) を使用した HTTPS の使用をお勧めします。
 
-    Under *Your Profile -> Developer Settings -> Personal access tokens -> Fine-grained token* choose *Generate New Token* and 
-    fill in the required fields. 
-    
-    Under *Repository access* choose *Only select repositories* and grant the token permissions for *Contents*.
+[個人用アクセストークン (PAT)](https://docs.github.com/en/github/authenticating-to-github/creating-a-personal-access-token) については、GitHub のドキュメントをご覧ください。
 
-    If using a Secret block, you can create it through code or the UI ahead of time and reference it at deployment creation as shown above. 
+*[プロフィール] -> [開発者設定] -> [個人用アクセストークン] -> [きめ細かなトークン]* で、*[新しいトークンの生成]* を選択し、必要なフィールドに入力します。
 
-    If using a credentials block, you can create it ahead of time and reference it at deployment creation. 
+*リポジトリアクセス* で *選択したリポジトリのみ* を選択し、*コンテンツ* へのトークン権限を付与します。
 
-    1. Install prefect-github with `pip install -U prefect-github`
-    1. Register the blocks in that library to make them available on the server with `prefect block register -m prefect_github`
-    1. Create a GitHub Credentials block through code or the Prefect UI and reference it at deployment creation as shown above.
+Secret ブロックを使用する場合は、事前にコードまたは UI で作成し、上記のようにデプロイメント作成時に参照することができます。
+
+Credentials ブロックを使用する場合は、事前に作成し、デプロイメント作成時に参照することができます。
+
+1. `pip install -U prefect-github` で prefect-github をインストールします。
+1. `prefect block register -m prefect_github` で、そのライブラリ内のブロックをサーバー上で利用できるように登録します。
+1. コードまたは Prefect UI で GitHub Credentials ブロックを作成し、上記のようにデプロイメント作成時に参照します。
 
   </Tab>  
   <Tab title="Bitbucket">
@@ -215,19 +215,19 @@ If using the Python `deploy` method with a private repository that references a 
     ```
     </CodeGroup>
 
-    For accessing a private repository, we recommend using HTTPS with Repository, Project, or Workspace [Access Tokens](https://support.atlassian.com/bitbucket-cloud/docs/access-tokens/). 
-    
-    You can create a Repository Access Token with Scopes -> Repositories -> Read.
+プライベートリポジトリにアクセスするには、リポジトリ、プロジェクト、またはワークスペースの [アクセストークン](https://support.atlassian.com/bitbucket-cloud/docs/access-tokens/) で HTTPS を使用することをお勧めします。
 
-    Bitbucket requires you prepend the token string with `x-token-auth:` The full string looks like this: `x-token-auth:abc_123_this_is_a_token`. 
+リポジトリアクセストークンは、「スコープ」->「リポジトリ」->「読み取り」で作成できます。
 
-    If using a Secret block, you can create it through code or the UI ahead of time and reference it at deployment creation as shown above. 
+Bitbucket では、トークン文字列の先頭に `x-token-auth:` を付加する必要があります。完全な文字列は `x-token-auth:abc_123_this_is_a_token` のようになります。
 
-    If using a credentials block, you can create it ahead of time and reference it at deployment creation. 
+シークレットブロックを使用する場合は、事前にコードまたは UI で作成し、上記のようにデプロイメント作成時に参照することができます。
 
-    1. Install prefect-bitbucket with `pip install -U prefect-bitbucket`
-    1. Register the blocks in that library with `prefect block register -m prefect_bitbucket` 
-    1. Create a Bitbucket credentials block in code or the Prefect UI and reference at deployment creation as shown above.
+認証情報ブロックを使用する場合は、事前に作成し、デプロイメント作成時に参照することができます。
+
+1. `pip install -U prefect-bitbucket` で prefect-bitbucket をインストールします。
+1. `prefect block register -m prefect_bitbucket` でライブラリ内のブロックを登録します。
+1. コードまたは Prefect UI で Bitbucket 認証情報ブロックを作成し、上記のようにデプロイメント作成時に参照します。
 
   </Tab>
 
@@ -310,47 +310,46 @@ If using the Python `deploy` method with a private repository that references a 
     ```
     </CodeGroup>
 
-    For accessing a private repository, we recommend using HTTPS with [Project Access Tokens](https://docs.gitlab.com/ee/user/profile/personal_access_tokens.html).
+プライベートリポジトリにアクセスするには、[プロジェクトアクセストークン](https://docs.gitlab.com/ee/user/profile/personal_access_tokens.html)を使用したHTTPSの使用をお勧めします。
 
-    In your repository in the GitLab UI, select *Settings -> Repository -> Project Access Tokens* and check 
-    *read_repository* under *Select scopes*.
+GitLab UIのリポジトリで、*設定 -> リポジトリ -> プロジェクトアクセストークン* を選択し、*スコープの選択* の *read_repository* にチェックを入れてください。
 
-    If using a Secret block, you can create it through code or the UI ahead of time and reference it at deployment creation as shown above. 
+Secretブロックを使用する場合は、事前にコードまたはUIで作成し、上記のようにデプロイメント作成時に参照することができます。
 
-    If using a credentials block, you can create it ahead of time and reference it at deployment creation. 
+credentialsブロックを使用する場合は、事前に作成し、デプロイメント作成時に参照することができます。
 
-    1. Install prefect-gitlab with `pip install -U prefect-gitlab`
-    1. Register the blocks in that library with `prefect block register -m prefect_gitlab` 
-    1. Create a GitLab credentials block in code or the Prefect UI and reference it at deployment creation as shown above.
+1. `pip install -U prefect-gitlab` でprefect-gitlabをインストールします。
+1. `prefect block register -m prefect_gitlab` で、そのライブラリ内のブロックを登録します。
+1. コードまたはPrefect UIでGitLab credentialsブロックを作成し、上記のようにデプロイメント作成時に参照します。
 
   </Tab>
 </Tabs>
 
-Note that you can specify a `branch` if creating a `GitRepository` object. 
-The default is `"main"`.
+`GitRepository` オブジェクトを作成する場合は、`branch` を指定できることに注意してください。
+デフォルトは `"main"` です。
 
 <Warning>
-**Push your code**
+**コードをプッシュする**
 
-When you make a change to your code, Prefect does not push your code to your git-based version control platform.
-You need to push your code manually or as part of your CI/CD pipeline.
-This is intentional to avoid confusion about the git history and push process.
+コードを変更しても、Prefect は Git ベースのバージョン管理プラットフォームにコードをプッシュしません。
+コードは手動でプッシュするか、CI/CD パイプラインの一部としてプッシュする必要があります。
+これは、Git の履歴とプッシュプロセスに関する混乱を避けるためです。
 </Warning>
 
-## Docker-based storage
+## Docker ベースのストレージ
 
-Another popular flow code storage option is to include it in a Docker image. 
-All work pool options except **Process** and **Prefect Managed** allow you to bake your code into a Docker image.
+フローコードを保存するもう一つの一般的な方法は、Docker イメージに含めることです。
+**Process** と **Prefect Managed** を除くすべてのワークプールオプションでは、コードを Docker イメージに組み込むことができます。
 
-To create a deployment with Docker-based flow code storage use the Python `deploy` method or create a `prefect.yaml` file.
+Docker ベースのフローコードストレージを使用してデプロイメントを作成するには、Python の `deploy` メソッドを使用するか、`prefect.yaml` ファイルを作成します。
 
 <Note>
-If you use the Python `deploy` method to store the flow code in a Docker image, you don't need to use the `from_source` method.
+Python の `deploy` メソッドを使用してフロー コードを Docker イメージに保存する場合は、`from_source` メソッドを使用する必要はありません。
 </Note>
 
-The `prefect.yaml` file below was generated by running `prefect deploy` from the CLI (a few lines of metadata were excluded from the top of the file output for brevity).
+以下の `prefect.yaml` ファイルは、CLI から `prefect deploy` を実行して生成されました（簡潔にするため、ファイル出力の先頭から数行のメタデータは省略されています）。
 
-Note that the `build` section is necessary if baking your flow code into a Docker image.
+フローコードを Docker イメージにベイクする場合は、`build` セクションが必要であることに注意してください。
 
 <CodeGroup>
 
@@ -409,42 +408,42 @@ deployments:
 ```
 </CodeGroup>
 
-Any pip packages specified in a `requirements.txt` file will be included in the image.
+`requirements.txt` ファイルで指定された pip パッケージはすべてイメージに含まれます。
 
-In the examples above, we elected not to push the image to a remote registry.
+上記の例では、イメージをリモートレジストリにプッシュしないことを選択しました。
 
-To push the image to a remote registry, pass `push=True` in the Python `deploy` method or add a `push_docker_image` step to the `push` section of the `prefect.yaml` file.
+イメージをリモートレジストリにプッシュするには、Python の `deploy` メソッドに `push=True` を渡すか、`prefect.yaml` ファイルの `push` セクションに `push_docker_image` ステップを追加します。
 
-### Custom Docker image
+### カスタム Docker イメージ
 
-By default, your deployment will use the base Prefect image when creating your image.
-Alternatively, you can create a custom Docker image outside of Prefect. 
-If doing this with and you don't need push or pull steps in the `prefect.yaml` file.
-Instead, the work pool can reference the image directly.
+デフォルトでは、デプロイメントではイメージ作成時にベースの Prefect イメージが使用されます。
+または、Prefect の外部でカスタム Docker イメージを作成することもできます。
+Prefect を使用してカスタム Docker イメージを作成する場合、`prefect.yaml` ファイルでプッシュまたはプルの手順を実行する必要はありません。
+代わりに、ワークプールでイメージを直接参照できます。
 
-For more information, see [this discussion of custom Docker images](/v3/deploy/infrastructure-examples/docker/#automatically-build-a-custom-docker-image-with-a-local-dockerfile).
+詳細については、[カスタム Docker イメージに関するこちらの説明](/v3/deploy/infrastructure-examples/docker/#automatically-build-a-custom-docker-image-with-a-local-dockerfile) をご覧ください。
 
-## Cloud-provider storage
+## クラウドプロバイダーのストレージ
 
-Another option for flow code storage is any [fsspec](https://filesystem-spec.readthedocs.io/en/latest/)-supported storage location, such as AWS S3, Azure Blob Storage, or GCP GCS.
+フローコードストレージのもう1つの選択肢は、[fsspec](https://filesystem-spec.readthedocs.io/en/latest/) でサポートされているストレージロケーション（AWS S3、Azure Blob Storage、GCP GCS など）です。
 
-If the storage location is publicly available, or if you are authenticated in the environment where you are creating and running your deployment, you can reference the storage location directly. 
-You don't need to pass credentials explicitly.
+ストレージロケーションが公開されている場合、またはデプロイメントを作成して実行している環境で認証されている場合は、ストレージロケーションを直接参照できます。
 
-To pass credentials explicitly to authenticate to your storage location, you can use either of the following block types:
+認証情報を明示的に渡す必要はありません。
+ストレージロケーションへの認証のために認証情報を明示的に渡すには、次のいずれかのブロックタイプを使用できます。
 
-- Prefect integration library storage blocks, such as the `prefect-aws` library's `S3Bucket` block, which can use a `AWSCredentials` block when it is created.
-- Secret blocks
+- Prefect 統合ライブラリのストレージブロック（`prefect-aws` ライブラリの `S3Bucket` ブロックなど）。作成時に `AWSCredentials` ブロックを使用できます。
+- シークレットブロック
 
 <Note>
-If you use a storage block such as the `S3Bucket` block, you need to have the `prefect-aws` library available in the environment where your flow code runs.
+`S3Bucket` ブロックなどのストレージブロックを使用する場合は、フローコードが実行される環境で `prefect-aws` ライブラリが利用可能になっている必要があります。
 
-You can do any of the following to make the library available:
+ライブラリを利用するには、次のいずれかの方法があります。
 
-1. Install the library into the execution environment directly
-1. Specify the library in the work pool's Base Job Template in the **Environment Variables** section like this:`{"EXTRA_PIP_PACKAGES":"prefect-aws"}`
-1. Specify the library in the environment variables of the `deploy` method as shown in the examples below
-1. Specify the library in a `requirements.txt` file and reference the file in the `pull` step of the `prefect.yaml` file like this:
+1. ライブラリを実行環境に直接インストールする
+1. ワークプールのベースジョブテンプレートの **Environment Variables** セクションで、次のようにライブラリを指定する: `{"EXTRA_PIP_PACKAGES":"prefect-aws"}`
+1. 以下の例に示すように、`deploy` メソッドの環境変数でライブラリを指定する
+1. `requirements.txt` ファイルでライブラリを指定し、`prefect.yaml` ファイルの `pull` ステップで次のようにファイルを参照する:
 
 ```yaml
     - prefect.deployments.steps.pip_install_requirements:
@@ -454,11 +453,11 @@ You can do any of the following to make the library available:
 
 </Note>
 
-The examples below show how to create a deployment with flow code in a cloud provider storage location.
-For each example, we show how to access code that is publicly available.
-The `prefect.yaml` example includes an additional line to reference a credentials block if authenticating to a private storage location through that option. 
+以下の例は、クラウドプロバイダーのストレージロケーションにフローコードを使用してデプロイメントを作成する方法を示しています。
+各例では、公開されているコードにアクセスする方法を示します。
+`prefect.yaml` の例には、そのオプションを使用してプライベートストレージロケーションに認証する場合に、認証情報ブロックを参照するための追加行が含まれています。
 
-We also include Python code that shows how to use an existing storage block and an example of that creates, but doesn't save, a storage block that references an existing nested credentials block.
+また、既存のストレージブロックの使用方法を示す Python コードと、既存のネストされた認証情報ブロックを参照するストレージブロックを作成する（ただし保存はしない）例も示します。
 
 
 <Tabs>
@@ -542,13 +541,15 @@ We also include Python code that shows how to use an existing storage block and 
 
     </CodeGroup>
 
-    To create an `AwsCredentials` block:
+    `AwsCredentials` ブロックを作成するには:
 
-    1. Install the [prefect-aws](/integrations/prefect-aws) library with `pip install -U prefect-aws`
-    1. Register the blocks in prefect-aws with `prefect block register -m prefect_aws` 
-    1. Create a user with a role with read and write permissions to access the bucket. If using the UI, create an access key pair with *IAM -> Users -> Security credentials -> Access keys -> Create access key*. Choose *Use case -> Other* and then copy the *Access key* and *Secret access key* values.
-    1. Create an [`AWSCredentials` block](/integrations/prefect-aws/index#save-credentials-to-an-aws-credentials-block) in code or the Prefect UI. In addition to the block name, most users will fill in the *AWS Access Key ID* and *AWS Access Key Secret* fields.
-    1. Reference the block as shown above.
+    1. `pip install -U prefect-aws` で [prefect-aws](/integrations/prefect-aws) ライブラリをインストールします。
+    1. `prefect block register -m prefect_aws` で、prefect-aws にブロックを登録します。
+    1. バケットにアクセスするための読み取り権限と書き込み権限を持つロールを持つユーザーを作成します。
+    UI を使用する場合は、*IAM -> Users -> Security credentials -> Access keys -> Create access key* でアクセスキーペアを作成します。*Use case -> Other* を選択し、*アクセスキー* と *シークレットアクセスキー* の値をコピーします。
+    1. コードまたは Prefect UI で [`AWSCredentials` ブロック](/integrations/prefect-aws/index#save-credentials-to-an-aws-credentials-block) を作成します。
+    ブロック名に加えて、ほとんどのユーザーは *AWS Access Key ID*  と *AWS Access Key Secret* のフィールドも入力します。
+    1. 上記のようにブロックを参照します。
     
 
   </Tab>
@@ -630,15 +631,14 @@ We also include Python code that shows how to use an existing storage block and 
 
     </CodeGroup>
 
-    To create an `AzureBlobCredentials` block:
+    `AzureBlobCredentials` ブロックを作成するには:
 
-    1. Install the [prefect-azure](/integrations/prefect-azure/) library with `pip install -U prefect-azure`
-    1. Register the blocks in prefect-azure with `prefect block register -m prefect_azure` 
-    1. Create an access key for a role with sufficient (read and write) permissions to access the blob. 
-    You can create a connection string containing all required information in the UI under *Storage Account -> Access keys*.
-    1. Create an Azure Blob Storage Credentials block in code or the Prefect UI. Enter a name for the block and paste the 
-    connection string into the *Connection String* field.
-    1. Reference the block as shown above.
+    1. `pip install -U prefect-azure` で [prefect-azure](/integrations/prefect-azure/) ライブラリをインストールします。
+    1. `prefect block register -m prefect_azure` で、prefect-azure にブロックを登録します。
+    1. BLOB にアクセスするための十分な権限（読み取りと書き込み）を持つロールのアクセスキーを作成します。
+    必要な情報をすべて含む接続文字列は、UI の *Storage Account -> Access keys* で作成できます。
+    1. コードまたは Prefect UI で Azure Blob Storage 資格情報ブロックを作成します。ブロックの名前を入力し、接続文字列を *接続文字列* フィールドに貼り付けます。
+    1. 上記のようにブロックを参照します。
   </Tab>
   <Tab title="GCP GCS bucket">
 
@@ -720,27 +720,25 @@ We also include Python code that shows how to use an existing storage block and 
     ```
     </CodeGroup>
     
-     To create a `GcpCredentials` block:
+    `GcpCredentials` ブロックを作成するには:
 
-    1. Install the [prefect-gcp](/integrations/prefect-gcp/) library with `pip install -U prefect-gcp`
-    1. Register the blocks in prefect-gcp with `prefect block register -m prefect_gcp` 
-    1. Create a service account in GCP for a role with read and write permissions to access the bucket contents. 
-    If using the GCP console, go to *IAM & Admin -> Service accounts -> Create service account*. 
-    After choosing a role with the required permissions, 
-    see your service account and click on the three dot menu in the *Actions* column. 
-    Select *Manage Keys -> ADD KEY -> Create new key -> JSON*. Download the JSON file.
-    1. Create a GCP Credentials block in code or the Prefect UI. Enter a name for the block and paste the entire contents of the JSON key file into the *Service Account Info* field.
-    1. Reference the block as shown above.
+    1. `pip install -U prefect-gcp` で [prefect-gcp](/integrations/prefect-gcp/) ライブラリをインストールします。
+    1. `prefect block register -m prefect_gcp` で、prefect-gcp 内のブロックを登録します。
+    1. バケットの内容にアクセスするための読み取り権限と書き込み権限を持つロールのサービスアカウントを GCP に作成します。
+    GCP コンソールを使用する場合は、*[IAM と管理] -> [サービスアカウント] -> [サービスアカウントの作成]* に移動します。
+    必要な権限を持つロールを選択したら、サービスアカウントを確認し、[アクション] 列のその他メニューをクリックします。
+    *[キーの管理] -> [キーの追加] -> [新しいキーの作成] -> [JSON]* を選択します。JSON ファイルをダウンロードします。
+    1. コードまたは Prefect UI で GCP Credentials ブロックを作成します。ブロックの名前を入力し、JSON キーファイルの全内容を *[サービスアカウント情報]* フィールドに貼り付けます。 1. 上記のようにブロックを参照します。
     </Tab>
 </Tabs>
 
-Another authentication option is to give the [worker](/v3/deploy/infrastructure-concepts/workers/) access to the storage location at runtime through SSH keys.
+もう 1 つの認証オプションは、SSH キーを介して実行時に [ワーカー](/v3/deploy/infrastructure-concepts/workers/) にストレージの場所へのアクセス権を付与することです。
 
-## Store code locally
+## コードをローカルに保存する
 
-If using a Process work pool, you can use one of the remote code storage options shown above, or you can store your flow code in a local folder.
+プロセス作業プールを使用している場合は、上記のいずれかで示したリモートコード保存オプションを使用するか、フローコードをローカルフォルダに保存できます。
 
-Here is an example of how to create a deployment with flow code stored locally:
+フローコードをローカルに保存したデプロイメントを作成する方法の例を以下に示します。
 
 <CodeGroup>
 
@@ -791,32 +789,32 @@ deployments:
 ```
 </CodeGroup>
 
-## Include or exclude files from storage
+## ストレージへのファイルの追加または除外
 
-By default, Prefect includes all files in the current folder when you create a deployment.
+デフォルトでは、Prefect はデプロイメントを作成する際に現在のフォルダ内のすべてのファイルをアップロード対象とします。
 
-When using a git repository, Docker image, or cloud-provider storage location, you may want to exclude certain files or directories. 
-If you are familiar with Docker you are likely familiar with the [`.dockerignore`](https://docs.docker.com/engine/reference/builder/#dockerignore-file) file. 
-For remote storage, the `.prefectignore` file serves the same purpose and follows a similar syntax. 
-For example, an entry of `*.pyc` will exclude all `.pyc` files from upload.
+Git リポジトリ、Docker イメージ、またはクラウドプロバイダーのストレージを使用する場合、特定のファイルまたはディレクトリを除外したい場合があります。
+Docker に精通している方は、[`.dockerignore`](https://docs.docker.com/engine/reference/builder/#dockerignore-file) ファイルについてもご存知でしょう。
+リモートストレージの場合、`.prefectignore` ファイルは同じ目的で使用され、同様の構文に従います。
+例えば、`*.pyc` というエントリは、すべての `.pyc` ファイルをアップロードから除外します。
 
-## Update flow code
+## フローコードの更新
 
-After creating a deployment, you may need to change your flow code.
-If baking your flow code into a Docker image, you will need to rebuild your image.
-If storing your flow code in a git-based version control platform or a cloud-based storage location, often you can update your flow code without rebuilding your deployment.
+デプロイメントを作成した後、フローコードの変更が必要になる場合があります。
+フローコードをDockerイメージにベイクしている場合は、イメージを再構築する必要があります。
+フローコードをGitベースのバージョン管理プラットフォームまたはクラウドベースのストレージに保存している場合は、デプロイメントを再構築せずにフローコードを更新できる場合が多くあります。
 
-The exception is when something the server needs to know about has changed, such as the flow entrypoint parameters.
+例外は、フローエントリポイントのパラメータなど、サーバーが認識する必要がある情報が変更された場合です。
 
-Rerun the Python script with `deploy` or run `prefect deploy` from the CLI for YAML-based deployments to update your deployment with the new flow code.
+新しいフローコードでデプロイメントを更新するには、Pythonスクリプトで`deploy`を再実行するか、YAMLベースのデプロイメントの場合はCLIから`prefect deploy`を実行します。
 
-## Flow code storage for deployments created with `serve` 
+## `serve` で作成されたデプロイメントのフローコード保存
 
-The Python `serve` method creates a deployment and a local long-running process to poll for flow runs at the same time.
+Python の `serve` メソッドは、デプロイメントと、フロー実行を同時にポーリングするためのローカルの長時間実行プロセスを作成します。
 
-The deployment creation mechanics for `serve` are similar to `deploy`. 
-`deploy`just requires a work pool name and has a number of parameters dealing with flow code storage for Docker images.
+`serve` のデプロイメント作成メカニズムは `deploy` と似ています。
+`deploy` はワークプール名のみを必要とし、Docker イメージのフローコード保存に関するいくつかのパラメータを持ちます。
 
-Unlike `serve`, if you don't specify an image to use for your flow, you must specify where to pull the flow code from at runtime with the `from_source` method; `from_source` is optional with `serve`.
+`serve` とは異なり、フローに使用するイメージを指定しない場合は、`from_source` メソッドを使用して実行時にフローコードを取得する場所を指定する必要があります。`serve` では `from_source` はオプションです。
 
-Read more about when to consider using `serve` [here](/v3/deploy/infrastructure-concepts/deploy-via-python#when-to-consider-flow-deploy-over-flow-serve).
+`serve` の使用を検討するタイミングの詳細については、[こちら](/v3/deploy/infrastructure-concepts/deploy-via-python#when-to-consider-flow-deploy-over-flow-serve) をご覧ください。
