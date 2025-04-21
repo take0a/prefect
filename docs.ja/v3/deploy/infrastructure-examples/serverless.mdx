@@ -1,63 +1,57 @@
 ---
-title: Run flows on serverless compute
-description: Learn how to use Prefect push work pools to schedule work on serverless infrastructure without having to run a worker.
+title: サーバーレスコンピューティングでフローを実行する
+description: Prefect プッシュ ワーク プールを使用して、ワーカーを実行せずにサーバーレス インフラストラクチャで作業をスケジュールする方法を学びます。
 ---
 
-<span class="badge cloud"></span> Push [work pools](/v3/deploy/infrastructure-concepts/work-pools/) are a special type of work pool. They allow 
-Prefect Cloud to submit flow runs for execution to serverless computing infrastructure without requiring you to run a worker.
-Push work pools currently support execution in AWS ECS tasks, Azure Container Instances, Google Cloud Run jobs, Modal, and Coiled.
+<span class="badge cloud"></span> プッシュ[ワークプール](/v3/deploy/infrastructure-concepts/work-pools/) は特別なタイプのワークプールです。
+プッシュ[ワークプール](/v3/deploy/infrastructure-concepts/work-pools/) を使用すると、Prefect Cloud は、ワーカーを実行することなく、フロー実行をサーバーレス コンピューティング インフラストラクチャに送信できます。
+プッシュ ワークプールは現在、AWS ECS タスク、Azure Container Instances、Google Cloud Run ジョブ、Modal、Coiled での実行をサポートしています。
 
-In this guide you will:
+このガイドでは、以下の内容を学習します:
 
-- Create a push work pool that sends work to Amazon Elastic Container Service (AWS ECS), Azure Container Instances (ACI), 
-Google Cloud Run, Modal, or Coiled
-- Deploy a flow to that work pool
-- Execute a flow without having to run a worker process to poll for flow runs
+- Amazon Elastic Container Service (AWS ECS)、Azure Container Instances (ACI)、Google Cloud Run、Modal、または Coiled に作業を送信するプッシュワークプールを作成する
+- そのワークプールにフローをデプロイする
+- フロー実行をポーリングするためのワーカープロセスを実行せずにフローを実行する
 
 {/*
 <!-- vale off -->
 */}
 
 <Note>
-You can automatically provision infrastructure and create your push work pool using the `prefect work-pool create` 
-CLI command with the `--provision-infra` flag.
-This approach greatly simplifies the setup process.
+`--provision-infra` フラグを指定した `prefect work-pool create` CLI コマンドを使用すると、インフラストラクチャを自動的にプロビジョニングし、プッシュ ワークプールを作成できます。
+このアプローチにより、セットアップ プロセスが大幅に簡素化されます。
 </Note>
 
 {/*
 <!-- vale on -->
 */}
 
-First, you will set up automatic infrastructure provisioning for push work pools. Then you will learn how to manually 
-set up your push work pool.
+まず、プッシュワークプールの自動インフラストラクチャプロビジョニングを設定します。次に、プッシュワークプールを手動で設定する方法を学びます。
 
-## Automatic infrastructure provisioning
+## 自動インフラストラクチャプロビジョニング
 
-With Perfect Cloud you can provision infrastructure for use with an AWS ECS, Google Cloud Run, ACI push work pool.
-Push work pools in Prefect Cloud simplify the setup and management of the infrastructure necessary to run your flows.
-However, setting up infrastructure on your cloud provider can still be a time-consuming process.
-Prefect dramatically simplifies this process by automatically provisioning the necessary infrastructure for you.
+Perfect Cloud を使用すると、AWS ECS、Google Cloud Run、ACI プッシュワークプールで使用するインフラストラクチャをプロビジョニングできます。
+Prefect Cloud のプッシュワークプールは、フロー実行に必要なインフラストラクチャのセットアップと管理を簡素化します。
+しかしながら、クラウドプロバイダーでのインフラストラクチャのセットアップは、依然として時間のかかるプロセスです。
+Prefect は、必要なインフラストラクチャを自動的にプロビジョニングすることで、このプロセスを大幅に簡素化します。
 
-We'll use the `prefect work-pool create` CLI command with the `--provision-infra` flag to automatically provision your 
-serverless cloud resources and set up your Prefect workspace to use a new push pool.
+`--provision-infra` フラグを指定した `prefect work-pool create` CLI コマンドを使用して、サーバーレスクラウドリソースを自動的にプロビジョニングし、Prefect ワークスペースで新しいプッシュプールを使用するように設定します。
 
-### Prerequisites
+### 前提条件
 
-To use automatic infrastructure provisioning, you need: 
+自動インフラストラクチャプロビジョニングを使用するには、次のものが必要です。
 
-- the relevant cloud CLI library installed 
-- to be authenticated with your cloud provider
+- 関連するクラウド CLI ライブラリがインストールされている
+- クラウドプロバイダーによる認証を受けている
 
 <Tabs>
   <Tab title="AWS ECS">
 
-    Install the [AWS CLI](https://docs.aws.amazon.com/cli/latest/userguide/getting-started-install.html), 
-    [authenticate with your AWS account](https://docs.aws.amazon.com/signin/latest/userguide/command-line-sign-in.html), 
-    and [set a default region](https://docs.aws.amazon.com/cli/latest/userguide/cli-configure-files.html#cli-configure-files-methods).
+    [AWS CLI](https://docs.aws.amazon.com/cli/latest/userguide/getting-started-install.html) をインストールし、[AWS アカウントで認証](https://docs.aws.amazon.com/signin/latest/userguide/command-line-sign-in.html)、[デフォルトのリージョンを設定](https://docs.aws.amazon.com/cli/latest/userguide/cli-configure-files.html#cli-configure-files-methods) してください。
 
-    If you already have the AWS CLI installed, be sure to [update to the latest version](https://docs.aws.amazon.com/cli/latest/userguide/getting-started-install.html#getting-started-install-instructions). 
+    AWS CLI が既にインストールされている場合は、[最新バージョンに更新](https://docs.aws.amazon.com/cli/latest/userguide/getting-started-install.html#getting-started-install-instructions) してください。
 
-    You will need the following permissions in your authenticated AWS account:
+    認証済みの AWS アカウントで以下の権限が必要です。
 
     IAM Permissions:
 
@@ -99,25 +93,24 @@ To use automatic infrastructure provisioning, you need:
     - ecr:DescribeRepositories
     - ecr:GetAuthorizationToken
 
-    If you want to use AWS managed policies, you can use the following:
+    AWS 管理ポリシーを使用する場合は、以下を使用できます:
 
     - AmazonECS_FullAccess
     - AmazonEC2FullAccess
     - IAMFullAccess
     - AmazonEC2ContainerRegistryFullAccess
 
-    The above policies give you all the permissions needed, but are more permissive than necessary.
+    上記のポリシーでは必要な権限がすべて付与されますが、必要以上に権限が制限されています。
 
-    [Docker](https://docs.docker.com/get-docker/) is also required to build and push images to your registry.
+    イメージをビルドしてレジストリにプッシュするには、[Docker](https://docs.docker.com/get-docker/) も必要です。
   </Tab>
   <Tab title="Azure Container Instances">
 
-    Install the [Azure CLI](https://learn.microsoft.com/en-us/cli/azure/install-azure-cli) and
-    [authenticate with your Azure account](https://learn.microsoft.com/en-us/cli/azure/authenticate-azure-cli).
+    [Azure CLI](https://learn.microsoft.com/en-us/cli/azure/install-azure-cli) をインストールし、[Azure アカウントで認証](https://learn.microsoft.com/en-us/cli/azure/authenticate-azure-cli) してください。
 
-    If you already have the Azure CLI installed, be sure to update to the latest version with `az upgrade`.
+    Azure CLI が既にインストールされている場合は、`az upgrade` を使用して最新バージョンに更新してください。
 
-    You will also need the following roles in your Azure subscription:
+    Azure サブスクリプションには以下のロールも必要です。
 
     - Contributor
     - User Access Administrator
@@ -125,17 +118,16 @@ To use automatic infrastructure provisioning, you need:
     - Managed Identity Operator
     - Azure Container Registry Contributor
 
-    Docker is also required to build and push images to your registry. You can install Docker 
-    [here](https://docs.docker.com/get-docker/).
+    イメージをビルドしてレジストリにプッシュするには、Docker も必要です。
+    Docker は [こちら](https://docs.docker.com/get-docker/) からインストールできます。
   </Tab>
   <Tab title="Google Cloud Run">
 
-    Install the [gcloud CLI](https://cloud.google.com/sdk/docs/install) and 
-    [authenticate with your GCP project](https://cloud.google.com/docs/authentication/gcloud).
+    [gcloud CLI](https://cloud.google.com/sdk/docs/install) をインストールし、[GCP プロジェクトで認証](https://cloud.google.com/docs/authentication/gcloud) してください。
 
-    If you already have the gcloud CLI installed, be sure to update to the latest version with `gcloud components update`.
+    すでに gcloud CLI がインストールされている場合は、`gcloud components update` を実行して最新バージョンに更新してください。
 
-    You will also need the following permissions in your GCP project:
+    また、GCP プロジェクトで以下の権限も必要です。
 
     - resourcemanager.projects.list
     - serviceusage.services.enable
@@ -144,53 +136,52 @@ To use automatic infrastructure provisioning, you need:
     - resourcemanager.projects.setIamPolicy
     - artifactregistry.repositories.create
 
-    Docker is also required to build and push images to your registry. You can install Docker 
-    [here](https://docs.docker.com/get-docker/).
+    イメージをビルドしてレジストリにプッシュするには、Docker も必要です。
+    Docker は [こちら](https://docs.docker.com/get-docker/) からインストールできます。
   </Tab>
   <Tab title="Modal">
 
-    Install `modal` by running:
+    次のコマンドを実行して `modal` をインストールします:
 
     ```bash
     pip install modal
     ```
 
-    Create a Modal API token by running:
+    次のコマンドを実行して、Modal API トークンを作成します:
 
     ```bash
     modal token new
     ```
 
-    See [Run flows on Modal](/v3/deploy/infrastructure-examples/modal) for more details.
+    詳細については、[Modal でのフロー実行](/v3/deploy/infrastructure-examples/modal)を参照してください。
   </Tab>
   <Tab title="Coiled">
 
-    Install `coiled` by running:
+    次のコマンドを実行して `coiled` をインストールします:
 
     ```bash
     pip install coiled prefect-coiled
     ```
 
-    Create a Coiled API token by running:
+    次のコマンドを実行して、Coiled API トークンを作成します:
 
     ```bash
     coiled login
     ```
 
-    Connect Coiled to your cloud account by running
+    次のコマンドを実行して、Coiledをクラウドアカウントに接続します。
 
     ```bash
     coiled setup
     ```
 
-    or by navigating to [cloud.coiled.io/get-started](https://cloud.coiled.io/get-started)
+    または[cloud.coiled.io/get-started](https://cloud.coiled.io/get-started)にアクセスしてください。
   </Tab>
 </Tabs>
 
-### Automatically create a new push work pool and provision infrastructure
+### 新しいプッシュワークプールを自動的に作成し、インフラストラクチャをプロビジョニングします。
 
-To create a new push work pool and configure the necessary infrastructure, 
-run this command for your particular cloud provider:
+新しいプッシュワークプールを作成し、必要なインフラストラクチャを構成するには、特定のクラウドプロバイダーに対して次のコマンドを実行します。
 
 <Tabs>
   <Tab title="AWS ECS">
@@ -199,14 +190,11 @@ run this command for your particular cloud provider:
     prefect work-pool create --type ecs:push --provision-infra my-ecs-pool
     ```
 
-    The `--provision-infra` flag automatically sets up your default AWS account to execute 
-    flows with ECS tasks.
-    In your AWS account, this command creates a new IAM user, IAM policy, and 
-    ECS cluster that uses AWS Fargate, VPC, and ECR repository (if they don't already exist).
-    In your Prefect workspace, this command creates an 
-    [`AWSCredentials` block](/integrations/prefect-aws/index#save-credentials-to-an-aws-credentials-block) for storing the generated credentials.
+    `--provision-infra` フラグは、ECS タスクを含むフローを実行するためのデフォルトの AWS アカウントを自動的に設定します。
+    AWS アカウントでは、このコマンドによって、AWS Fargate、VPC、ECR リポジトリ（まだ存在しない場合）を使用する新しい IAM ユーザー、IAM ポリシー、ECS クラスターが作成されます。
+    Prefect ワークスペースでは、生成された認証情報を保存するための [`AWSCredentials` ブロック](/integrations/prefect-aws/index#save-credentials-to-an-aws-credentials-block) が作成されます。
 
-    Here's an abbreviated example output from running the command:
+    以下は、このコマンドを実行した場合の出力例の抜粋です。
 
     ```bash
     _____________________________________________________________________________________________
@@ -238,16 +226,14 @@ run this command for your particular cloud provider:
     ```
 
  <Tip>
- **Default Docker build namespace**
+ **デフォルトの Docker ビルド名前空間**
 
-    After infrastructure provisioning completes, you will be logged into your new ECR repository and the default 
-    Docker build namespace will be set to the URL of the registry.
+  インフラストラクチャのプロビジョニングが完了すると、新しい ECR リポジトリにログインし、デフォルトの Docker ビルド名前空間がレジストリの URL に設定されます。
  </Tip>
 
-        While the default namespace is set, you do not need to provide the registry URL when building images as 
-        part of your deployment process.
+        デフォルトの名前空間が設定されている場合は、デプロイプロセスの一環としてイメージをビルドする際にレジストリ URL を指定する必要はありません。
 
-        To take advantage of this, you can write your deploy scripts like this:
+        この機能を利用するには、デプロイスクリプトを次のように記述します。
 
         ```python example_deploy_script.py
         from prefect import flow
@@ -269,10 +255,10 @@ run this command for your particular cloud provider:
             )       
         ```
 
-        This builds an image with the tag `<ecr-registry-url>/my-image:latest` and push it to the registry.
+        これにより、`<ecr-registry-url>/my-image:latest` タグが付いたイメージがビルドされ、レジストリにプッシュされます。
 
-        Your image name needs to match the name of the repository created with your work pool. You can create 
-        new repositories in the ECR console.
+        イメージ名は、ワークプールで作成されたリポジトリの名前と一致する必要があります。
+        新しいリポジトリは ECR コンソールで作成できます。
   </Tab>
   <Tab title="Azure Container Instances">
 
@@ -280,15 +266,11 @@ run this command for your particular cloud provider:
     prefect work-pool create --type azure-container-instance:push --provision-infra my-aci-pool
     ```
 
-    The `--provision-infra` flag automatically sets up your default Azure account to execute 
-    flows through Azure Container Instances.
-    In your Azure account, this command creates a resource group, app registration, service account with necessary permission, 
-    generates a secret for the app registration, and creates an Azure Container Registry, (if they don't already exist).
-    In your Prefect workspace, this command creates an 
-    [`AzureContainerInstanceCredentials` block](/integrations/prefect-azure) 
-    to store the client secret value from the generated secret.
+    `--provision-infra` フラグは、Azure Container Instances を介してフローを実行するためのデフォルトの Azure アカウントを自動的に設定します。
+    Azure アカウントでは、このコマンドによってリソースグループ、アプリ登録、必要な権限を持つサービスアカウントが作成され、アプリ登録用のシークレットが生成され、Azure Container Registry が作成されます（まだ存在しない場合）。
+    Prefect ワークスペースでは、このコマンドによって [`AzureContainerInstanceCredentials` ブロック](/integrations/prefect-azure) が作成され、生成されたシークレットのクライアントシークレット値が保存されます。
 
-    Here's an abbreviated example output from running the command:
+    以下は、このコマンドを実行した場合の出力例の抜粋です。
 
     ```bash
     _____________________________________________________________________________________________
@@ -326,15 +308,14 @@ run this command for your particular cloud provider:
     ```
 
     <Tip>
-    **Default Docker build namespace**
-        After infrastructure provisioning completes, you are logged into your new Azure Container Registry and 
-        the default Docker build namespace is set to the URL of the registry.
+    **デフォルトの Docker ビルド名前空間**
+
+    インフラストラクチャのプロビジョニングが完了すると、新しい Azure Container Registry にログインし、デフォルトの Docker ビルド名前空間がレジストリの URL に設定されます。
     </Tip>
 
-        While the default namespace is set, any images you build without specifying a registry or username/organization 
-        are pushed to the registry.
+        デフォルトの名前空間が設定されている場合、レジストリやユーザー名/組織を指定せずにビルドしたイメージはすべてレジストリにプッシュされます。
 
-        To use this capability, write your deploy scripts like this:
+        この機能を使用するには、デプロイスクリプトを次のように記述します。
 
         ```python example_deploy_script.py
         from prefect import flow
@@ -357,7 +338,7 @@ run this command for your particular cloud provider:
             )       
         ```
 
-        This builds an image with the tag `<acr-registry-url>/my-image:latest` and pushes it to the registry.
+        これにより、`<acr-registry-url>/my-image:latest` タグが付いたイメージが構築され、レジストリにプッシュされます。
   </Tab>
   <Tab title="Google Cloud Run">
 
@@ -365,14 +346,11 @@ run this command for your particular cloud provider:
 prefect work-pool create --type cloud-run:push --provision-infra my-cloud-run-pool 
 ```
 
-The `--provision-infra` flag allows you to select a GCP project to use for your work pool and automatically 
-configures it to execute flows through Cloud Run.
-In your GCP project, this command activates the Cloud Run API, creates a service account, and creates a key for the 
-service account, (if they don't already exist).
-In your Prefect workspace, this command creates a 
-[`GCPCredentials` block](/integrations/prefect-gcp/index#authenticate-using-a-gcp-credentials-block) to store the service account key.
+`--provision-infra` フラグを使用すると、ワークプールに使用する GCP プロジェクトを選択し、Cloud Run を介してフローを実行するように自動的に構成できます。
+GCP プロジェクトでは、このコマンドによって Cloud Run API が有効化され、サービス アカウントが作成され、サービス アカウントのキーが作成されます（まだ存在しない場合）。
+Prefect ワークスペースでは、このコマンドによって [`GCPCredentials` ブロック](/integrations/prefect-gcp/index#authenticate-using-a-gcp-credentials-block) が作成され、サービス アカウント キーが保存されます。
 
-Here's an abbreviated example output from running the command:
+以下は、このコマンドを実行した場合の出力例の抜粋です:
 
 ```bash
 ____________________________________________________________________________________________________________
@@ -410,16 +388,14 @@ Created work pool 'my-cloud-run-pool'!
 ```
 
 <Tip>
-**Default Docker build namespace**
+**デフォルトの Docker ビルド名前空間**
 
-    After infrastructure provisioning completes, you are logged into your new Artifact Registry repository 
-    and the default Docker build namespace is set to the URL of the repository.
+インフラストラクチャのプロビジョニングが完了すると、新しい Artifact Registry リポジトリにログインし、デフォルトの Docker ビルド名前空間がリポジトリの URL に設定されます。
 </Tip>
 
-    While the default namespace is set, any images you build without specifying a registry or username/organization 
-    are pushed to the repository.
+    デフォルトの名前空間が設定されている場合、レジストリやユーザー名/組織を指定せずにビルドしたイメージはすべてリポジトリにプッシュされます。
 
-    To use this capability, write your deploy scripts like this:
+    この機能を使用するには、デプロイスクリプトを次のように記述します。
 
     ```python example_deploy_script.py
     from prefect import flow                                                       
@@ -442,8 +418,7 @@ Created work pool 'my-cloud-run-pool'!
         )
     ```
 
-    This builds an image with the tag `<region>-docker.pkg.dev/<project>/<repository-name>/my-image:latest` 
-    and pushes it to the repository.
+    これにより、`<region>-docker.pkg.dev/<project>/<repository-name>/my-image:latest` タグが付いたイメージがビルドされ、リポジトリにプッシュされます。
   </Tab>
   <Tab title="Modal">
 
@@ -451,10 +426,10 @@ Created work pool 'my-cloud-run-pool'!
     prefect work-pool create --type modal:push --provision-infra my-modal-pool 
     ```
 
-    Using the `--provision-infra` flag triggers the creation of a `ModalCredentials` block in your Prefect Cloud workspace. 
-    This block stores your Modal API token, which authenticates with Modal's API. By default, the token for your 
-    current Modal profile is used for the new `ModalCredentials` block. If Prefect is unable to discover a Modal 
-    API token for your current profile, you will be prompted to create a new one.
+    `--provision-infra` フラグを使用すると、Prefect Cloud ワークスペースに `ModalCredentials` ブロックが作成されます。
+    このブロックには、Modal API で認証する Modal API トークンが格納されます。
+    デフォルトでは、現在の Modal プロファイルのトークンが新しい `ModalCredentials` ブロックに使用されます。
+    Prefect が現在のプロファイルの Modal API トークンを検出できない場合は、新しいトークンを作成するように求められます。
   </Tab>
   <Tab title="Coiled">
 
@@ -462,20 +437,19 @@ Created work pool 'my-cloud-run-pool'!
     prefect work-pool create --type coiled:push --provision-infra my-coiled-pool 
     ```
 
-    Using the `--provision-infra` flag triggers the creation of a `CoiledCredentials` block in your Prefect Cloud workspace. 
-    This block stores your Coiled API token, which authenticates with Coiled's API. 
+    `--provision-infra` フラグを使用すると、Prefect Cloud ワークスペースに `CoiledCredentials` ブロックが作成されます。
+    このブロックには、Coiled API で認証する Coiled API トークンが保存されます。
   </Tab>
 </Tabs>
 
-You're ready to create and schedule deployments that use your new push work pool.
-Reminder that no worker is required to run flows with a push work pool.
+新しいプッシュワークプールを使用するデプロイメントを作成してスケジュールする準備が整いました。
+プッシュワークプールでフローを実行するためにワーカーは必要ありません。
 
-### Use existing resources with automatic infrastructure provisioning
+### 自動インフラストラクチャプロビジョニングで既存のリソースを使用する
 
-If you already have the necessary infrastructure set up, Prefect detects that at work pool creation and the 
-infrastructure provisioning for that resource is skipped.
+必要なインフラストラクチャが既にセットアップされている場合、Prefect は作業プールの作成時にそれを検出し、そのリソースのインフラストラクチャプロビジョニングをスキップします。
 
-For example, here's how `prefect work-pool create my-work-pool --provision-infra` looks when existing Azure resources are detected:
+例えば、既存の Azure リソースが検出された場合の `prefect work-pool create my-work-pool --provision-infra` は次のようになります。
 
 ```bash
 Proceed with infrastructure provisioning? [y/n]: y
@@ -497,18 +471,16 @@ Infrastructure successfully provisioned!
 Created work pool 'my-work-pool'!
 ```
 
-## Provision infrastructure for an existing push work pool
+## 既存のプッシュワークプールのインフラストラクチャをプロビジョニングする
 
-If you already have a push work pool set up, but haven't configured the necessary infrastructure, you can use the 
-`provision-infra` sub-command to provision the infrastructure for that work pool.
-For example, you can run the following command if you have a work pool named "my-work-pool".
+プッシュワークプールが既にセットアップされているものの、必要なインフラストラクチャを構成していない場合は、`provision-infra` サブコマンドを使用して、そのワークプールのインフラストラクチャをプロビジョニングできます。
+たとえば、「my-work-pool」という名前のワークプールがある場合は、次のコマンドを実行できます。
 
 ```bash
 prefect work-pool provision-infra my-work-pool
 ```
 
-Prefect creates the necessary infrastructure for the `my-work-pool` work pool and provides you with a summary 
-of the changes:
+Prefect は `my-work-pool` 作業プールに必要なインフラストラクチャを作成し、変更の概要を提供します:
 
 ```bash
 __________________________________________________________________________________________________________________
@@ -531,210 +503,199 @@ ________________________________________________________________________________
 Proceed with infrastructure provisioning? [y/n]: y
 ```
 
-This command speeds up your infrastructure setup process.
+このコマンドは、インフラストラクチャのセットアッププロセスを高速化します。
 
-As with the examples above, you need to have the related cloud CLI library installed and to be authenticated with 
-your cloud provider.
+上記の例と同様に、関連するクラウド CLI ライブラリがインストールされ、クラウドプロバイダーによって認証されている必要があります。
 
-## Manual infrastructure provisioning
+## インフラストラクチャの手動プロビジョニング
 
-If you prefer to set up your infrastructure manually, exclude the `--provision-infra` flag in the CLI command.
-In the examples below, you'll create a push work pool through the Prefect Cloud UI.
+インフラストラクチャを手動でセットアップする場合は、CLI コマンドで `--provision-infra` フラグを除外してください。
+以下の例では、Prefect Cloud UI を使用してプッシュワークプールを作成します。
 
 <Tabs>
   <Tab title="AWS ECS">
 
-    To push work to ECS, AWS credentials are required.
+    ECS に作業をプッシュするには、AWS 認証情報が必要です。
 
-    Create a user and attach the *AmazonECS_FullAccess* permissions.
+    ユーザーを作成し、*AmazonECS_FullAccess* 権限を付与します。
 
-    From that user's page, create credentials and store them somewhere safe for use in the next section.
+    そのユーザーのページから認証情報を作成し、次のセクションで使用するために安全な場所に保存します。
   </Tab>
   <Tab title="Azure Container Instances">
 
-    To push work to Azure, you need an Azure subscription, resource group, and tenant secret. 
+    Azure に作業をプッシュするには、Azure サブスクリプション、リソースグループ、テナント シークレットが必要です。
 
-    **Create Subscription and Resource Group**
+    **サブスクリプションとリソースグループの作成**
 
-    1. In the Azure portal, create a subscription.
-    2. Create a resource group within your subscription.
+    1. Azure ポータルでサブスクリプションを作成します。
+    2. サブスクリプション内にリソースグループを作成します。
 
-    **Create App Registration**
+    **アプリ登録の作成**
 
-    1. In the Azure portal, create an app registration.
-    2. In the app registration, create a client secret. Copy the value and store it somewhere safe.
-    
-    **Add App Registration to Resource Group**
+    1. Azure ポータルでアプリ登録を作成します。
+    2. アプリ登録で、クライアント シークレットを作成します。値をコピーして安全な場所に保管してください。
 
-    1. Navigate to the resource group you created earlier.
-    1. Choose the "Access control (IAM)" blade in the left-hand side menu. Click "+ Add" button at the top, then 
-    "Add role assignment".
-    1. Go to the "Privileged administrator roles" tab, click on "Contributor", then click "Next" at the bottom of the page.
-    1. Click on "+ Select members". Type the name of the app registration (otherwise it may not autopopulate) and click to add it. 
-    Then hit "Select" and click "Next". The default permissions associated with a role like "Contributor" may 
-    not be sufficient for all operations related to Azure Container Instances (ACI). The specific permissions 
-    required depend on the operations you need to perform (like creating, running, and deleting ACI container groups) 
-    and your organization's security policies. In some cases, additional permissions or custom roles are necessary.
-    1. Click "Review + assign" to finish.
+    **アプリ登録をリソースグループに追加**
+
+    1. 先ほど作成したリソースグループに移動します。
+    1. 左側のメニューで「アクセス制御 (IAM)」ブレードを選択します。上部の "+ Add" ボタンをクリックし、"Add role assignment" をクリックします。
+    1. "Privileged administrator roles" タブに移動し、"Contributor" をクリックして、ページ下部の "Next" をクリックします。
+    1. "+ Select members" をクリックします。アプリ登録の名前を入力し（入力しないと自動入力されない場合があります）、クリックして追加します。
+    次に "Select" をクリックし、"Next" をクリックします。
+    "Contributor" などのロールに関連付けられているデフォルトの権限は、Azure Container Instances (ACI) に関連するすべての操作には不十分な場合があります。
+    必要な具体的な権限は、実行する必要がある操作（ACI コンテナー グループの作成、実行、削除など）と組織のセキュリティ ポリシーによって異なります。
+    場合によっては、追加の権限やカスタム ロールが必要になることもあります。
+    1. "Review + assign" をクリックして完了します。
   </Tab>
   <Tab title="Google Cloud Run">
 
-    You need a GCP service account and an API Key to push work to Cloud Run.
+    Cloud Run に作業をプッシュするには、GCP サービス アカウントと API キーが必要です。
 
-    Create a service account by navigating to the service accounts page and clicking *Create*. Name and describe your service account, 
-    and click *continue* to configure permissions.
+    サービス アカウントを作成するには、サービス アカウント ページに移動し、「作成」をクリックします。
+    サービス アカウントの名前と説明を入力し、「続行」をクリックして権限を設定します。
 
-    The service account must have two roles at a minimum: *Cloud Run Developer* and *Service Account User*.
+    サービス アカウントには、少なくとも「Cloud Run 開発者」と「サービス アカウント ユーザー」の 2 つのロールが必要です。
 
     ![Configuring service account permissions in GCP](/v3/img/guides/gcr-service-account-setup.png)
 
-    Once you create the Service account, navigate to its *Keys* page to add an API key. Create a JSON type key, download it, 
-    and store it somewhere safe for use in the next section.
+    サービスアカウントを作成したら、*キー*ページに移動してAPIキーを追加します。JSON型のキーを作成し、ダウンロードして、次のセクションで使用できるように安全な場所に保管してください。
   </Tab>
   <Tab title="Modal">
 
-    You need a Modal API token to push work to Modal.
+    Modal に作業をプッシュするには、Modal API トークンが必要です。
 
-    Navigate to **Settings** in the Modal UI to create a Modal API token. In the **API Tokens** section of the Settings page, 
-    click **New Token**.
+    Modal UI の **Settings** に移動して、Modal API トークンを作成してください。
+    設定ページの **API Tokens** セクションで、 **New Token** をクリックします。
 
-    Copy the token ID and token secret and store them somewhere safe for use in the next section.
+    トークン ID とトークン シークレットをコピーし、次のセクションで使用するために安全な場所に保管してください。
   </Tab>
   <Tab title="Coiled">
 
-    You need a Coiled API token to push work to Coiled.
+    Coiled に作業をプッシュするには、Coiled API トークンが必要です。
 
-    In the Coiled UI click on your avatar and select **Profile**.  Then press the **Create API Token** button and copy the result.  You will need it in the next section.
+    Coiled UI でアバターをクリックし、**Profile** を選択します。次に、**Create API Token** ボタンを押して、表示されるトークンをコピーします。このトークンは次のセクションで必要になります。
   </Tab>
 </Tabs>
 
-### Work pool configuration
+### ワークプールの構成
 
-The push work pool stores information about what type of infrastructure the flow will run on, what default values to 
-provide to compute jobs, and other important execution environment parameters. Because the push work pool needs to 
-integrate securely with your serverless infrastructure, you need to store your credentials in Prefect Cloud by making a block.
+プッシュワークプールには、フローが実行されるインフラストラクチャの種類、コンピューティングジョブに提供するデフォルト値、その他の重要な実行環境パラメータに関する情報が保存されます。
+プッシュワークプールはサーバーレスインフラストラクチャと安全に統合する必要があるため、ブロックを作成してPrefect Cloudに認証情報を保存する必要があります。
 
-### Create a Credentials block
+### 資格情報ブロックを作成する
 
 <Tabs>
   <Tab title="AWS ECS">
 
-    Navigate to the blocks page, click create new block, and select AWS Credentials for the type.
-    
-    For use in a push work pool, set the region, access key, and access key secret.
+    ブロックページに移動し、「新しいブロックを作成」をクリックして、タイプとして「AWS 認証情報」を選択します。
 
-    Provide any other optional information and create your block.
+    プッシュワークプールで使用する場合は、リージョン、アクセスキー、アクセスキーシークレットを設定します。
+
+    その他のオプション情報を入力してブロックを作成します。
   </Tab>
   <Tab title="Azure Container Instances">
 
-    Navigate to the blocks page and click the "+" at the top to create a new block. Find the Azure Container 
-    Instance Credentials block and click "Add +".
-    
-    Locate the client ID and tenant ID on your app registration and use the client secret you saved earlier. 
-    Make sure the value of the secret, not the secret ID.
+    ブロックページに移動し、上部の「+」をクリックして新しいブロックを作成します。
+    「Azure コンテナーインスタンス資格情報」ブロックを見つけて、"Add +" をクリックします。
 
-    Provide any other optional information and click "Create".
+    アプリ登録でクライアントIDとテナントIDを確認し、先ほど保存したクライアントシークレットを使用します。
+    シークレットIDではなく、シークレットの値を確認してください。
+
+    その他のオプション情報を入力し、"Create" をクリックします。
   </Tab>
   <Tab title="Google Cloud Run">
 
-    Navigate to the blocks page, click create new block, and select GCP Credentials for the type.
+    ブロックページに移動し、「新しいブロックを作成」をクリックして、タイプとして「GCP 認証情報」を選択します。
 
-    For use in a push work pool, this block must have the contents of the JSON key stored in the 
-    Service Account Info field, as such:
+    プッシュワークプールで使用する場合、このブロックには、サービスアカウント情報フィールドに保存されている JSON キーの内容が次のように含まれている必要があります:
 
     ![Configuring GCP Credentials block for use in cloud run push work pools](/v3/img/guides/gcp-creds-block-setup.png)
 
-    Provide any other optional information and create your block.
+    その他のオプション情報を入力してブロックを作成します。
   </Tab>
   <Tab title="Modal">
 
-    Navigate to the blocks page, click create new block, and select Modal Credentials for the type.
+    ブロックページに移動し、「新しいブロックを作成」をクリックし、タイプとして「モーダル認証情報」を選択します。
 
-    For use in a push work pool, this block must have the token ID and token secret stored in the Token ID and Token 
-    Secret fields, respectively.
+    プッシュワークプールで使用する場合、このブロックの「トークンID」フィールドと「トークンシークレット」フィールドに、それぞれトークンIDとトークンシークレットを保存する必要があります。
   </Tab>
   <Tab title="Coiled">
 
-    Navigate to the blocks page, click create new block, and select Coiled Credentials for the type.  Provide the API token from the previous section.
+    ブロックページに移動し、「新しいブロックを作成」をクリックして、タイプとして「Coiled Credentials」を選択します。
+    前のセクションで取得したAPIトークンを入力します。
 
   </Tab>
 </Tabs>
 
-### Create a push work pool
+### プッシュワークプールを作成する
 
-Now navigate to the work pools page.
-Click **Create** to configure your push work pool by selecting a push option in the infrastructure type step.
+ワークプールページに移動します。
+**Create** をクリックし、インフラストラクチャタイプのステップでプッシュオプションを選択して、プッシュワークプールを構成します。
+
 <Tabs>
   <Tab title="AWS ECS">
 
-    Each step has several optional fields that are detailed in the
-     [work pools documentation](/v3/deploy/infrastructure-concepts/work-pools/). 
-    Select the block you created under the AWS Credentials field. 
-    This allows Prefect Cloud to securely interact with your ECS cluster.
+    各ステップにはいくつかのオプションフィールドがあり、詳細は[ワークプールのドキュメント](/v3/deploy/infrastructure-concepts/work-pools/)に記載されています。
+    「AWS 認証情報」フィールドで作成したブロックを選択してください。
+    これにより、Prefect Cloud は ECS クラスターと安全に連携できるようになります。
  </Tab>
  <Tab title="Azure Container Instances">
 
-    Fill in the subscription ID and resource group name from the resource group you created.  
-    Add the Azure Container Instance Credentials block you created in the step above. 
+    作成したリソースグループのサブスクリプションIDとリソースグループ名を入力します。
+    上記の手順で作成したAzureコンテナーインスタンス資格情報ブロックを追加します。
  </Tab>
  <Tab title="Google Cloud Run">
 
-    Each step has several optional fields that are detailed in
-    [Manage infrastructure with work pools](/v3/deploy/infrastructure-concepts/work-pools/). 
-    Select the block you created under the GCP Credentials field. 
-    This allows Prefect Cloud to securely interact with your GCP project.
+    各ステップには、いくつかのオプションフィールドがあります。詳細は[ワークプールを使用したインフラストラクチャの管理](/v3/deploy/infrastructure-concepts/work-pools/)に記載されています。
+    「GCP 認証情報」フィールドで作成したブロックを選択してください。
+    これにより、Prefect Cloud は GCP プロジェクトと安全に連携できるようになります。
  </Tab>
  <Tab title="Modal">
 
-    Each step has several optional fields that are detailed in the 
-    [work pools documentation](/v3/deploy/infrastructure-concepts/work-pools/). 
-    Select the block you created under the Modal Credentials field. 
-    This allows Prefect Cloud to securely interact with your Modal account.
+    各ステップにはいくつかのオプションフィールドがあり、詳細は[ワークプールのドキュメント](/v3/deploy/infrastructure-concepts/work-pools/)に記載されています。
+    「Modal Credentials」フィールドで作成したブロックを選択してください。
+    これにより、Prefect Cloud は Modal アカウントと安全に連携できるようになります。
  </Tab>
  <Tab title="Coiled">
 
-    Each step has several optional fields that are detailed in the 
-    [work pools documentation](/v3/deploy/infrastructure-concepts/work-pools/). 
-    Select the block you created under the Coiled Credentials field. 
-    This allows Prefect Cloud to securely interact with your Coiled account.
+    各ステップにはいくつかのオプションフィールドがあり、詳細は[ワークプールのドキュメント](/v3/deploy/infrastructure-concepts/work-pools/)に記載されています。
+    「Coiled 認証情報」フィールドで作成したブロックを選択してください。
+    これにより、Prefect Cloud は Coiled アカウントと安全に連携できるようになります。
  </Tab>
 </Tabs>
-Create your pool to be ready to deploy flows to your Push work pool.
 
-## Deployment
+プールを作成して、フローをプッシュ作業プールにデプロイする準備をします。
 
-You need to configure your [deployment](/v3/deploy/infrastructure-examples/docker/) to send flow runs to your push work pool.
-For example, if you create a deployment through the interactive command line experience, 
-choose the work pool you just created. If you are deploying an existing `prefect.yaml` file, the deployment would contain:
+## デプロイメント
+
+フロー実行をプッシュワークプールに送信するには、[デプロイメント](/v3/deploy/infrastructure-examples/docker/) を構成する必要があります。
+例えば、対話型コマンドラインエクスペリエンスを使用してデプロイメントを作成する場合は、先ほど作成したワークプールを選択します。既存の `prefect.yaml` ファイルをデプロイする場合、デプロイメントには以下の内容が含まれます:
 
 ```yaml
   work_pool:
     name: my-push-pool
 ```
 
-Deploying your flow to the `my-push-pool` work pool ensures that runs that are ready for execution are 
-submitted immediately—without the need for a worker to poll for them.
+フローを `my-push-pool` 作業プールにデプロイすると、ワーカーがポーリングする必要なく、実行準備が整った実行がすぐに送信されるようになります。
 
 <Warning>
-**Serverless infrastructure may require a certain image architecture**
+**サーバーレス インフラストラクチャでは特定のイメージ アーキテクチャが必要になる場合があります**
 
-Serverless infrastructure may assume a certain Docker image architecture; for example, 
-Google Cloud Run will fail to run images built with `linux/arm64` architecture. If using Prefect to build your image, 
-you can change the image architecture through the `platform` keyword (for example, `platform="linux/amd64"`).
+サーバーレス インフラストラクチャでは、特定の Docker イメージ アーキテクチャが想定される場合があります。たとえば、Google Cloud Run は `linux/arm64` アーキテクチャでビルドされたイメージを実行できません。
+Prefect を使用してイメージをビルドする場合は、`platform` キーワードを使用してイメージ アーキテクチャを変更できます (例: `platform="linux/amd64"`)。
 </Warning>
 
-## Putting it all together
+## すべてをまとめる
 
-With your deployment created, navigate to its detail page and create a new flow run.
-You'll see the flow start running without polling the work pool, because Prefect Cloud securely connected 
-to your serverless infrastructure, created a job, ran the job, and reported on its execution.
+デプロイメントを作成したら、詳細ページに移動して新しいフロー実行を作成します。
+Prefect Cloud がサーバーレス インフラストラクチャに安全に接続し、ジョブを作成して実行し、実行レポートを作成したため、ワークプールをポーリングすることなくフローの実行が開始されます。
 
-## Usage Limits
+## 使用制限
 
-Push work pool usage is unlimited. However push work pools limit flow runs to 24 hours.
+プッシュワークプールの使用量は無制限です。ただし、プッシュワークプールではフローの実行時間が24時間に制限されます。
 
-## Next steps
+## 次のステップ
 
-Learn more about [work pools](/v3/deploy/infrastructure-concepts/work-pools/) and [workers](/v3/deploy/infrastructure-concepts/workers/).
+[ワークプール](/v3/deploy/infrastructure-concepts/work-pools/)と[ワーカー](/v3/deploy/infrastructure-concepts/workers/)について詳しく学習してください。
 
-Learn about installing dependencies at runtime or baking them into your Docker image in the [Deploy to Docker](/v3/deploy/infrastructure-examples/docker#automatically-build-a-custom-docker-image-with-a-local-dockerfile) guide.
+実行時に依存関係をインストールする方法、または依存関係をDockerイメージに組み込む方法については、[Dockerへのデプロイ](/v3/deploy/infrastructure-examples/docker#automatically-build-a-custom-docker-image-with-a-local-dockerfile)ガイドをご覧ください。

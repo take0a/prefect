@@ -1,28 +1,29 @@
 ---
-title: Deploy a web application powered by background tasks
-description: Learn how to background heavy tasks from a web application to dedicated infrastructure.
+title: バックグラウンドタスクで動作するWebアプリケーションをデプロイする
+description: Web アプリケーションから専用インフラストラクチャまで、負荷の高いタスクをバックグラウンドで実行する方法を学習します。
 ---
 
-This example demonstrates how to use [background tasks](/v3/develop/deferred-tasks) in the context of a web application using Prefect for task submission, execution, monitoring, and result storage. We'll build out an application using FastAPI to offer API endpoints to our clients, and task workers to execute the background tasks these endpoints defer.
+この例では、Prefect を使用した Web アプリケーションのコンテキストで、[バックグラウンドタスク](/v3/develop/deferred-tasks) を使用してタスクの送信、実行、監視、結果の保存を行う方法を示します。
+FastAPI を使用してアプリケーションを構築し、クライアントに API エンドポイントを提供し、これらのエンドポイントが遅延させるバックグラウンドタスクをタスクワーカーで実行します。
 
 <Tip>
-Refer to the [examples repository](https://github.com/PrefectHQ/examples/tree/main/apps/background-tasks) for the complete example's source code.
+完全な例のソース コードについては、[例のリポジトリ](https://github.com/PrefectHQ/examples/tree/main/apps/background-tasks) を参照してください。
 </Tip>
 
-This pattern is useful when you need to perform operations that are too long for a standard web request-response cycle, such as data processing, sending emails, or interacting with external APIs that might be slow.
+このパターンは、データ処理、電子メールの送信、遅い可能性がある外部 API とのやり取りなど、標準の Web 要求応答サイクルには長すぎる操作を実行する必要がある場合に役立ちます。
 
 
 
-## Overview
+## 概要
 
-This example will build out:
+この例では、以下のものを構築します。
 
-- `@prefect.task` definitions representing the work you want to run in the background
-- A `fastapi` application providing API endpoints to:
-    - Receive task parameters via `POST` request and submit the task to Prefect with `.delay()`
-    - Allow polling for the task's status via a `GET` request using its `task_run_id`
-- A `Dockerfile` to build a multi-stage image for the web app, Prefect server and task worker(s)
-- A `compose.yaml` to manage lifecycles of the web app, Prefect server and task worker(s)
+- バックグラウンドで実行するタスクを表す `@prefect.task` 定義
+- 以下の API エンドポイントを提供する `fastapi` アプリケーション
+  - タスクパラメータを `POST` リクエストで受け取り、`.delay()` を使用してタスクを Prefect に送信する
+  - タスクの `task_run_id` を使用した `GET` リクエストでタスクのステータスをポーリングする
+- Web アプリ、Prefect サーバー、タスクワーカーのマルチステージイメージを構築するための `Dockerfile`
+- Web アプリ、Prefect サーバー、タスクワーカーのライフサイクルを管理するための `compose.yaml`
 
 ```bash
 ├── Dockerfile
@@ -37,31 +38,32 @@ This example will build out:
 │       └── task.py
 ```
 
-You can follow along by cloning the [examples repository](https://github.com/PrefectHQ/examples) or instead use [`uv`](https://docs.astral.sh/uv/getting-started/installation/) to bootstrap a your own new project:
+[examples リポジトリ](https://github.com/PrefectHQ/examples) をクローンするか、代わりに [`uv`](https://docs.astral.sh/uv/getting-started/installation/) を使用して独自の新しいプロジェクトをブートストラップすることもできます。
 
 ```bash
 uv init --lib foo
 uv add prefect marvin
 ```
 
-This example application is structured as a library with a `src/foo` directory for portability and organization.
+このサンプル アプリケーションは、移植性と整理性を考慮して、`src/foo` ディレクトリを持つライブラリとして構造化されています。
 
 <Note>
-This example does **_not_** require:
+この例では、以下のものは必要ありません。
 - Prefect Cloud
-- creating a Prefect Deployment
-- creating a work pool
+- Prefect Deployment の作成
+- ワークプールの作成
 </Note>
 
-## Useful things to remember
+## 覚えておくと便利な点
 
-- You can call any Python code from your task definitions (including other flows and tasks!)
-- Prefect [Results](/v3/concepts/caching.html) allow you to save/serialize the `return` value of your task definitions to your result storage (e.g. a local directory, S3, GCS, etc), enabling [caching](/v3/develop/task-caching) and [idempotency](/v3/develop/transactions).
+- タスク定義（他のフローやタスクも含む）から任意の Python コードを呼び出すことができます。
+- Prefect [Results](/v3/concepts/caching.html) を使用すると、タスク定義の `return` 値を結果ストレージ（ローカルディレクトリ、S3、GCS など）に保存/シリアル化できるため、[キャッシュ](/v3/develop/task-caching) と [べき等性](/v3/develop/transactions) が有効になります。
 
 
-## Defining the background task
+## バックグラウンドタスクの定義
 
-The core of the background processing is a Python function decorated with `@prefect.task`. This marks the function as a unit of work that Prefect can manage (e.g. observe, cache, retry, etc.)
+バックグラウンド処理の中核は、`@prefect.task` で修飾された Python 関数です。
+これにより、この関数は Prefect が管理できる作業単位（監視、キャッシュ、再試行など）としてマークされます。
 
 {/* pmd-metadata: notest */}
 ```python src/foo/task.py
@@ -101,17 +103,17 @@ if __name__ == "__main__":
     main()
 ```
 
-Key details:
+主な詳細:
 
-- `@task`: Decorator to define our task we want to run in the background.
-- `cache_policy`: Caching based on `INPUTS` and `TASK_SOURCE`.
-- `serve(create_structured_output)`: This function starts a task worker subscribed to newly `delay()`ed task runs.
+- `@task`: バックグラウンドで実行するタスクを定義するデコレータ。
+- `cache_policy`: `INPUTS` と `TASK_SOURCE` に基づいたキャッシュ。
+- `serve(create_structured_output)`: この関数は、新たに `delay()` されたタスク実行をサブスクライブするタスクワーカーを開始します。
 
 
 
-## Building the FastAPI application
+## FastAPI アプリケーションの構築
 
-The FastAPI application provides API endpoints to trigger the background task and check its status.
+FastAPI アプリケーションは、バックグラウンドタスクをトリガーし、そのステータスを確認するための API エンドポイントを提供します。
 
 {/* pmd-metadata: notest */}
 ```python src/foo/api.py
@@ -158,9 +160,9 @@ async def get_task_status_api(task_run_id: UUID) -> Response:
         # Optionally set a different HTTP status for errors
     return JSONResponse(response_data, status_code=http_status_code)
 ```
-<Accordion title="Checking Task Status with the Prefect Client">
+<Accordion title="Prefectクライアントでタスクステータスを確認する">
 
-The `get_task_result` helper function (in `src/foo/_internal/_prefect.py`) uses the Prefect Python client to interact with the Prefect API:
+`get_task_result` ヘルパー関数 (`src/foo/_internal/_prefect.py` 内) は、Prefect Python クライアントを使用して Prefect API と対話します:
 
 ```python src/foo/_internal/_prefect.py
 from typing import Any, Literal, cast
@@ -231,13 +233,16 @@ async def get_task_result(task_run_id: UUID) -> tuple[Status, Any]:
         return "error", f"Failed to check task status: {str(e)}"
 ```
 
-This function fetches the `TaskRun` object from the API and checks its `state` to determine if it's `Completed`, `Failed`, or still `Pending`/`Running`. If completed, it attempts to retrieve the result using `task_run.state.result()`. If failed, it tries to get the error message.
+この関数は、API から `TaskRun` オブジェクトを取得し、その `state` をチェックして、`Completed`、`Failed`、あるいは `Pending`/`Running` 状態かどうかを判断します。
+完了している場合は、`task_run.state.result()` を使用して結果を取得しようとします。
+失敗した場合は、エラーメッセージを取得しようとします。
 
 
 </Accordion>
-## Building the Docker Image
+## Docker イメージのビルド
 
-A multi-stage `Dockerfile` is used to create optimized images for each service (Prefect server, task worker, and web API). This approach helps keep image sizes small and separates build dependencies from runtime dependencies.
+マルチステージの `Dockerfile` を使用して、各サービス（Prefect サーバー、タスクワーカー、Web API）に最適化されたイメージを作成します。
+このアプローチにより、イメージサイズを小さく抑え、ビルド依存関係とランタイム依存関係を分離できます。
 
 ```dockerfile Dockerfile
 # Stage 1: Base image with Python and uv
@@ -276,20 +281,21 @@ CMD ["uvicorn", "src.foo.api:app", "--host", "0.0.0.0", "--port", "8000"]
 
 ```
 
-<Accordion title="Dockerfile Key Details">
+<Accordion title="Dockerfile の主な詳細">
 
-- **Base Stage (`base`)**: Sets up Python, `uv`, installs all dependencies from `pyproject.toml` into a base layer to make use of Docker caching, and copies the source code.
-- **Server Stage (`server`)**: Builds upon the `base` stage. Sets the default command (`CMD`) to start the Prefect server.
-- **Task Worker Stage (`task`)**: Builds upon the `base` stage. Sets the `CMD` to run the `src/foo/task.py` script, which is expected to contain the `serve()` call for the task(s).
-- **API Stage (`api`)**: Builds upon the `base` stage. Sets the `CMD` to start the FastAPI application using `uvicorn`.
+- **ベースステージ (`base`)**: Python と `uv` をセットアップし、Docker キャッシュを利用するために `pyproject.toml` からすべての依存関係をベースレイヤーにインストールし、ソースコードをコピーします。
+- **サーバーステージ (`server`)**: `base` ステージをビルドします。Prefect サーバーを起動するためのデフォルトコマンド (`CMD`) を設定します。
+- **タスクワーカーステージ (`task`)**: `base` ステージをビルドします。`CMD` を設定して、タスクの `serve()` 呼び出しを含む `src/foo/task.py` スクリプトを実行します。
+- **API ステージ (`api`)**: `base` ステージをビルドします。
+`uvicorn` を使用して FastAPI アプリケーションを起動するための `CMD` を設定します。
 
-The `compose.yaml` file then uses the `target` build argument to specify which of these final stages (`server`, `task`, `api`) to use for each service container.
+次に、`compose.yaml` ファイルは `target` ビルド引数を使用して、各サービス コンテナに使用する最終ステージ (`server`、`task`、`api`) を指定します。
 
 </Accordion>
 
-## Declaring the application services
+## アプリケーションサービスの宣言
 
-We use `compose.yaml` to define and run the multi-container application, managing the lifecycles of the FastAPI web server, the Prefect API server, database and task worker(s).
+`compose.yaml` を使用して、マルチコンテナアプリケーションを定義および実行し、FastAPI ウェブサーバー、Prefect API サーバー、データベース、タスクワーカーのライフサイクルを管理します。
 
 ```yaml compose.yaml
 services:
@@ -372,61 +378,63 @@ volumes:
   prefect-data: {}
   task-storage: {}
 ```
-In a production use-case, you'd likely want to:
-- write a `Dockerfile` for each service
-- add a `postgres` service and [configure it as the Prefect database](/v3/manage/server/index#quickstart%3A-configure-a-postgresql-database-with-docker).
-- remove the hot-reloading configuration in the `develop` section
 
-<Accordion title="Key Service Configurations">
+本番環境でのユースケースでは、おそらく以下の手順が必要になるでしょう。
+- サービスごとに `Dockerfile` を作成する
+- `postgres` サービスを追加し、[Prefect データベースとして設定](/v3/manage/server/index#quickstart%3A-configure-a-postgresql-database-with-docker)する
+- `develop` セクションのホットリロード設定を削除する
 
-- **`prefect-server`**: Runs the Prefect API server and UI.
-    - `build`: Uses a multi-stage `Dockerfile` (not shown here, but present in the example repo) targeting the `server` stage.
-    - `ports`: Exposes the Prefect API/UI on port `4200`.
-    - `volumes`: Uses a named volume `prefect-data` to persist the Prefect SQLite database (`/root/.prefect/prefect.db`) across container restarts.
-    - `PREFECT_SERVER_API_HOST=0.0.0.0`: Makes the API server listen on all interfaces within the Docker network, allowing the `task` and `api` services to connect.
+<Accordion title="主要なサービス構成">
 
-- **`task`**: Runs the Prefect task worker process (executing `python src/foo/task.py` which calls `serve`).
-    - `build`: Uses the `task` stage from the `Dockerfile`.
-    - `depends_on`: Ensures the `prefect-server` service is started before this service attempts to connect.
-    - `PREFECT_API_URL`: Crucial setting that tells the worker where to find the Prefect API to poll for submitted task runs.
-    - `PREFECT_LOCAL_STORAGE_PATH=/task-storage`: Configures the worker to store task run results in the `/task-storage` directory inside the container. This path is mounted to the host using the `task-storage` named volume via `volumes: - ./task-storage:/task-storage` (or just `task-storage:` if using a named volume without a host path binding).
-    - `PREFECT_RESULTS_PERSIST_BY_DEFAULT=true`: Tells Prefect tasks to automatically save their results using the configured storage (defined by `PREFECT_LOCAL_STORAGE_PATH` in this case).
-    - `PREFECT_LOGGING_LOG_PRINTS=true`: Configures the Prefect logger to capture output from `print()` statements within tasks.
-    - `OPENAI_API_KEY=${OPENAI_API_KEY}`: Passes secrets needed by the task code from the host environment (via a `.env` file loaded by Docker Compose) into the container's environment.
+- **`prefect-server`**: Prefect API サーバーと UI を実行します。
+    - `build`: `server` ステージをターゲットとするマルチステージ `Dockerfile` (ここでは示されていませんが、サンプルリポジトリには存在します) を使用します。
+    - `ports`: ポート `4200` で Prefect API/UI を公開します。
+    - `volumes`: 名前付きボリューム `prefect-data` を使用して、コンテナの再起動後も Prefect SQLite データベース (`/root/.prefect/prefect.db`) を保持します。
+    - `PREFECT_SERVER_API_HOST=0.0.0.0`: API サーバーが Docker ネットワーク内のすべてのインターフェースを listen するようにし、`task` サービスと `api` サービスが接続できるようにします。
 
-- **`api`**: Runs the FastAPI web application.
-    - `build`: Uses the `api` stage from the `Dockerfile`.
-    - `depends_on`: Waits for the `prefect-server` (required for submitting tasks and checking status) and optionally the `task` worker.
-    - `PREFECT_API_URL`: Tells the FastAPI application where to send `.delay()` calls and status check requests.
-    - `PREFECT_LOCAL_STORAGE_PATH`: May be needed if the API itself needs to directly read result files (though typically fetching results via `task_run.state.result()` is preferred).
+- **`task`**: Prefect タスクワーカープロセスを実行します（`serve` を呼び出す `python src/foo/task.py` を実行します）。
+    - `build`: `Dockerfile` の `task` ステージを使用します。
+    - `depends_on`: このサービスが接続を試みる前に、`prefect-server` サービスが起動されていることを確認します。
+    - `PREFECT_API_URL`: ワーカーに、送信されたタスク実行をポーリングするための Prefect API の場所を指示する重要な設定です。
+    - `PREFECT_LOCAL_STORAGE_PATH=/task-storage`: ワーカーがタスク実行結果をコンテナ内の `/task-storage` ディレクトリに保存するように設定します。このパスは、`volumes: - ./task-storage:/task-storage` （ホストパスバインディングのない名前付きボリュームを使用している場合は、単に `task-storage:`）を介して、`task-storage` 名前付きボリュームを使用してホストにマウントされます。
+    - `PREFECT_RESULTS_PERSIST_BY_DEFAULT=true`：Prefect タスクに、設定されたストレージ（この場合は `PREFECT_LOCAL_STORAGE_PATH` で定義）を使用して結果を自動的に保存するように指示します。
+    - `PREFECT_LOGGING_LOG_PRINTS=true`：タスク内の `print()` ステートメントの出力をキャプチャするように Prefect ロガーを設定します。
+    - `OPENAI_API_KEY=${OPENAI_API_KEY}`：タスクコードに必要なシークレットを、ホスト環境（Docker Compose によって読み込まれた `.env` ファイル経由）からコンテナの環境に渡します。
 
-- **`volumes`**: Defines named volumes (`prefect-data`, `task-storage`) to persist data generated by the containers.
+- **`api`**: FastAPI Webアプリケーションを実行します。
+    - `build`: `Dockerfile`の`api`ステージを使用します。
+    - `depends_on`: `prefect-server`（タスクの送信とステータスの確認に必要）と、オプションで`task`ワーカーを待機します。
+    - `PREFECT_API_URL`: FastAPIアプリケーションに、`.delay()`呼び出しとステータスチェックリクエストの送信先を指定します。
+    - `PREFECT_LOCAL_STORAGE_PATH`: API自体が結果ファイルを直接読み取る必要がある場合に必要になる場合があります（ただし、通常は`task_run.state.result()`を介して結果を取得することが推奨されます）。
+
+- **`volumes`**: コンテナによって生成されたデータを永続化するために、名前付きボリューム (`prefect-data`、`task-storage`) を定義します。
 
 </Accordion>
 
-## Running this example
+## この例の実行
 
-Assuming you have obtained the code (either by cloning the repository or using `uv init` as described previously) and are in the project directory:
+リポジトリをクローンするか、前述のように `uv init` を使用することでコードを取得し、プロジェクトディレクトリにいることを前提としています。
 
-1.  **Prerequisites:** Ensure Docker Desktop (or equivalent) with `docker compose` support is running.
+1. **前提条件:** `docker compose` をサポートする Docker Desktop（または同等のツール）が実行中であることを確認してください。
 
-2.  **Build and Run Services:** 
-    This example's task uses [marvin](https://github.com/PrefectHQ/marvin), which (by default) requires an OpenAI API key. Provide it as an environment variable when starting the services:
+2. **サービスのビルドと実行:**
+この例のタスクでは [marvin](https://github.com/PrefectHQ/marvin) を使用します。これは（デフォルトで）OpenAI API キーを必要とします。サービス起動時に環境変数としてキーを指定してください:
 
     ```bash
     OPENAI_API_KEY=<your-openai-api-key> docker compose up --build --watch
     ```
-    This command will:
-    *   `--build`: Build the container images if they don't exist or if the Dockerfile/context has changed.
-    *   `--watch`: Watch for changes in the project source code and automatically sync/rebuild services (useful for development).
-    *   Add `--detach` or `-d` to run the containers in the background.
 
-3.  **Access Services:**
-    - If you cloned the existing example, check out the basic [htmx](https://htmx.org/) UI at [http://localhost:8000](http://localhost:8000)
-    - FastAPI docs: [http://localhost:8000/docs](http://localhost:8000/docs)
-    - Prefect UI (for observing task runs): [http://localhost:4200](http://localhost:4200)
+    このコマンドは以下の処理を行います:
+    * `--build`: コンテナイメージが存在しない場合、またはDockerfile/コンテキストが変更されている場合にビルドします。
+    * `--watch`: プロジェクトのソースコードの変更を監視し、サービスを自動的に同期/再構築します（開発時に便利です）。
+    * コンテナをバックグラウンドで実行するには、`--detach` または `-d` を追加します。
 
-### Cleaning up
+3. **アクセスサービス:**
+    - 既存のサンプルをクローンした場合は、[http://localhost:8000](http://localhost:8000) にある基本的な [htmx](https://htmx.org/) UI をご確認ください。
+    - FastAPI ドキュメント: [http://localhost:8000/docs](http://localhost:8000/docs)
+    - Prefect UI (タスク実行の監視用): [http://localhost:4200](http://localhost:4200)
+
+### 掃除
 
 ```bash
 docker compose down
@@ -435,11 +443,11 @@ docker compose down
 docker compose down -v
 ```
 
-## Next Steps
+## 次のステップ
 
-This example provides a repeatable pattern for integrating Prefect-managed background tasks with any python web application. You can:
+この例は、Prefect が管理するバックグラウンドタスクを任意の Python Web アプリケーションに統合するための繰り返し可能なパターンを提供します。以下のことが可能です。
 
-- Explore the [background tasks examples repository](https://github.com/PrefectHQ/prefect-background-task-examples) for more examples.
-- Adapt `src/**/*.py` to define and submit your specific web app and background tasks.
-- Configure Prefect settings (environment variables in `compose.yaml`) further, for example, using different result storage or logging levels.
-- Deploy these services to cloud infrastructure using managed container services.
+- その他の例については、[バックグラウンドタスクのサンプルリポジトリ](https://github.com/PrefectHQ/prefect-background-task-examples) を参照してください。
+- `src/**/*.py` を調整して、特定の Web アプリとバックグラウンドタスクを定義し、送信します。
+- Prefect の設定（`compose.yaml` 内の環境変数）をさらに設定します（例：異なる結果の保存方法やログレベルを使用する）。
+- マネージドコンテナサービスを使用して、これらのサービスをクラウドインフラストラクチャにデプロイします。

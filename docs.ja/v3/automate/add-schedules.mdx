@@ -1,58 +1,56 @@
 ---
-title: Schedule flow runs
-description: Prefect can schedule when to automatically create new flow runs.
+title: フロー実行のスケジュール
+description: Prefect では、新しいフロー実行を自動的に作成するタイミングをスケジュールできます。
 ---
 
-Prefect allows you to specify schedules on which your flows run.
-You can add one or more schedules to any [served or deployed](/v3/deploy/run-flows-in-local-processes) flow.
-Schedules tell Prefect when and how to create new flow runs.
-You can add a schedule to a deployed flow in the Prefect UI, in the CLI through the `prefect deployment schedule` command, or the `prefect.yaml` configuration file.
+Prefect では、フローを実行するスケジュールを指定できます。
+[配信済みまたはデプロイ済みの](/v3/deploy/run-flows-in-local-processes) フローに、1 つ以上のスケジュールを追加できます。
+スケジュールは、Prefect に新しいフロー実行をいつどのように作成するかを指示します。
+デプロイ済みのフローにスケジュールを追加するには、Prefect UI、CLI の `prefect deployment schedule` コマンド、または `prefect.yaml` 設定ファイルを使用します。
 
-## Create schedules
+## スケジュールの作成
 
-There are several ways to create a schedule for a deployment:
+デプロイメントのスケジュールを作成するには、いくつかの方法があります。
 
-- Through the Prefect UI
-- With the `cron`, `interval`, or `rrule` parameters if building your deployment with the
-[`serve` method](/v3/deploy/run-flows-in-local-processes#serve-a-flow) of the `Flow` object or
-[the `serve` utility](/v3/deploy/run-flows-in-local-processes#serve-multiple-flows-at-once) for managing multiple flows simultaneously
-- If using [worker-based deployments](/v3/deploy/infrastructure-concepts/workers/)
-  - When you define a deployment with `flow.serve` or `flow.deploy`
-  - Through the interactive `prefect deploy` command
-  - With the `deployments` -> `schedules` section of the `prefect.yaml` file
+- Prefect UI を使用する
+- `Flow` オブジェクトの [`serve` メソッド](/v3/deploy/run-flows-in-local-processes#serve-a-flow)、または複数のフローを同時に管理するための [`serve` ユーティリティ](/v3/deploy/run-flows-in-local-processes#serve-multiple-flows-at-once) を使用してデプロイメントを構築する場合は、`cron`、`interval`、または `rrule` パラメータを使用する
+- [ワーカーベースのデプロイメント](/v3/deploy/infrastructure-concepts/workers/) を使用する場合
+  - `flow.serve` または `flow.deploy` を使用してデプロイメントを定義する場合
+  - 対話型の `prefect deploy` コマンドを使用する
+  - `prefect.yaml` ファイルの `deployments` -> `schedules` セクションを使用する
 
-### Create schedules in the UI
+### UI でスケジュールを作成する
 
-You can add schedules in the **Schedules** section of a **Deployment** page in the UI.
-To add a schedule select the **+ Schedule** button.
-Choose **Interval** or **Cron** to create a schedule.
+UI の **Deployment** ページの **Schedules** セクションでスケジュールを追加できます。
+スケジュールを追加するには、 **+ Schedule** ボタンを選択します。
+スケジュールを作成するには、**Interval** または **Cron** を選択します。
 
 <Note>
-**What about RRule?**
-The UI does not support creating RRule schedules.
-However, the UI will display RRule schedules that you've created through the command line.
+**RRule についてはどうですか？**
+UI では RRule スケジュールの作成はサポートされていません。
+ただし、コマンドラインで作成した RRule スケジュールは UI に表示されます。
 </Note>
 
-The new schedule appears on the **Deployment** page where you created it.
-New scheduled flow runs are visible in the **Upcoming** tab of the **Deployment** page.
+新しいスケジュールは、作成した **Deployment** ページに表示されます。
+新しくスケジュールされたフロー実行は、**Deployment** ページの **Upcoming** タブに表示されます。
 
-To edit an existing schedule, select **Edit** from the three-dot menu next to a schedule on a **Deployment** page.
+既存のスケジュールを編集するには、**Deployment** ページのスケジュールの横にある3点メニューから **Edit** を選択します。
 
-### Create schedules in Python
+### Python でスケジュールを作成する
 
-Specify the schedule when you create a deployment in a Python file with `flow.serve()`, `serve`, `flow.deploy()`, or `deploy`.
-Just add the keyword argument `cron`, `interval`, or `rrule`.
+Python ファイルで `flow.serve()`、`serve`、`flow.deploy()`、または `deploy` を使用してデプロイメントを作成するときに、スケジュールを指定します。
+キーワード引数 `cron`、`interval`、または `rrule` を追加するだけです。
 
 | Argument    | Description                                                                                                                                                                                                                                           |
 | ----------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `interval`  | An interval on which to execute the deployment. Accepts a number or a timedelta object to create a single schedule. If a number is given, it is interpreted as seconds. Also accepts an iterable of numbers or timedelta to create multiple schedules.|
-| `cron`      | A cron schedule string of when to execute runs of this deployment. Also accepts an iterable of cron schedule strings to create multiple schedules.                                                                                                    |
-| `rrule`     | An rrule schedule string of when to execute runs of this deployment. Also accepts an iterable of rrule schedule strings to create multiple schedules.                                                                                                 |
-| `schedules` | A list of schedule objects defining when to execute runs of this deployment. Used to define multiple schedules or additional scheduling options such as `timezone`.                                                                                   |
-| `schedule`  | A schedule object defining when to execute runs of this deployment. Used to define additional scheduling options such as `timezone`.                                                                                                                  |
-| `slug`      | An optional unique identifier for the schedule containing only lowercase letters, numbers, and hyphens. If not provided for a given schedule, the schedule will be unnamed.                                                                           |
+| `interval`  | デプロイメントを実行する間隔。単一のスケジュールを作成するには、数値またはtimedeltaオブジェクトを指定します。数値を指定した場合は、秒数として解釈されます。また、複数のスケジュールを作成するには、数値の反復可能オブジェクトまたはtimedeltaを指定します。|
+| `cron`      | このデプロイメントの実行タイミングを指定するcronスケジュール文字列。また、複数のスケジュールを作成するために、cronスケジュール文字列の反復可能オブジェクトも受け入れます。 |
+| `rrule`     | このデプロイメントの実行タイミングを指定するルールスケジュール文字列。また、複数のスケジュールを作成するために、ルールスケジュール文字列の反復可能オブジェクトも受け入れます。     |
+| `schedules` | このデプロイメントの実行タイミングを定義するスケジュールオブジェクトのリスト。複数のスケジュールや「タイムゾーン」などの追加のスケジュールオプションを定義するために使用されます。  |
+| `schedule`  | このデプロイメントの実行をいつ実行するかを定義するスケジュールオブジェクト。「タイムゾーン」などの追加のスケジュールオプションを定義するために使用されます。  |
+| `slug`      | スケジュールのオプションの一意の識別子。小文字、数字、ハイフンのみで構成します。スケジュールに指定しない場合、スケジュール名は設定されません。 |
 
-The `serve` method below will create a deployment of `my_flow` with a cron schedule that creates runs every minute of every day:
+以下の `serve` メソッドは、毎日 1 分ごとに実行を作成する cron スケジュールを使用して `my_flow` のデプロイメントを作成します:
 
 ```python
 from prefect import flow
@@ -62,9 +60,9 @@ from myproject.flows import my_flow
 my_flow.serve(name="flowing", cron="* * * * *")
 ```
 
-If using work pool-based deployments, the `deploy` method has the same schedule-based parameters.
+ワークプールベースのデプロイメントを使用する場合、`deploy` メソッドには同じスケジュールベースのパラメータがあります。
 
-When `my_flow` is served with this interval schedule, it will run every 10 minutes beginning at midnight on January, 1, 2026 in the `America/Chicago` timezone:
+`my_flow` がこの間隔スケジュールで提供されると、`America/Chicago` タイムゾーンの 2026 年 1 月 1 日午前 0 時から 10 分ごとに実行されます。
 
 <CodeGroup>
 ```python prefect >= 3.1.16
@@ -103,14 +101,14 @@ my_flow.serve(
 
 </CodeGroup>
 
-### Create schedules with the CLI
+### CLI でスケジュールを作成する
 
-You can create a schedule through the interactive `prefect deploy` command. You will be prompted to choose which type of schedule to create.
+対話型の「prefect deploy」コマンドを使用してスケジュールを作成できます。作成するスケジュールの種類を選択するように求められます。
 
-### Create schedules in YAML
+### YAML でスケジュールを作成する
 
-If you save the `prefect.yaml` file from the `prefect deploy` command, you will see it has a `schedules` section for your deployment.
-Alternatively, you can create a `prefect.yaml` file from a recipe or from scratch and add a `schedules` section to it.
+`prefect deploy` コマンドから `prefect.yaml` ファイルを保存すると、デプロイメント用の `schedules` セクションが追加されます。
+または、レシピから、または最初から `prefect.yaml` ファイルを作成し、そこに `schedules` セクションを追加することもできます。
 
 ```yaml
 deployments:
@@ -130,95 +128,88 @@ deployments:
       active: true
 ```
 
-### Create schedules with Terraform
+### Terraformでスケジュールを作成する
 
 import { TF } from "/snippets/resource-management/terraform.mdx"
 import { deployments } from "/snippets/resource-management/vars.mdx"
 
 <TF name="schedules" href={deployments.tf} />
 
-## Schedule types
+## スケジュールの種類
 
-Prefect supports three types of schedules:
+Prefect は 3 種類のスケジュールをサポートしています:
 
-- [`Cron`](#cron) is most appropriate for users who are already familiar with `cron` from previous use.
-- [`Interval`](#interval) is best suited for deployments that run at some consistent cadence that isn't related to absolute time.
-- [`RRule`](#rrule) is best suited for deployments that rely on calendar logic for simple recurring schedules, irregular intervals, exclusions,
-or day-of-month adjustments.
+- [`Cron`](#cron) は、以前に `cron` を使い慣れているユーザーに最適です。
+- [`Interval`](#interval) は、絶対時刻に関係のない一定の周期で実行されるデプロイメントに最適です。
+- [`RRule`](#rrule) は、単純な繰り返しスケジュール、不定期間隔、除外、または日付調整のためにカレンダーロジックに依存するデプロイメントに最適です。
 
 <Tip>
-**Schedules can be inactive**
+**スケジュールを非アクティブにすることができます**
 
-When you create or edit a schedule, you can set the `active` property to `False` in Python (or `false` in a YAML file) to
-deactivate the schedule.
-This is useful to keep the schedule configuration but temporarily stop the schedule from creating new flow runs.
+スケジュールを作成または編集する際に、Python では `active` プロパティを `False`（YAML ファイルでは `false`）に設定することで、スケジュールを非アクティブにすることができます。
+これは、スケジュール設定を維持しながら、スケジュールによる新しいフロー実行の作成を一時的に停止する場合に便利です。
 </Tip>
 
 ### Cron
 
-You can specify a schedule with a [`cron`](https://en.wikipedia.org/wiki/Cron) pattern.
-You may also provide a timezone to enforce daylight saving time (DST) behaviors.
+[`cron`](https://en.wikipedia.org/wiki/Cron) パターンを使用してスケジュールを指定できます。
+また、タイムゾーンを指定して夏時間 (DST) の動作を強制することもできます。
 
-Prefect uses [`croniter`](https://github.com/kiorky/croniter) to specify datetime iteration with a `cron`-like format.
+Prefect は [`croniter`](https://github.com/kiorky/croniter) を使用して、`cron` のような形式で日時の繰り返し処理を指定します。
 
 <Tip>
-**Supported `croniter` features**
+**サポートされている `croniter` 機能**
 
-While Prefect supports most features of `croniter` for creating `cron`-like schedules, it does not support "R"
-random or "H" hashed keyword expressions or the schedule jittering possible with those expressions.
+Prefect は `cron` のようなスケジュールを作成するための `croniter` のほとんどの機能をサポートしていますが、「R」ランダムまたは「H」ハッシュのキーワード式、およびこれらの式で可能なスケジュールのジッタリングはサポートしていません。
 </Tip>
 
-`Cron` properties include:
+`Cron` プロパティには次のものが含まれます:
 
 | Property | Description                                                                                                            |
 | -------- | ---------------------------------------------------------------------------------------------------------------------- |
-| cron     | A valid `cron` string. (Required)                                                                                      |
-| day_or   | Boolean indicating how `croniter` handles `day` and `day_of_week` entries. Default is `True`.                          |
-| timezone | String name of a time zone. (See the [IANA Time Zone Database](https://www.iana.org/time-zones) for valid time zones.) |
+| cron     | 有効な `cron` 文字列。(必須)|
+| day_or   | `croniter` が `day` および `day_of_week` エントリをどのように処理するかを示すブール値。デフォルトは `True` です。   |
+| timezone | タイムゾーンの文字列名。(有効なタイムゾーンについては、[IANA タイムゾーン データベース](https://www.iana.org/time-zones) を参照してください。) |
 
-#### How the `day_or` property works
+#### `day_or` プロパティの動作
 
-The `day_or` property defaults to `True`, matching the behavior of `cron`.
+`day_or` プロパティのデフォルトは `True` で、`cron` の動作と一致します。
 
-In this mode, if you specify a `day` (of the month)
-entry and a `day_of_week` entry, the schedule runs a flow on both the specified day of the month *and* on the specified day of the
-week.
+このモードでは、`day`（月内の日）エントリと `day_of_week` エントリを指定すると、スケジュールは指定された月の日と曜日の両方にフローを実行します。
 
-The "or" in `day_or` refers to the two entries treated like an `OR` statement. The schedule should include
-both, as in the SQL statement:
+`day_or` の「or」は、2 つのエントリを `OR` ステートメントのように扱います。スケジュールには、次の SQL ステートメントのように、両方のエントリを含める必要があります。
 
 ```sql
 SELECT * FROM employees WHERE first_name = 'Ford' OR last_name = 'Prefect';
 ```
 
-For example, with `day_or` set to `True`, the cron schedule `* * 3 1 2` runs a flow every minute on the third day of the month
-and on Tuesday (the second day of the week) in January (the first month of the year).
+例えば、`day_or` を `True` に設定すると、cron スケジュール `* * 3 1 2` は、1 月 (年の最初の月) の 3 日目と火曜日 (週の 2 日目) に 1 分ごとにフローを実行します。
 
-With `day_or` set to `False`, the `day` (of the month) and `day_of_week` entries are joined with the more restrictive `AND`
-operation, as in the SQL statement:
+`day_or` を `False` に設定すると、`day` (月) と `day_of_week` エントリは、次の SQL 文のように、より制限の厳しい `AND` 演算で結合されます:
 
 ```sql
 SELECT * from employees WHERE first_name = 'Zaphod' AND last_name = 'Beeblebrox';
 ```
 
-For example, the same schedule, when `day_or` is `False`, runs a flow on every minute on the **third Tuesday** in January.
-This behavior matches `fcron` instead of `cron`.
+たとえば、同じスケジュールで `day_or` が `False` の場合、1 月の **第 3 火曜日** に 1 分ごとにフローが実行されます。
+この動作は `cron` ではなく `fcron` と一致します。
 
 <Note>
-**Daylight saving time considerations**
+**夏時間に関する考慮事項**
 
-If the `timezone` is a DST-observing one, then the schedule adjusts itself appropriately.
+`timezone` が夏時間（DST）を採用している場合、スケジュールは自動的に調整されます。
 
-The `cron` rules for DST are based on schedule times, not intervals. This means that an hourly `cron` schedule fires on
-every new schedule hour, not every elapsed hour.
-For example, when clocks are set back, this results in a two-hour pause as the schedule will fire _the first time_ 1 AM is reached and _the first time_ 2 AM is reached, 120 minutes later.
+DST の `cron` ルールは、間隔ではなくスケジュール時刻に基づいています。
+つまり、1 時間ごとの `cron` スケジュールは、経過時間ごとではなく、新しいスケジュール時刻ごとに実行されます。
+例えば、時計を戻すと、スケジュールは _最初の_ 午前 1 時と _最初の_ 午前 2 時（それぞれ 120 分後）に実行されるため、2 時間の一時停止が発生します。
 
-Longer schedules, such as one that fires at 9 AM every morning, adjust for DST automatically.
+毎朝午前 9 時に実行されるような、より長いスケジュールは、DST に合わせて自動的に調整されます。
 </Note>
 
-### Interval
+### 間隔
 
-An `Interval` schedule creates new flow runs on a regular interval measured in seconds. Intervals are computed using an optional `anchor_date`.
+「間隔」スケジュールは、秒単位で一定の間隔で新しいフロー実行を作成します。
+間隔はオプションの「anchor_date」を使用して計算されます。
 
 ```yaml
 schedule:
@@ -230,50 +221,47 @@ schedule:
 
 | Property    | Description                                                                                                                                                                        |
 | ----------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| interval    | `datetime.timedelta` indicating the time between flow runs. (Required)                                                                                                             |
-| anchor_date | `datetime.datetime` indicating the starting or "anchor" date to begin the schedule. If no `anchor_date` is supplied, the current UTC time is used.                                 |
-| timezone    | String name of a time zone, used to enforce localization behaviors like DST boundaries. (See the [IANA Time Zone Database](https://www.iana.org/time-zones) for valid time zones.) |
+| interval    | フロー実行間の時間を示す「datetime.timedelta」。(必須) |
+| anchor_date | スケジュールの開始日（アンカー日付）を示す「datetime.datetime」。「anchor_date」が指定されていない場合は、現在のUTC時刻が使用されます。 |
+| timezone    | タイムゾーンの文字列名。DST 境界などのローカライズ動作を強制するために使用されます。(有効なタイムゾーンについては、[IANA タイムゾーン データベース](https://www.iana.org/time-zones) を参照してください。) |
 
-The `anchor_date` does not indicate a "start time" for the schedule, but a fixed point to
-compute intervals.
-If the anchor date is in the future, then schedule dates are computed by subtracting the `interval` from it.
+`anchor_date` はスケジュールの「開始時刻」を示すのではなく、間隔を計算するための固定点を示します。
+アンカー日付が将来の日付の場合、スケジュールの日付はそこから `interval` を減算して計算されます。
 
 <Note>
-**Daylight saving time considerations**
+**夏時間に関する考慮事項**
 
-If the schedule's `anchor_date` or `timezone` are provided with a DST-observing timezone, then the schedule adjusts itself
-appropriately.
-Intervals greater than 24 hours will follow DST conventions, while intervals of less than 24 hours will follow UTC intervals.
+スケジュールの `anchor_date` または `timezone` に夏時間（DST）のタイムゾーンが指定されている場合、スケジュールは適切に調整されます。
+24時間を超える間隔はDSTの規則に従い、24時間未満の間隔はUTCの規則に従います。
 
-For example, an hourly schedule will fire every UTC hour, even across DST boundaries. When clocks are set back, this results in two runs that _appear_ to be scheduled for 1 AM local time, even though they are an hour apart in UTC time.
+例えば、時間単位のスケジュールは、DSTの境界を越えてもUTCの毎時実行されます。
+時計を戻すと、UTC時間では1時間差があるにもかかわらず、ローカル時間の午前1時にスケジュールされているように見える2つの実行が発生します。
 
-For longer intervals, like a daily schedule, the interval schedule adjusts for DST boundaries so that the clock-hour remains constant.
-This means that a daily schedule that always fires at 9 AM will observe DST and continue to fire at 9 AM in the local time zone.
+日単位のスケジュールのように間隔が長い場合、間隔スケジュールはDSTの境界に合わせて調整され、時刻が一定になります。
+つまり、常に午前9時に実行される日単位のスケジュールは、DSTを順守し、ローカルタイムゾーンの午前9時に実行され続けます。
 </Note>
 
 ### RRule
 
-An `RRule` scheduling supports [iCal recurrence rules](https://icalendar.org/iCalendar-RFC-5545/3-8-5-3-recurrence-rule.html)
-(RRules), which provide convenient syntax for creating repetitive schedules. Schedules can repeat on a frequency from
-yearly down to every minute.
+`RRule` スケジュール機能は、[iCal 繰り返しルール](https://icalendar.org/iCalendar-RFC-5545/3-8-5-3-recurrence-rule.html) (RRules) をサポートしています。RRules は、繰り返しスケジュールを作成するための便利な構文を提供します。
+スケジュールは、年単位から毎分まで、任意の頻度で繰り返すことができます。
 
-`RRule` uses the [dateutil rrule](https://dateutil.readthedocs.io/en/stable/rrule.html) module to specify iCal recurrence rules.
+`RRule` は [dateutil rrule](https://dateutil.readthedocs.io/en/stable/rrule.html) モジュールを使用して iCal 繰り返しルールを指定します。
 
-RRules are appropriate for any kind of calendar-date manipulation, including simple repetition, irregular intervals, exclusions,
-week day or day-of-month adjustments, and more. RRules can represent complex logic like:
+RRules は、単純な繰り返し、不規則な間隔、除外、曜日や日付の調整など、あらゆる種類のカレンダー日付操作に適しています。RRules は、次のような複雑なロジックを表現できます:
 
-- The last weekday of each month
-- The fourth Thursday of November
-- Every other day of the week
+- 毎月の最終平日
+- 11 月の第 4 木曜日
+- 1 週間おき
 
-`RRule` properties include:
+`RRule` のプロパティには以下が含まれます:
 
 | Property | Description                                                                                                                                                   |
 | -------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| rrule    | String representation of an RRule schedule. See the [`rrulestr` examples](https://dateutil.readthedocs.io/en/stable/rrule.html#rrulestr-examples) for syntax. |
-| timezone | String name of a time zone. See the [IANA Time Zone Database](https://www.iana.org/time-zones) for valid time zones.                                          |
+| rrule    | RRuleスケジュールの文字列表現。構文については[`rrulestr`の例](https://dateutil.readthedocs.io/en/stable/rrule.html#rrulestr-examples)を参照してください。 |
+| timezone | タイムゾーンの文字列名。有効なタイムゾーンについては、[IANAタイムゾーンデータベース](https://www.iana.org/time-zones)を参照してください。 |
 
-You may find it useful to use an RRule string generator such as the [iCalendar.org RRule Tool](https://icalendar.org/rrule-tool.html) to help create valid RRules.
+有効な RRule を作成するには、[iCalendar.org RRule ツール](https://icalendar.org/rrule-tool.html) などの RRule 文字列ジェネレータを使用すると便利です。
 
 ```yaml
 schedule:
@@ -281,32 +269,32 @@ schedule:
 ```
 
 <Note>
-**RRule restrictions**
-The max supported character length of an `rrulestr` is 6,500 characters
+**RRule の制限**
+`rrulestr` でサポートされる最大文字数は 6,500 文字です。
 
-`COUNT` is not supported. Please use `UNTIL` or the `/deployments/{id}/runs` endpoint to schedule a fixed number of
-flow runs.
+`COUNT` はサポートされていません。フロー実行回数を固定でスケジュールするには、`UNTIL` または `/deployments/{id}/runs` エンドポイントを使用してください。
 </Note>
 
 <Note>
-**Daylight saving time considerations**
+**夏時間に関する考慮事項**
 
-As a calendar-oriented standard, `RRules` are sensitive to the initial timezone provided.
-A 9 AM daily schedule with a DST-aware start date maintains a local 9 AM time through DST boundaries. A 9 AM daily schedule
-with a UTC start date maintains a 9 AM UTC time.
+カレンダー指向の標準規格である `RRules` は、指定された初期タイムゾーンに依存します。
+DST を考慮した開始日を持つ午前 9 時の日次スケジュールは、DST の境界を越えてローカルの午前 9 時時刻を維持します。
+UTC 開始日を持つ午前 9 時の日次スケジュールは、UTC の午前 9 時時刻を維持します。
 </Note>
 
-## Associate parameters with schedules
-Using any of the above methods to create a schedule, you can bind parameters to your schedules.
+## パラメータとスケジュールの関連付け
 
-For example, say you have a flow that sends an email.
-Every day at 8:00 AM you want to send a message to one recipient, and at 8:05 AM you want to send a different message to another recipient.
+上記のいずれかの方法でスケジュールを作成すると、パラメータをスケジュールにバインドできます。
 
-Instead of creating independent deployments with different default parameters and schedules, you can bind parameters to the schedules themselves:
+例えば、メールを送信するフローがあるとします。
+毎日午前8時に1人の受信者にメッセージを送信し、午前8時5分に別の受信者に異なるメッセージを送信するとします。
 
-### Schedule parameters in Python
+異なるデフォルトパラメータとスケジュールを持つ独立したデプロイメントを作成する代わりに、パラメータをスケジュール自体にバインドすることができます。
 
-Whether using `.serve` or `.deploy`, you can pass `parameters` to your deployment `schedules`:
+### Python でのスケジュールパラメータ
+
+`.serve` または `.deploy` を使用する場合でも、デプロイメントの `schedules` に `parameters` を渡すことができます:
 
 ```python send_email_flow.py {13,17-20}
 from prefect import flow
@@ -335,21 +323,22 @@ send_email.serve(
   ]
 )
 ```
-Note that our flow has a default `message` parameter, but we've overridden it for the second schedule.
 
-This deployment will schedule runs that:
+フローにはデフォルトの `message` パラメータがありますが、2 番目のスケジュールではこれを上書きしていることに注意してください。
 
-- Send "Stop goofing off!" to Jim at 8:00 AM every day
-- Send "Stop goofing off! You're assistant _to_ the regional manager!" to Dwight at 8:05 AM every day
+このデプロイメントでは、次の実行がスケジュールされます:
+
+- 毎日午前 8 時に Jim に「サボるのをやめろ！」を送信
+- 毎日午前 8 時 5 分に Dwight に「サボるのをやめろ！お前は地域マネージャーのアシスタントだ！」を送信
 
 <Tip>
-Use the same pattern to bind parameters to any schedule type in `prefect.schedules`.
-You can provide one schedule via the `schedule` kwarg or multiple schedules via `schedules`.
+同じパターンを使用して、`prefect.schedules` 内の任意のスケジュール タイプにパラメータをバインドします。
+`schedule` キーワード引数を使用して 1 つのスケジュールを指定することも、`schedules` を使用して複数のスケジュールを指定することもできます。
 </Tip>
 
-### Schedule parameters in `prefect.yaml`
+### `prefect.yaml` のスケジュールパラメータ
 
-You can also provide parameters to schedules in your `prefect.yaml` file.
+`prefect.yaml` ファイルでスケジュールパラメータを指定することもできます。
 
 ```yaml prefect.yaml {4-11}
 deployments:
@@ -368,20 +357,19 @@ deployments:
 ```
 
 
-## How scheduling works
+## スケジューリングの仕組み
 
-Prefect's `Scheduler` service evaluates each deployment's schedules and creates new runs appropriately. It starts
-automatically when `prefect server start` is run and it is a built-in service of Prefect Cloud.
+Prefect の「スケジューラ」サービスは、各デプロイメントのスケジュールを評価し、適切な新しい実行を作成します。
+「スケジューラ」サービスは、「prefect server start」コマンドを実行すると自動的に起動し、Prefect Cloud の組み込みサービスです。
 
-The `Scheduler` creates the fewest runs that satisfy the following constraints, in order:
+「スケジューラ」サービスは、以下の制約を満たす最小数の実行を順に作成します:
 
-- No more than 100 runs will be scheduled.
-- Runs will not be scheduled more than 100 days in the future.
-- At least three runs will be scheduled.
-- Runs will be scheduled until at least one hour in the future.
+- スケジュールされる実行は 100 件までです。
+- 100 日以上先の実行はスケジュールされません。
+- 少なくとも 3 件はスケジュールされます。
+- 少なくとも 1 時間先の実行はスケジュールされます。
 
-These behaviors are adjustable through the relevant settings with the `prefect config
-view --show-defaults` command:
+これらの動作は、「prefect config view --show-defaults」コマンドを使用して、関連する設定で調整できます:
 
 ```bash
 PREFECT_API_SERVICES_SCHEDULER_DEPLOYMENT_BATCH_SIZE='100'
@@ -394,19 +382,18 @@ PREFECT_API_SERVICES_SCHEDULER_MIN_SCHEDULED_TIME='1:00:00'
 PREFECT_API_SERVICES_SCHEDULER_MAX_SCHEDULED_TIME='100 days, 0:00:00'
 ```
 
-See the [Settings docs](/v3/develop/settings-and-profiles/) for more information on altering your settings.
+設定の変更に関する詳細は、[設定ドキュメント](/v3/develop/settings-and-profiles/)をご覧ください。
 
-These settings mean that if a deployment has an hourly schedule, the default settings will create runs for the next four days (or 100 hours).
-If it has a weekly schedule, the default settings will maintain the next 14 runs (up to 100 days in the future).
+これらの設定は、デプロイメントに時間単位のスケジュールが設定されている場合、デフォルト設定では今後4日間（または100時間）の実行が作成されます。
+デプロイメントに週単位のスケジュールが設定されている場合、デフォルト設定では今後14回の実行（最大100日先まで）が維持されます。
 
 <Tip>
-**`Scheduler` does not affect execution**
+**「スケジューラー」は実行には影響しません**
 
-The Prefect `Scheduler` service only creates new flow runs and places them in `Scheduled` states.
-It is not involved in flow or task execution.
+Prefect の「スケジューラー」サービスは、新しいフロー実行を作成し、「スケジュール済み」状態にするだけです。
+フローやタスクの実行には関与しません。
 </Tip>
 
-If you change a schedule, previously scheduled flow runs that have not started are removed, and new scheduled flow runs are
-created to reflect the new schedule.
+スケジュールを変更すると、開始されていない以前にスケジュールされたフロー実行は削除され、新しいスケジュールを反映した新しいスケジュールされたフロー実行が作成されます。
 
-To remove all scheduled runs for a flow deployment, you can remove the schedule.
+フローデプロイメントのすべてのスケジュールされた実行を削除するには、スケジュールを削除します。

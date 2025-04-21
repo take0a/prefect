@@ -1,46 +1,41 @@
 ---
-title: Receive events with webhooks
-description: Observe and respond to events from other systems.
+title: Webhookでイベントを受信する
+description: 他のシステムからのイベントを観察し、応答します。
 ---
 
-<span class="badge cloud"></span>  Prefect Cloud webhooks can receive, observe, and respond to events
-from other systems. 
-Each webhook exposes a unique URL endpoint to receive events from other systems and transform them into Prefect
-[events](/v3/automate/events/) for use in [automations](/v3/automate/events/automations-triggers/).
+<span class="badge cloud"></span> Prefect Cloud の Webhook は、他のシステムからのイベントを受信、監視、応答できます。
+各 Webhook は、他のシステムからのイベントを受信し、Prefect [イベント](/v3/automate/events/) に変換して [オートメーション](/v3/automate/events/automations-triggers/) で使用するための固有の URL エンドポイントを公開します。
 
-Webhooks are defined by two essential components: a unique URL and a template that translates incoming web requests to a 
-Prefect event.
+Webhook は、固有の URL と、受信した Web リクエストを Prefect イベントに変換するテンプレートという 2 つの主要コンポーネントによって定義されます。
 
-## Configure webhooks
+## Webhook を設定する
 
-Set up your webhooks through the Prefect Cloud API, Prefect Cloud UI, or Prefect CLI. 
+Prefect Cloud API、Prefect Cloud UI、または Prefect CLI から Webhook を設定します。
 
-### Through the Prefect Cloud API
+### Prefect Cloud APIを通じて
 
 import { API } from "/snippets/resource-management/api.mdx"
 import { webhooks } from "/snippets/resource-management/vars.mdx"
 
 <API name="webhooks" href={webhooks.api} />
 
-This is a Prefect Cloud-only feature. Authenticate API calls using the standard
-[authentication methods](/v3/manage/cloud/connect-to-cloud#manually-configure-prefect-api-settings) you use with Prefect
-Cloud.
+これはPrefect Cloud専用の機能です。Prefect Cloudで使用する標準の[認証方法](/v3/manage/cloud/connect-to-cloud#manually-configure-prefect-api-settings)を使用して、API呼び出しを認証してください。
 
-### Through Prefect Cloud
+### Prefect Cloud 経由
 
-You can create and manage webhooks from the Prefect Cloud UI.
+Prefect Cloud UI から Webhook を作成および管理できます。
 
 ![Managing a webhook in the Prefect Cloud UI.](/v3/img/ui/webhook.png)
 
-### Through the Prefect CLI
+### Prefect CLI 経由
 
-You can manage and interact with webhooks through the `prefect cloud webhook` command group.
+「prefect cloud webhook」コマンドグループを通じて、Webhook を管理および操作できます。
 
 ```bash
 prefect cloud webhook --help
 ```
 
-Create your first webhook by invoking `create`:
+`create` を呼び出して最初の Webhook を作成します。
 
 ```bash
 prefect cloud webhook create your-webhook-name \
@@ -48,10 +43,9 @@ prefect cloud webhook create your-webhook-name \
     --template '{ "event": "your.event.name", "resource": { "prefect.resource.id": "your.resource.id" } }'
 ```
 
-Note the template string, discussed in [greater detail below](#webhook-templates).
+テンプレート文字列については、[以下で詳しく説明](#webhook-templates)で説明します。
 
-You can retrieve details for a specific webhook by ID using `get`, or optionally query
-all webhooks in your workspace with `ls`:
+`get` を使用して特定の Webhook の詳細を ID で取得したり、`ls` を使用してワークスペース内のすべての Webhook を照会したりできます。
 
 ```bash
 # get webhook by ID
@@ -61,7 +55,7 @@ prefect cloud webhook get <webhook-id>
 prefect cloud webhook ls
 ```
 
-Disable an existing webhook without deleting it using `toggle`:
+`toggle` を使用して、既存の Webhook を削除せずに無効にします:
 
 ```bash
 prefect cloud webhook toggle <webhook-id>
@@ -71,111 +65,89 @@ prefect cloud webhook toggle <webhook-id>
 Webhook is now enabled
 ```
 
-Use `rotate` to generate a new, random endpoint if you're concerned your webhook endpoint was compromised:
+Webhook エンドポイントが侵害されたのではないかと懸念される場合は、`rotate` を使用して新しいランダムなエンドポイントを生成します:
 
 ```bash
 prefect cloud webhook rotate <webhook-url-slug>
 ```
 
-### Through Terraform
+### Terraformを通じて
 
 import { TF } from "/snippets/resource-management/terraform.mdx"
 
 <TF name="webhooks" href={webhooks.tf} />
 
-## Webhook endpoints
+## Webhook エンドポイント
 
-The webhook endpoints have randomly generated opaque URLs that do not divulge any information about your Prefect Cloud workspace. 
-They are rooted at `https://api.prefect.cloud/hooks/`. 
-For example: `https://api.prefect.cloud/hooks/AERylZ_uewzpDx-8fcweHQ`.
-Prefect Cloud assigns this URL when you create a webhook; it cannot be set through the API.
-You may rotate your webhook URL at any time without losing the associated configuration.
+Webhook エンドポイントには、Prefect Cloud ワークスペースに関する情報を一切漏らさない、ランダムに生成された不透明な URL が割り当てられます。
+これらの URL は `https://api.prefect.cloud/hooks/` をルートとしています。
+例: `https://api.prefect.cloud/hooks/AERylZ_uewzpDx-8fcweHQ`。
+この URL は、Webhook 作成時に Prefect Cloud によって割り当てられます。API 経由で設定することはできません。
+Webhook URL は、関連する設定を失うことなくいつでも変更できます。
 
-All webhooks may accept requests with the most common HTTP methods:
+すべてのWebhookは、最も一般的なHTTPメソッドによるリクエストを受け入れることができます:
 
-* Use `GET`, `HEAD`, and `DELETE` for webhooks that define a static event
-  template, or a template that does not depend on the _body_ of the HTTP request. The
-  headers of the request will be available for templates.
-* Use `POST`, `PUT`, and `PATCH` when the webhook request includes a body.
-  See [How HTTP request components are
-  handled](#how-http-request-components-are-handled) for more details on how the body is
-  parsed.
+* 静的なイベントテンプレート、またはHTTPリクエストの_body_に依存しないテンプレートを定義するWebhookには、`GET`、`HEAD`、`DELETE`を使用します。
+リクエストのヘッダーはテンプレートで使用できます。
+* Webhookリクエストにボディが含まれる場合は、`POST`、`PUT`、`PATCH`を使用します。
+ボディの解析方法の詳細については、[HTTPリクエストコンポーネントの処理方法](#how-http-request-components-are-handled)を参照してください。
 
-Prefect Cloud webhooks are deliberately quiet to the outside world, and only return
-a `204 No Content` response when they are successful or a `400 Bad Request` error when
-there is any error interpreting the request. For more visibility when your webhooks
-fail, see the [Troubleshooting](#troubleshooting) section below.
+Prefect Cloud Webhookは、外部に対して意図的に静かに動作し、成功した場合にのみ`204 No Content`レスポンスを返し、リクエストの解釈にエラーがある場合は`400 Bad Request`エラーを返します。
+Webhookが失敗した場合の可視性の詳細については、以下の[トラブルシューティング](#troubleshooting)セクションを参照してください。
 
 
-## Webhook authentication
+## Webhook認証
 
-To enhance security, within a Prefect Cloud Pro or Enterprise tier account, you
-can assign a service account to a webhook. This feature provides an additional
-layer of security and is highly recommended, especially for enterprise
-environments. 
+セキュリティを強化するため、Prefect Cloud ProまたはEnterpriseプランのアカウントでは、Webhookにサービスアカウントを割り当てることができます。
+この機能はセキュリティをさらに強化するため、特にエンタープライズ環境では強く推奨されます。
 
-### API key authentication
+### APIキー認証
 
-Webhooks can be associated with a service account, and the webhook endpoint
-will be authenticated using the service account's API key. 
+Webhookはサービスアカウントに関連付けることができ、WebhookエンドポイントはサービスアカウントのAPIキーを使用して認証されます。
 
-To use API key authentication:
+APIキー認証を使用するには：
 
-1. Create a service account or use an existing one.
-2. Associate the service account with your webhook from the UI.
-3. Include the API key in the `Authorization` header of your webhook requests:
+1. サービスアカウントを作成するか、既存のサービスアカウントを使用します。
+2. UIからサービスアカウントとWebhookを関連付けます。
+3. Webhookリクエストの`Authorization`ヘッダーにAPIキーを含めます。
 
 ```
 Authorization: Bearer <your-api-key>
 ```
 
-### Account-level security enforcement
+### アカウントレベルのセキュリティ適用
 
-An account-level setting is available to enforce authentication on all webhooks. When enabled:
+すべてのWebhookに認証を強制するアカウントレベルの設定が利用可能です。有効にすると、以下のようになります。
 
-- All existing webhooks without an associated service account will be automatically disabled.
-- New webhooks must be created with an associated service account.
-- Existing webhooks must be updated to include a service account before they can be re-enabled.
+- サービスアカウントが関連付けられていない既存のWebhookはすべて自動的に無効化されます。
+- 新しいWebhookは、サービスアカウントを関連付けて作成する必要があります。
+- 既存のWebhookを再度有効化するには、サービスアカウントを追加するように更新する必要があります。
 
 
-## Webhook templates
+## Webhook テンプレート
 
-The purpose of a webhook is to accept an HTTP request from another system and produce a
-Prefect event from it. You often have little control
-over the format of those requests, so Prefect's webhook system gives you full configuration
-on how you turn those notifications from other systems into meaningful events in your
-Prefect Cloud workspace. The template you define for each webhook determines how
-individual components of the incoming HTTP request become the event name and resource
-labels of the resulting Prefect event.
+Webhook の目的は、他のシステムからの HTTP リクエストを受け取り、それに基づいて Prefect イベントを生成することです。
+これらのリクエストの形式を制御できない場合が多いため、Prefect の Webhook システムでは、他のシステムからの通知を Prefect Cloud ワークスペースで意味のあるイベントに変換する方法を詳細に設定できます。
+各 Webhook に定義するテンプレートによって、受信した HTTP リクエストの個々のコンポーネントが、生成される Prefect イベントのイベント名とリソースラベルにどのように変換されるかが決まります。
 
-As with the [templates available in Prefect Cloud Automation](/v3/automate/events/automations-triggers) for
-defining notifications and other parameters, you write templates in
-[Jinja2](https://jinja.palletsprojects.com/en/3.1.x/templates/). All of the built-in
-Jinja2 blocks and filters are available, as well as the filters from the
-[`jinja2-humanize-extensions`
-package](https://pypi.org/project/jinja2-humanize-extension/).
+通知やその他のパラメータを定義するための [Prefect Cloud Automation で利用可能なテンプレート](/v3/automate/events/automations-triggers) と同様に、テンプレートは [Jinja2](https://jinja.palletsprojects.com/en/3.1.x/templates/) で作成します。
+Jinja2 の組み込みブロックとフィルターはすべて利用可能で、さらに [`jinja2-humanize-extensions` パッケージ](https://pypi.org/project/jinja2-humanize-extension/) のフィルターも利用できます。
 
-Your goal when defining an event template is to produce a valid JSON object that
-defines (at minimum) the `event` name and the `resource["prefect.resource.id"]`, which
-are required of all events. The simplest template is one in which these are statically
-defined.
+イベントテンプレートを定義する際の目標は、すべてのイベントに必要な `event` 名と `resource["prefect.resource.id"]` を（少なくとも）定義した有効な JSON オブジェクトを生成することです。
+最もシンプルなテンプレートは、これらが静的に定義されているものです。
 
 <Warning>
-**Make sure to produce valid JSON**
+**有効なJSONを生成するようにしてください**
 
-The output of your template, when rendered, should be a valid string that can be
-parsed, for example, with `json.loads`.
+テンプレートの出力は、レンダリング時に、たとえば`json.loads`で解析できる有効な文字列である必要があります。
 </Warning>
 
-### Static webhook events
+### 静的 Webhook イベント
 
-Here's a static webhook template example that notifies Prefect when your `recommendations`
-machine learning model has been updated, so you can send a Slack notification to your team and run a few subsequent
-deployments. Those models are produced on a daily schedule by another team that is
-using `cron` for scheduling. They aren't able to use Prefect for their flows yet, but
-they are happy to add a `curl` to the end of their daily script to notify you. Because
-this webhook is only used for a single event from a single resource, your template
-can be entirely static:
+以下は、`recommendations` 機械学習モデルが更新された際に Prefect に通知する静的 Webhook テンプレートの例です。これにより、チームに Slack 通知を送信し、その後数回のデプロイを実行できます。
+これらのモデルは、`cron` を使用してスケジュールを設定している別のチームによって、毎日作成されています。
+彼らはまだフローに Prefect を使用できませんが、通知のために毎日のスクリプトの末尾に `curl` を追加できます。
+この Webhook は単一のリソースからの単一のイベントにのみ使用されるため、テンプレートは完全に静的にできます。
 
 ```JSON
 {
@@ -188,37 +160,29 @@ can be entirely static:
 }
 ```
 
-A webhook with this template may be invoked through _any_ of the HTTP methods, including a
-`GET` request with no body, so the team you are integrating with can include this line at the
-end of their daily script:
+このテンプレートを使用した Webhook は、本文のない `GET` リクエストを含む任意の HTTP メソッドを通じて呼び出すことができるため、統合先のチームは日常のスクリプトの最後に次の行を含めることができます:
 
 ```bash
 curl https://api.prefect.cloud/hooks/AERylZ_uewzpDx-8fcweHQ
 ```
 
-Each time the script hits the webhook, the webhook produces a single
-Prefect event with that name and resource in your workspace.
+スクリプトが Webhook にヒットするたびに、Webhook はワークスペース内にその名前とリソースを持つ単一の Prefect イベントを生成します。
 
-### Event fields that Prefect Cloud populates for you
+### Prefect Cloud が自動的に入力するイベントフィールド
 
-You only had to provide the `event` and `resource` definition, which
-is not a completely fleshed out event. Prefect Cloud sets default values for any
-missing fields, such as `occurred` and `id`, so you don't need to set them in your
-template. Additionally, Prefect Cloud adds the webhook itself as a related resource
-on all of the events it produces.
+`event` と `resource` の定義のみを指定する必要がありましたが、これは完全なイベントではありません。
+Prefect Cloud は、`occurred` や `id` など、不足しているフィールドにデフォルト値を設定するため、テンプレートで設定する必要はありません。
+さらに、Prefect Cloud は、生成するすべてのイベントに Webhook 自体を関連リソースとして追加します。
 
-If your template does not produce a `payload` field, the `payload` defaults to a
-standard set of debugging information, including the HTTP method, headers, and body.
+テンプレートで `payload` フィールドが生成されない場合、`payload` にはデフォルトで、HTTP メソッド、ヘッダー、本文を含む標準的なデバッグ情報セットが設定されます。
 
-### Dynamic webhook events
+### 動的Webhookイベント
 
-Let's say that after a few days you and the Data Science team are getting a lot of
-value from the automations you have set up with the static webhook. You've agreed to
-upgrade this webhook to handle all of the various models that the team produces. It's
-time to add some dynamic information to your webhook template.
+数日後、あなたとデータサイエンスチームは、静的Webhookで設定した自動化から多くの価値を得ているとします。
+チームが作成する様々なモデルをすべて処理できるように、このWebhookをアップグレードすることに同意しました。
+次は、Webhookテンプレートに動的な情報を追加します。
 
-Your colleagues on the team have adjusted their daily `cron` scripts to `POST` a
-small body that includes the ID and name of the model that was updated:
+チームの同僚は、毎日実行する`cron`スクリプトを調整し、更新されたモデルのIDと名前を含む短いメッセージを`POST`するようにしました。
 
 ```bash
 curl \
@@ -227,10 +191,8 @@ curl \
     -X POST https://api.prefect.cloud/hooks/AERylZ_uewzpDx-8fcweHQ
 ```
 
-This script sends a `POST` request and the body will include a traditional
-URL-encoded form with two fields describing the model that was updated: `model` and
-`friendly_name`. Here's the webhook code that uses Jinja to receive these values in your
-template and produce different events for the different models:
+このスクリプトは `POST` リクエストを送信し、そのボディには更新されたモデルを表す `model` と `friendly_name` という 2 つのフィールドを含む、従来の URL エンコードされたフォームが含まれます。
+以下は、Jinja を使用してテンプレートでこれらの値を受け取り、モデルごとに異なるイベントを生成する Webhook コードです:
 
 ```jinja2
 {
@@ -243,32 +205,27 @@ template and produce different events for the different models:
 }
 ```
 
-All subsequent `POST` requests will produce events with those variable
-resource IDs and names. The other statically defined parts, such as `event` or the
-`producing-team` label you included earlier, will still be used.
+後続のすべての `POST` リクエストは、これらの変数リソース ID と名前を持つイベントを生成します。
+`event` や、先ほど追加した `producing-team` ラベルなど、静的に定義されたその他の部分は引き続き使用されます。
 
 <Tip>
-**Use Jinja2's `default` filter to handle missing values**
+**Jinja2 の `default` フィルターを使用して欠損値を処理します**
 
-Jinja2 has a helpful [`default`](https://jinja.palletsprojects.com/en/3.1.x/templates/#jinja-filters.default)
-filter that can compensate for missing values in the request. In this example,
-you may want to use the model's ID in place of the friendly name when the friendly name is not
-provided: `{{ body.friendly_name|default(body.model) }}`.
+Jinja2 には、リクエスト内の欠損値を補正できる便利な [`default`](https://jinja.palletsprojects.com/en/3.1.x/templates/#jinja-filters.default) フィルターがあります。
+この例では、フレンドリ名が指定されていない場合、フレンドリ名の代わりにモデルの ID を使用できます: `{{ body.friendly_name|default(body.model) }}`。
 </Tip>
 
-### How HTTP request components are handled
+### HTTP リクエストコンポーネントの処理方法
 
-The Jinja2 template context includes the three parts of the incoming HTTP request:
+Jinja2 テンプレートコンテキストには、受信 HTTP リクエストの 3 つの部分が含まれます。
 
-* `method` is the uppercased string of the HTTP method, like `GET` or `POST`.
-* `headers` is a case-insensitive dictionary of the HTTP headers included with the
-  request. To prevent accidental disclosures, the `Authorization` header is removed.
-* `body` represents the body that was posted to the webhook, with a best-effort approach
-  to parse it into an object you can access.
+* `method` は、`GET` や `POST` などの HTTP メソッドの大文字表記の文字列です。
+* `headers` は、リクエストに含まれる HTTP ヘッダーの、大文字と小文字を区別しない辞書です。誤って漏洩するのを防ぐため、`Authorization` ヘッダーは削除されます。
+* `body` は、Webhook に送信された本文を表します。この本文は、ベストエフォート方式で解析され、アクセス可能なオブジェクトに変換されます。
 
-HTTP headers are available without any alteration as a `dict`-like object, but you may
-access them with header names in any case. For example, these template expressions all
-return the value of the `Content-Length` header:
+HTTP ヘッダーは、`dict` のようなオブジェクトとしてそのまま使用できますが、大文字と小文字の区別なくヘッダー名でアクセスできます。
+
+例えば、以下のテンプレート式はすべて `Content-Length` ヘッダーの値を返します。
 
 ```jinja2
 {{ headers['Content-Length'] }}
@@ -278,13 +235,10 @@ return the value of the `Content-Length` header:
 {{ headers['CoNtEnt-LeNgTh'] }}
 ```
 
-The HTTP request body goes through some light preprocessing to make it more useful in
-templates. If the `Content-Type` of the request is `application/json`, the body will be
-parsed as a JSON object and made available to the webhook templates. If the
-`Content-Type` is `application/x-www-form-urlencoded` (as in our example above), the
-body is parsed into a flat `dict`-like object of key-value pairs. Jinja2 supports both
-index and attribute access to the fields of these objects, so the following two
-expressions are equivalent:
+HTTP リクエストボディは、テンプレートでより使いやすくするために、いくつかの簡単な前処理が行われます。
+リクエストの `Content-Type` が `application/json` の場合、ボディは JSON オブジェクトとして解析され、Webhook テンプレートで使用できるようになります。
+`Content-Type` が `application/x-www-form-urlencoded` の場合 (上記の例のように)、ボディはキーと値のペアのフラットな `dict` のようなオブジェクトに解析されます。
+Jinja2 はこれらのオブジェクトのフィールドへのインデックスアクセスと属性アクセスの両方をサポートしているため、次の 2 つの式は同等です。
 
 ```jinja2
 {{ body['friendly_name'] }}
@@ -293,29 +247,24 @@ expressions are equivalent:
 ```
 
 <Tip>
-**Only for Python identifiers**
+**Python 識別子のみ**
 
-Jinja2's syntax only allows attribute-like access if the key is a valid Python
-identifier, so `body.friendly-name` will not work. Use `body['friendly-name']` in
-those cases.
+Jinja2 の構文では、キーが有効な Python 識別子である場合にのみ属性のようなアクセスが許可されます。そのため、`body.friendly-name` は機能しません。そのような場合は、`body['friendly-name']` を使用してください。
 </Tip>
 
-Prefect Cloud will attempt to parse any other content type (such as `text/plain`) as if it were JSON first.
-In any case where the body cannot be transformed into JSON, it is made available to your
-templates as a Python `str`.
+Prefect Cloud は、まず他のコンテンツタイプ（`text/plain` など）を JSON であるかのように解析しようとします。
+本文を JSON に変換できない場合は、Python の `str` としてテンプレートで使用できるようになります。
 
-### Accept Prefect events directly
+### Prefect イベントを直接受信する
 
-In cases where you have more control over the client, your webhook can accept Prefect
-events directly with a simple pass-through template:
+クライアントをより細かく制御する必要がある場合は、シンプルなパススルーテンプレートを使用して、Webhook で Prefect イベントを直接受信できます。
 
 ```jinja2
 {{ body|tojson }}
 ```
 
-This template accepts the incoming body (assuming it was in JSON format) and passes
-it through unmodified. This allows a `POST` of a partial Prefect event as in this
-example:
+このテンプレートは、受信したボディ（JSON形式であると仮定）を受け取り、変更せずにそのまま渡します。
+これにより、次の例のように、Prefectイベントの一部をPOST送信できます:
 
 ```
 POST /hooks/AERylZ_uewzpDx-8fcweHQ HTTP/1.1
@@ -333,34 +282,27 @@ Content-Length: 228
 }
 ```
 
-The resulting event is filled out with the default values for `occurred`, `id`, and
-other fields as described [above](#event-fields-that-prefect-cloud-populates-for-you).
+結果のイベントには、[上記](#クラウドが最適に入力するイベントフィールド) で説明したように、`occurred`、`id`、およびその他のフィールドのデフォルト値が入力されます。
 
-### Accepting CloudEvents
+### CloudEvents の受け入れ
 
-The [Cloud Native Computing Foundation](https://cncf.io) has standardized
-[CloudEvents](https://cloudevents.io) for use by systems to exchange event information
-in a common format. These events are supported by major cloud providers and a growing
-number of cloud-native systems. Prefect Cloud can interpret a webhook containing
-a CloudEvent natively with the following template:
+[Cloud Native Computing Foundation](https://cncf.io) は、システムが共通形式でイベント情報を交換するために使用する [CloudEvents](https://cloudevents.io) を標準化しました。
+これらのイベントは、主要なクラウドプロバイダーと、増加し続けるクラウドネイティブシステムでサポートされています。
+Prefect Cloud は、次のテンプレートを使用して、CloudEvent を含む Webhook をネイティブに解釈できます。
 
 ```jinja2
 {{ body|from_cloud_event(headers) }}
 ```
 
-The resulting event uses the CloudEvent's `subject` as the resource (or the `source`
-if no `subject` is available). The CloudEvent's `data` attribute becomes the
-Prefect event's `payload['data']`, and the other CloudEvent metadata will be at
-`payload['cloudevents']`. To handle CloudEvents in a more specific
-way tailored to your use case, use a dynamic template to interpret the incoming `body`.
+The resulting event uses the CloudEvent's `subject` as the resource (or the `source` if no `subject` is available). 
+The CloudEvent's `data` attribute becomes the Prefect event's `payload['data']`, and the other CloudEvent metadata will be at `payload['cloudevents']`. 
+To handle CloudEvents in a more specific way tailored to your use case, use a dynamic template to interpret the incoming `body`.
 
-## Troubleshooting
+## トラブルシューティング
 
-The initial configuration of your webhook may require some trial and error as you get
-the sender and your receiving webhook speaking a compatible language. While you are in
-this phase, lean upon the [event feed](/v3/automate/events/#event-feed) in the UI to see events as they happen.
+Webhookの初期設定では、送信側と受信側のWebhookが互換性のある言語を使用するようにするため、試行錯誤が必要になる場合があります。
+この段階では、UIの[イベントフィード](/v3/automate/events/#event-feed)を利用して、発生したイベントを確認してください。
 
-When Prefect Cloud encounters an error during receipt of a webhook, it produces a
-`prefect-cloud.webhook.failed` event in your workspace. This event includes
-critical information about the HTTP method, headers, and body it received, as well as
-what the template rendered. Keep an eye out for these events when something goes wrong.
+Prefect CloudがWebhookの受信中にエラーを検出すると、ワークスペースに「prefect-cloud.webhook.failed」イベントが生成されます。
+このイベントには、受信したHTTPメソッド、ヘッダー、本文、およびテンプレートがレンダリングした内容に関する重要な情報が含まれています。
+問題が発生した場合は、これらのイベントに注意してください。

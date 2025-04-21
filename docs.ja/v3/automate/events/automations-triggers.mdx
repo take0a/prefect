@@ -1,86 +1,88 @@
 ---
-title: Trigger actions on events
-description: Automations provide a flexible and powerful framework for automatically taking action in response to events.
+title: イベントでアクションをトリガーする
+description: 自動化は、イベントに応じて自動的にアクションを実行するための柔軟で強力なフレームワークを提供します。
 ---
 
-Automations enable you to configure [actions](#actions) that execute automatically based on [trigger](#triggers) conditions.
+自動化を使用すると、[トリガー](#triggers) 条件に基づいて自動的に実行される [アクション](#actions) を設定できます。
 
-Potential triggers include the occurrence of events from changes in a flow run's state—or the absence of such events.
-You can define your own custom trigger to fire based on a custom [event](/v3/automate/events/custom-triggers/) defined in Python code.
-With Prefect Cloud you can even create [webhooks](/v3/automate/events/webhook-triggers/) that can receive data for use in actions.
+トリガーとしては、フロー実行の状態変化によるイベントの発生、またはそのようなイベントが発生しないことなどが考えられます。
+Python コードで定義されたカスタム [イベント](/v3/automate/events/custom-triggers/) に基づいて実行される独自のカスタムトリガーを定義することもできます。
+Prefect Cloud では、アクションで使用するデータを受信できる [webhook](/v3/automate/events/webhook-triggers/) を作成することもできます。
 
-Actions include starting flow runs, pausing schedules, and sending custom notifications.
+アクションには、フロー実行の開始、スケジュールの一時停止、カスタム通知の送信などがあります。
 
-## Create an automation
+## オートメーションを作成する
 
-On the **Automations** page, select the **+** icon to create a new automation. You'll be prompted to configure:
+ **Automations** ページで **+** アイコンを選択して、新しいオートメーションを作成します。以下の設定を行うように求められます。
 
-- A [trigger](#triggers) condition that causes the automation to execute.
-- One or more [actions](#actions) carried out by the automation.
-- [Details](#details) about the automation, such as a name and description.
+- オートメーションを実行するための[トリガー](#triggers)条件。
+- オートメーションによって実行される1つ以上の[アクション](#actions)。
+- オートメーションの名前や説明など、オートメーションの[詳細](#details)。
 
 import { COMBINED } from "/snippets/resource-management/combined.mdx"
 import { automations } from "/snippets/resource-management/vars.mdx"
 
 <COMBINED name="automations" hrefTF={automations.tf} hrefAPI={automations.api} hrefCLI={automations.cli} />
 
-## Manage automations
+## 自動化の管理
 
-The **Automations** page provides an overview of all configured automations for your workspace.
+ **Automations** ページでは、ワークスペースで設定されているすべての自動化の概要が表示されます。
 
 ![Viewing automations for a workspace in Prefect Cloud.](/v3/img/ui/automations.png)
 
-Select the toggle next to an automation to pause execution of the automation.
+オートメーションの実行を一時停止するには、オートメーションの横にあるトグルを選択します。
 
-The button next to the toggle provides commands to copy the automation ID, edit the automation, or delete the automation.
+トグルの横にあるボタンには、オートメーションIDのコピー、オートメーションの編集、オートメーションの削除を行うコマンドがあります。
 
-Select the name of an automation to view **Details** about it and relevant **Events**.
+オートメーションの名前を選択すると、そのオートメーションの **Details** と関連する **Events** が表示されます。
 
-### Triggers
+### トリガー
 
-Triggers specify the conditions under which your action should be performed. The Prefect UI includes templates for many
-common conditions, such as:
+トリガーは、アクションを実行する条件を指定します。
+Prefect UI には、次のような多くの一般的な条件のテンプレートが用意されています。
 
-- Flow run state change (Flow Run Tags are only evaluated with `OR` criteria)
-- Work pool status
-- Work queue status
-- Deployment status
-- Metric thresholds, such as average duration, lateness, or completion percentage
-- Custom event triggers
+- フロー実行状態の変更（フロー実行タグは「OR」条件でのみ評価されます）
+- 作業プールのステータス
+- 作業キューのステータス
+- デプロイメントのステータス
+- 平均所要時間、遅延、完了率などのメトリックしきい値
+- カスタムイベントトリガー
 
-Importantly, you can configure the triggers not only in reaction to events, but also proactively: in the absence of
-an expected event.
+重要なのは、トリガーはイベント発生時に反応するだけでなく、予期されるイベントが発生していない場合にも事前に設定できることです。
 
 ![Configuring a trigger for an automation in Prefect Cloud.](/v3/img/ui/automations-trigger.png)
 
-For example, in the case of flow run state change triggers, you might expect production flows to finish in no longer
-than thirty minutes. But transient infrastructure or network issues could cause your flow to get “stuck” in a running state.
-A trigger could kick off an action if the flow stays in a running state for more than 30 minutes.
+例えば、フロー実行状態変更トリガーの場合、本番環境のフローは30分以内に完了すると予想されます。
+しかし、一時的なインフラストラクチャやネットワークの問題により、フローが実行状態のまま「スタック」する可能性があります。
+フローが30分以上実行状態のままになった場合、トリガーによってアクションが開始されます。
 
-This action could be taken on the flow itself, such as cancelling or restarting it. Or the action could take the form of a
-notification for someone to take manual remediation steps. Or you could set both actions to take place when the trigger occurs.
+このアクションは、フロー自体に対して実行され、キャンセルや再起動などが行われます。
+あるいは、手動で修復手順を実行するよう通知する形でアクションが実行される可能性があります。
+あるいは、トリガーの発生時に両方のアクションが実行されるように設定することもできます。
 
-### Actions
+### アクション
 
-Actions specify what your automation does when its trigger criteria are met. Current action types include:
+アクションは、トリガー条件が満たされたときにオートメーションが実行する処理を指定します。
+現在のアクションの種類は次のとおりです。
 
-- Cancel a flow run
-- Pause or resume a schedule
-- Run a deployment
-- Pause or resume a deployment schedule
-- Pause or resume a work pool
-- Pause or resume a work queue
-- Pause or resume an automation
-- Send a [notification](#automation-notifications)
-- Call a webhook
-- Suspend a flow run
-- Change the state of a flow run
+- フロー実行をキャンセルする
+- スケジュールを一時停止または再開する
+- デプロイメントを実行する
+- デプロイメントスケジュールを一時停止または再開する
+- ワークプールを一時停止または再開する
+- ワークキューを一時停止または再開する
+- オートメーションを一時停止または再開する
+- [通知](#automation-notifications) を送信する
+- Webhook を呼び出す
+- フロー実行を一時停止する
+- フロー実行の状態を変更する
 
 ![Configuring an action for an automation in Prefect Cloud.](/v3/img/ui/automations-action.png)
 
-### Create automations In Python code
+### Python コードで自動化を作成する
 
-You can create and access any automation with the Python SDK's `Automation` class and its methods.
+Python SDK の `Automation` クラスとそのメソッドを使用して、あらゆる自動化を作成し、アクセスできます。
+
 ```python
 from prefect.automations import Automation
 from prefect.events.schemas.automations import EventTrigger
@@ -113,37 +115,34 @@ print(automation)
 # name='woodchonk' description='' enabled=True trigger=EventTrigger(type='event', match=ResourceSpecification(__root__={'genus': 'Marmota', 'species': 'monax'}), match_related=ResourceSpecification(__root__={}), after=set(), expect={'animal.walked'}, for_each=set(), posture=Posture.Reactive, threshold=3, within=datetime.timedelta(seconds=10)) actions=[CancelFlowRun(type='cancel-flow-run')] actions_on_trigger=[] actions_on_resolve=[] owner_resource=None id=UUID('d641c552-775c-4dc6-a31e-541cb11137a6')
 ```
 
-### Selected and inferred action targets
+### 選択済みアクションターゲットと推定アクションターゲット
 
-Some actions require you to either select the target of the action, or specify that the target of the action should be
-inferred. Selected targets are simple and useful for when you know exactly what object your action should act on. For
-example, the case of a cleanup flow you want to run or a specific notification you want to send.
+一部のアクションでは、アクションのターゲットを選択するか、アクションのターゲットを推定するように指定する必要があります。
+選択済みターゲットはシンプルで、アクションの対象オブジェクトが正確にわかっている場合に便利です。
 
-Inferred targets are deduced from the trigger itself.
+例えば、クリーンアップフローを実行する場合や、特定の通知を送信する場合などです。
 
-For example, if a trigger fires on a flow run that is stuck in a running state, and the action is to cancel an inferred
-flow run—the flow run that caused the trigger to fire.
+推定ターゲットはトリガー自体から推定されます。
 
-Similarly, if a trigger fires on a work queue event and the corresponding action is to pause an inferred work queue, the
-inferred work queue is the one that emitted the event.
+例えば、実行状態のまま停止しているフロー実行でトリガーが発動し、アクションが推定されたフロー実行（トリガーの発動原因となったフロー実行）をキャンセルする場合です。
 
-Prefect infers the relevant event whenever possible, but sometimes one does not exist.
+同様に、ワークキューイベントでトリガーが発動し、対応するアクションが推定されたワークキューを一時停止する場合、推定されたワークキューはイベントを発行したキューです。
 
-Specify a name and, optionally, a description for the automation.
+Prefect は可能な限り関連イベントを推定しますが、イベントが存在しない場合もあります。
 
-## Create an automation with deployment triggers
+オートメーションの名前と、オプションで説明を指定します。
 
-To enable the simple configuration of event-driven deployments, Prefect provides deployment triggers—a shorthand for
-creating automations that are linked to specific deployments to run them based on the presence or absence of events.
+## デプロイメントトリガーを使用したオートメーションの作成
 
-Trigger definitions for deployments are supported in `prefect.yaml`, `.serve`, and `.deploy`. At deployment time,
-specified trigger definitions create linked automations triggered by events matching your chosen
-[grammar](/v3/automate/events/events/#event-grammar). Each trigger definition may include a [jinja template](https://en.wikipedia.org/wiki/Jinja_(template_engine))
-to render the triggering `event` as the `parameters` of your  deployment's flow run.
+イベントドリブンなデプロイメントを簡単に設定できるように、Prefect はデプロイメントトリガーを提供しています。これは、特定のデプロイメントにリンクされたオートメーションを作成するためのショートカットであり、イベントの有無に基づいてデプロイメントを実行します。
 
-### Define triggers in `prefect.yaml`
+デプロイメントのトリガー定義は、`prefect.yaml`、`.serve`、`.deploy` でサポートされています。
+デプロイメント時に、指定されたトリガー定義に基づいて、選択した [文法](/v3/automate/events/events/#event-grammar) に一致するイベントによってトリガーされる、リンクされたオートメーションが作成されます。
+各トリガー定義には、トリガーとなる `イベント` をデプロイメントのフロー実行の `パラメーター` としてレンダリングするための [Jinja テンプレート](https://en.wikipedia.org/wiki/Jinja_(template_engine)) を含めることができます。
 
-You can include a list of triggers on any deployment in a `prefect.yaml` file:
+### `prefect.yaml` でトリガーを定義する
+
+`prefect.yaml` ファイルには、任意のデプロイメントのトリガーのリストを含めることができます:
 
 ```yaml
 deployments:
@@ -162,8 +161,7 @@ deployments:
           param_1: "{{ event }}"
 ```
 
-This deployment creates a flow run when an `external.resource.pinged` event _and_ an `external.resource.replied`
-event have been seen from `my.external.resource`:
+このデプロイメントは、`external.resource.pinged` イベントと `external.resource.replied` イベントが `my.external.resource` から確認されたときに実行されるフローを作成します:
 
 ```yaml
 deployments:
@@ -189,11 +187,9 @@ deployments:
               - external.resource.replied
 ```
 
-### Define triggers in `.serve` and `.deploy`
+### `.serve` と `.deploy` でトリガーを定義する
 
-To create deployments with triggers in Python, the trigger types `DeploymentEventTrigger`,
-`DeploymentMetricTrigger`, `DeploymentCompoundTrigger`, and `DeploymentSequenceTrigger` can be imported
-from `prefect.events`:
+Python でトリガーを使用したデプロイメントを作成するには、`prefect.events` からトリガータイプ `DeploymentEventTrigger`、`DeploymentMetricTrigger`、`DeploymentCompoundTrigger`、`DeploymentSequenceTrigger` をインポートします。
 
 ```python
 from prefect import flow
@@ -221,7 +217,7 @@ if __name__=="__main__":
     )
 ```
 
-As with prior examples, you must supply composite triggers with a list of underlying triggers:
+前の例と同様に、複合トリガーには基礎となるトリガーのリストを指定する必要があります:
 
 ```python
 from prefect import flow
@@ -264,10 +260,9 @@ if __name__=="__main__":
 ```
 
 
-### Pass triggers to `prefect deploy`
+### `prefect deploy` にトリガーを渡す
 
-You can pass one or more `--trigger` arguments to `prefect deploy` as either a JSON string or a
-path to a `.yaml` or `.json` file.
+`prefect deploy` には、1 つ以上の `--trigger` 引数を、JSON 文字列、または `.yaml` ファイルまたは `.json` ファイルへのパスとして渡すことができます。
 
 ```bash
 # Pass a trigger as a JSON string
@@ -285,7 +280,7 @@ prefect deploy -n test-deployment --trigger triggers.yaml
 prefect deploy -n test-deployment --trigger my_stuff/triggers.json
 ```
 
-For example, a `triggers.yaml` file could have many triggers defined:
+たとえば、`triggers.yaml` ファイルには多くのトリガーが定義されている可能性があります:
 
 ```yaml
 triggers:
@@ -305,37 +300,34 @@ triggers:
       param_1: "{{ event }}"
 ```
 
-Both of the above triggers would be attached to `test-deployment` after running `prefect deploy`.
+上記の両方のトリガーは、`prefect deploy` を実行した後、`test-deployment` にアタッチされます。
 
 <Warning>
-**Triggers passed to `prefect deploy` will override any triggers defined in `prefect.yaml`**
+**`prefect deploy` に渡されたトリガーは、`prefect.yaml` で定義されたトリガーをオーバーライドします**
 
-While you can define triggers in `prefect.yaml` for a given deployment, triggers passed to `prefect deploy`
-take precedence over those defined in `prefect.yaml`.
+特定のデプロイメントに対して `prefect.yaml` でトリガーを定義することはできますが、`prefect deploy` に渡されたトリガーは `prefect.yaml` で定義されたトリガーよりも優先されます。
 </Warning>
 
-Note that deployment triggers contribute to the total number of automations in your workspace.
+デプロイメント トリガーは、ワークスペース内の自動化の合計数に寄与することに注意してください。
 
-## Sending notifications with automations
+## 自動化による通知の送信
 
+自動化は、メッセージ送信機能を備え、設定済みの定義済みブロックを介して通知を送信できます。これには以下が含まれます。
 
-Automations support sending notifications through any predefined block that is capable of and configured
-to send a message, including:
-
-- Slack message to a channel
-- Microsoft Teams message to a channel
-- Email to an email address
+- チャンネルへのSlackメッセージ
+- チャンネルへのMicrosoft Teamsメッセージ
+- メールアドレスへのメール
 
 ![Configuring notifications for an automation in Prefect Cloud.](/v3/img/ui/automations-notifications.png)
 
-## Templating with Jinja
+## Jinja によるテンプレート化
 
-You can access templated variables with automation actions through [Jinja](https://palletsprojects.com/p/jinja/) syntax.
-Templated variables enable you to dynamically include details from an automation trigger, such as a flow or pool name.
+自動化アクションでは、[Jinja](https://palletsprojects.com/p/jinja/) 構文を使用してテンプレート変数にアクセスできます。
+テンプレート変数を使用すると、フロー名やプール名など、自動化トリガーの詳細を動的に含めることができます。
 
-Jinja templated variable syntax wraps the variable name in double curly brackets, like this: `{{ variable }}`.
+Jinja のテンプレート変数構文では、変数名を二重の中括弧で囲みます（例: `{{ 変数 }}`）。
 
-You can access properties of the underlying flow run objects including:
+以下のフロー実行オブジェクトのプロパティにアクセスできます:
 
 - [flow_run](https://reference.prefect.io/prefect/server/schemas/core/#prefect.server.schemas.core.FlowRun)
 - [flow](https://reference.prefect.io/prefect/server/schemas/core/#prefect.server.schemas.core.Flow)
@@ -343,11 +335,11 @@ You can access properties of the underlying flow run objects including:
 - [work_queue](https://reference.prefect.io/prefect/server/schemas/core/#prefect.server.schemas.core.WorkQueue)
 - [work_pool](https://reference.prefect.io/prefect/server/schemas/core/#prefect.server.schemas.core.WorkPool)
 
-In addition to its native properties, each object includes an `id` along with `created` and `updated` timestamps.
+各オブジェクトには、ネイティブプロパティに加えて、以下のプロパティが含まれます。 `id` と `created` および `updated` のタイムスタンプ。
 
-The `flow_run|ui_url` token returns the URL to view the flow run in the UI.
+`flow_run|ui_url` トークンは、UI でフロー実行を表示するための URL を返します。
 
-Here's an example relevant to a flow run state-based notification:
+フロー実行状態に基づく通知に関連する例を以下に示します:
 
 ```
 Flow run {{ flow_run.name }} entered state {{ flow_run.state.name }}.
@@ -358,11 +350,11 @@ Flow run {{ flow_run.name }} entered state {{ flow_run.state.name }}.
     State message: {{ flow_run.state.message }}
 ```
 
-The resulting Slack webhook notification looks something like this:
+結果として得られる Slack Webhook 通知は次のようになります:
 
 ![Configuring notifications for an automation in Prefect Cloud.](/v3/img/ui/templated-notification.png)
 
-You could include `flow` and `deployment` properties:
+`flow` プロパティと `deployment` プロパティを含めることができます:
 
 ```
 Flow run {{ flow_run.name }} for flow {{ flow.name }}
@@ -375,7 +367,7 @@ Deployment version: {{ deployment.version }}
 Deployment parameters: {{ deployment.parameters }}
 ```
 
-An automation that reports on work pool status might include notifications using `work_pool` properties:
+作業プールのステータスを報告する自動化には、`work_pool` プロパティを使用した通知が含まれる場合があります:
 
 ```
 Work pool status alert!
@@ -384,9 +376,7 @@ Name: {{ work_pool.name }}
 Last polled: {{ work_pool.last_polled }}
 ```
 
-In addition to those shortcuts for flows, deployments, and work pools, you have access to the automation and the
-event that triggered the automation. See the [Automations API](https://app.prefect.cloud/api/docs#tag/Automations)
-for additional details.
+フロー、デプロイメント、ワークプールへのショートカットに加えて、オートメーションと、オートメーションをトリガーしたイベントにもアクセスできます。詳細については、[Automations API](https://app.prefect.cloud/api/docs#tag/Automations) をご覧ください。
 
 ```
 Automation: {{ automation.name }}
@@ -406,19 +396,17 @@ Related Resources:
 {% endfor %}
 ```
 
-Note that this example also illustrates the ability to use Jinja features such as iterator and for loop
-[control structures](https://jinja.palletsprojects.com/en/3.1.x/templates/#list-of-control-structures) when
-templating notifications.
+この例では、通知をテンプレート化するときに、反復子や for ループ [制御構造](https://jinja.palletsprojects.com/en/3.1.x/templates/#list-of-control-structures) などの Jinja 機能を使用できることも示されていることに注意してください。
 
-## API example
+## API の例
 
-This example grabs data from an API and sends a notification based on the end state.
+この例では、API からデータを取得し、終了状態に基づいて通知を送信します。
 
-### Create the example script
+### サンプルスクリプトを作成する
 
-Start by pulling hypothetical user data from an endpoint and then performing data cleaning and transformations.
+まず、エンドポイントから仮想ユーザーデータを取得し、データのクリーニングと変換を実行します。
 
-First create a simple extract method that pulls the data from a random user data generator endpoint:
+まず、ランダムユーザーデータジェネレータエンドポイントからデータを取得するシンプルな抽出メソッドを作成します:
 
 ```python
 from prefect import flow, task, get_run_logger
@@ -458,56 +446,67 @@ if __name__ == "__main__":
     list_of_names = build_names()
 ```
 
-The data cleaning workflow has visibility into each step, and sends a list of names to the next step of the pipeline.
+データ クリーニング ワークフローでは各ステップが可視化され、名前のリストがパイプラインの次のステップに送信されます。
 
-### Create a notification block in the UI
-Next, send a notification based off a completed state outcome. Configure a notification that shows when to look into your
-workflow logic.
+### UI で通知ブロックを作成します。
 
-1. Prior to creating the automation, confirm the notification location. Create a notification block to help define where
-the notification is sent.
+次に、完了状態の結果に基づいて通知を送信します。
+ワークフローロジックを確認するタイミングを示す通知を設定します。
+
+1. 自動化を作成する前に、通知の送信先を確認します。
+通知の送信先を定義するための通知ブロックを作成します。
+
 ![List of available blocks](/v3/img/guides/block-list.png)
 
-2. Navigate to the blocks page on the UI, and click into creating an email notification block.
+2. UI のブロック ページに移動し、電子メール通知ブロックの作成をクリックします。
+
 ![Creating a notification block in the Cloud UI](/v3/img/guides/notification-block.png)
 
-3. Go to the automations page to create your first automation.
+3. 自動化ページに移動して、最初の自動化を作成します。
+
 ![Automations page](/v3/img/guides/automation-list.png)
 
-4. Next, find the trigger type. In this case, use a flow completion.
+4. 次に、トリガーの種類を選択します。
+この場合は、フロー完了を使用します。
+
 ![Trigger type](/v3/img/guides/automation-triggers.png)
 
-5. Create the actions for when the trigger is hit. In this case, create a notification to showcase the
-completion.
+5. トリガーがヒットした際のアクションを作成します。
+今回は、完了を通知する通知を作成します。
+
 ![Notification block in automation](/v3/img/guides/notify-auto-block.png)
 
-6. Now the automation is ready to be triggered from a flow run completion. Run the file locally and see that the
-notification is sent to your inbox after the completion. It may take a few minutes for the notification to arrive.
+6. これで、フロー実行の完了時に自動化をトリガーする準備が整いました。
+ファイルをローカルで実行し、完了後に受信トレイに通知が送信されることを確認してください。
+通知が届くまで数分かかる場合があります。
+
 ![Final notification](/v3/img/guides/final-automation.png)
 
 <Tip>
-**No deployment created**
+**デプロイメントは作成されていません**
 
-You do not need to create a deployment to trigger your automation. In the case above, the flow run state trigger fired in response to a flow run that was executed locally.
+自動化をトリガーするためにデプロイメントを作成する必要はありません。
+上記のケースでは、フロー実行状態トリガーは、ローカルで実行されたフロー実行に応じて起動しました。
 </Tip>
 
-Now that you've seen how to create an email notification from a flow run completion, see how to kick off a deployment
-run in response to an event.
+フロー実行の完了から電子メール通知を作成する方法を説明しました。次は、イベントに応じてデプロイメント実行を開始する方法を確認します。
 
-### Event-based deployment automation
-Create an automation to kick off a deployment instead of a notification. Explore how to programmatically create this
-automation with Prefect's REST API.
+### イベントベースのデプロイメント自動化
 
-See the [REST API documentation](https://docs.prefect.io/latest/api-ref/rest-api/#interacting-with-the-rest-api) as a reference for interacting with the automation endpoints.
+通知ではなくデプロイメントを開始する自動化を作成します。
 
-Create a deployment to kick off some work based on how long a flow is running. For example, if the `build_names` flow
-takes too long to execute, you can kick off a deployment with the same `build_names` flow, but replace the `count` value
-with a lower number to speed up completion.
-Create a deployment with a `prefect.yaml` file or a Python file that uses `flow.deploy`.
+Prefect の REST API を使用して、プログラムでこの自動化を作成する方法を確認します。
+
+自動化エンドポイントとのやり取りについては、[REST API ドキュメント](https://docs.prefect.io/latest/api-ref/rest-api/#interacting-with-the-rest-api) を参照してください。
+
+フローの実行時間に基づいて作業を開始するデプロイメントを作成します。
+例えば、`build_names` フローの実行に時間がかかりすぎる場合は、同じ `build_names` フローでデプロイメントを開始しますが、`count` 値をより小さい数値に置き換えることで完了を早めることができます。
+`prefect.yaml` ファイルまたは `flow.deploy` を使用する Python ファイルを使用してデプロイメントを作成します。
+
 <Tabs>
 <Tab title="prefect.yaml">
 
-    Create a `prefect.yaml` file like this one for our flow `build_names`:
+    フロー `build_names` 用に次のような `prefect.yaml` ファイルを作成します:
 
     ```yaml
       # Welcome to your prefect.yaml file! You can use this file for storing and managing
@@ -547,7 +546,7 @@ Create a deployment with a `prefect.yaml` file or a Python file that uses `flow.
 
   <Tab title=".deploy">
 
-    To follow a more Python-based approach to create a deployment, use `flow.deploy` as in the example below:
+    より Python ベースのアプローチに従ってデプロイメントを作成するには、次の例のように `flow.deploy` を使用します:
 
     ```python
     # .deploy only needs a name, valid work pool
@@ -563,12 +562,12 @@ Create a deployment with a `prefect.yaml` file or a Python file that uses `flow.
   </Tab>
 </Tabs>
 
-Grab your `deployment_id` from this deployment with the CLI and embed it in your automation.
+CLI を使用してこのデプロイメントから `deployment_id` を取得し、自動化に埋め込みます。
 
 <Tip>
-**Find deployment_id from the CLI**
+**CLI からデプロイメント ID を見つける**
 
-Run `prefect deployment ls` in an authenticated command prompt.
+認証されたコマンドプロンプトで「prefect deployment ls」を実行します。
 </Tip>
 
 ```bash
@@ -582,7 +581,8 @@ prefect deployment ls
 │ ride-duration-prediction-backfill/backfill-deployment │ 76dc6581-1773-45c5-a291-7f864d064c57 │
 └───────────────────────────────────────────────────────┴──────────────────────────────────────┘
 ```
-Create an automation with a POST call to programmatically create the automation. Ensure you have your `api_key`, `account_id`, and `workspace_id`.
+
+プログラムで自動化を作成するには、POST呼び出しを使用して自動化を作成します。`api_key`、`account_id`、`workspace_id` が必要です。
 
 ```python
 def create_event_driven_automation():
@@ -623,21 +623,21 @@ def create_event_driven_automation():
     return response.json()
 ```
 
-After running this function, you will see the changes that came from the post request within the UI. Keep in mind the
-context is "custom" on UI.
+この関数を実行すると、UI 内で POST リクエストによる変更を確認できます。
+UI ではコンテキストが「カスタム」になっていることに注意してください。
 
-Run the underlying flow and see the deployment kick off after 30 seconds. This results in a new flow run of `build_names`.
-You can see this new deployment get initiated with the custom parameters outlined above.
+基盤となるフローを実行し、30 秒後にデプロイが開始されることを確認します。
+これにより、`build_names` の新しいフローが実行されます。
+この新しいデプロイが、上記で説明したカスタムパラメータを使用して開始されることがわかります。
 
-In a few quick changes, you can programmatically create an automation that deploys workflows with custom parameters.
+いくつかの簡単な変更を加えるだけで、カスタムパラメータを使用してワークフローをデプロイする自動化をプログラムで作成できます。
 
-## Use an underlying .yaml file
+## 基盤となる .yaml ファイルを使用する
 
-You can take this a step further by using your own .yaml version of the automation, and registering that file with the UI.
-This simplifies the requirements of the automation by declaring it in its own .yaml file, and then registering that .yaml
-with the API.
+さらに一歩進んで、自動化の独自の .yaml バージョンを使用し、そのファイルを UI に登録することもできます。
+自動化を独自の .yaml ファイルで宣言し、その .yaml を API に登録することで、自動化の要件が簡素化されます。
 
-First start with creating the .yaml file to house the automation requirements:
+まず、自動化の要件を格納する .yaml ファイルを作成します。
 
 ```yaml automation.yaml
 name: Cancel long running flows
@@ -659,7 +659,7 @@ actions:
   - type: "cancel-flow-run"
 ```
 
-Make a helper function that applies this YAML file with the REST API function.
+この YAML ファイルを REST API 関数に適用するヘルパー関数を作成します。
 
 ```python
 import yaml
@@ -689,27 +689,26 @@ if __name__ == "__main__":
     create_or_update_automation()
 ```
 
-Find a complete repo with these APIs examples in this [GitHub repository](https://github.com/EmilRex/prefect-api-examples/tree/main).
+これらのAPIサンプルを含む完全なリポジトリは、こちらの[GitHubリポジトリ](https://github.com/EmilRex/prefect-api-examples/tree/main)でご覧いただけます。
 
-In this example, you created the automation by registering the .yaml file with a helper function.
+この例では、ヘルパー関数を使用して.yamlファイルを登録することで自動化を作成しました。
 
-## Kick off an automation with a custom webhook
+## カスタムWebhookで自動化を開始する
 
 {/*
 <!-- vale off -->
 */}
 
-Use webhooks to expose the events API. This allows you to extend the functionality of deployments and respond to
-changes in your workflow.
+Webhookを使用してイベントAPIを公開します。
+これにより、デプロイメントの機能を拡張し、ワークフローの変更に対応できるようになります。
 
 {/*
 <!-- vale on -->
 */}
 
-By exposing a webhook endpoint, you can kick off workflows that trigger deployments, all from an event created from an
-HTTP request.
+Webhook エンドポイントを公開することで、HTTP リクエストから作成されたイベントから、デプロイをトリガーするワークフローを開始できます。
 
-Create this webhook in the UI to create these dynamic events.
+これらの動的イベントを作成するには、UI でこの Webhook を作成します。
 
 ```JSON
 {
@@ -721,34 +720,39 @@ Create this webhook in the UI to create these dynamic events.
     }
 }
 ```
-From this input, you can create an exposed webhook endpoint.
+
+この入力から、公開された Webhook エンドポイントを作成できます。
 
 ![webhook-simple](/v3/img/guides/webhook-simple.png)
 
-Each webhook corresponds to a custom event created where you can react to it downstream with a separate deployment or
-automation.
+各 Webhook は作成されたカスタムイベントに対応しており、下流で個別のデプロイメントまたは自動化を使用して対応できます。
 
-For example, you can create a curl request that sends the endpoint information such as a run count for your deployment:
+例えば、デプロイメントの実行回数などのエンドポイント情報を送信する curl リクエストを作成できます:
+
 ```console
 curl -X POST https://api.prefect.cloud/hooks/34iV2SFke3mVa6y5Y-YUoA -d "model_id=adhoc" -d "run_count=10" -d "friendly_name=test-user-input"
 ```
-From here, you can make a webhook that is connected to pulling in parameters on the curl command. It kicks off a
-deployment that uses these pulled parameters:
+
+ここから、curl コマンドでパラメータを取得することに接続する Webhook を作成できます。
+取得したパラメータを使用してデプロイメントを開始します:
+
 ![Webhook created](/v3/img/guides/webhook-created.png)
 
-Go into the event feed to automate straight from this event:
+イベント フィードにアクセスして、このイベントから直接自動化します:
+
 ![Webhook automate](/v3/img/guides/webhook-automate.png)
 
-This allows you to create automations that respond to these webhook events. From a few clicks in the UI, you can
-associate an external process with the Prefect events API that can trigger downstream deployments.
+これにより、これらのWebhookイベントに応答する自動化を作成できます。
+UIで数回クリックするだけで、外部プロセスをPrefectイベントAPIに関連付け、下流のデプロイメントをトリガーできます。
+
 ![Automation custom](/v3/img/guides/automation-custom.png)
 
 ## Examples
 
 
-### Trigger a downstream deployment with an event
+### イベントで下流の展開をトリガーする
 
-This example shows how to use a trigger to schedule a downstream deployment when an upstream deployment completes.
+この例では、トリガーを使用して、アップストリーム デプロイメントが完了したときにダウンストリーム デプロイメントをスケジュールする方法を示します。
 
 ```python event_driven_deployments.py
 from prefect import flow, serve
@@ -780,24 +784,25 @@ if __name__ == "__main__":
     serve(upstream_deployment, downstream_deployment)
 ```
 
-First, start the `serve` process to listen for scheduled deployments runs:
+まず、スケジュールされたデプロイメントの実行をリッスンするために `serve` プロセスを開始します:
 
 ```bash
 python event_driven_deployments.py
 ```
 
-Now, run the upstream deployment and see the downstream deployment kick off after it completes:
+次に、アップストリーム デプロイメントを実行し、完了後にダウンストリーム デプロイメントが開始されることを確認します:
 
 ```bash
 prefect deployment run upstream-flow/upstream_deployment
 ```
 
 <Tip>
-**Check the event feed**
+**イベントフィードを確認する**
 
-You can inspect raw events in the event feed in the UI to see what related resources are available to match against.
+UI のイベントフィードで生のイベントを調べ、どのような関連リソースがマッチングできるかを確認できます。
 
-For example, the following `prefect.flow-run.Completed` event's related resources include:
+例えば、次の `prefect.flow-run.Completed` イベントの関連リソースには以下が含まれます:
+
 ```json
 {
    "related": [
@@ -821,10 +826,11 @@ For example, the following `prefect.flow-run.Completed` event's related resource
 ```
 </Tip>
 
-### Trigger a deployment when a customer completes an order
-Imagine you are running an e-commerce platform and you want to trigger a deployment when a customer completes an order.
+### 顧客が注文を完了したときにデプロイをトリガーする
 
-There might be a number of events that occur during an order on your platform, for example:
+eコマースプラットフォームを運営していて、顧客が注文を完了したときにデプロイをトリガーしたいとします。
+
+プラットフォーム上で注文処理中に、次のような複数のイベントが発生する場合があります。
 
 - `order.created`
 - `order.item.added`
@@ -833,20 +839,19 @@ There might be a number of events that occur during an order on your platform, f
 - `order.complete`
 
 <Tip>
-**Event grammar**
+**イベント文法**
 
-The above choices of event names are arbitrary. With Prefect events, you're free to select any event grammar that best
-represents your use case.
+上記のイベント名は任意です。
+Prefect イベントでは、ユースケースに最適なイベント文法を自由に選択できます。
 </Tip>
 
-In this case, we want to trigger a deployment when a user completes an order, so our trigger should:
+この場合、ユーザーが注文を完了した際にデプロイメントをトリガーしたいので、トリガーは以下の動作を行う必要があります。
 
-- `expect` an `order.complete` event
-- `after` an `order.created` event
-- evaluate these conditions `for_each` user id
+- `order.complete` イベントを `expect` する
+- `order.created` イベントを `after` する
+- ユーザー ID を `for_each` で条件として評価する
 
-
-Finally, it should pass the `user_id` as a parameter to the deployment. Here's how this looks in code:
+最後に、`user_id` をデプロイメントのパラメーターとして渡す必要があります。コードで示すと以下のようになります。
 
 ```python post_order_deployment.py
 from prefect import flow
@@ -870,14 +875,14 @@ if __name__ == "__main__":
 ```
 
 <Tip>
-**Specify multiple events or resources**
+**複数のイベントまたはリソースを指定する**
 
-The `expect` and `after` fields accept a `set` of event names, so you can specify multiple events for each condition.
+`expect` フィールドと `after` フィールドはイベント名の `set` を受け入れるため、条件ごとに複数のイベントを指定できます。
 
-Similarly, the `for_each` field accepts a `set` of resource ids.
+同様に、`for_each` フィールドはリソース ID の `set` を受け入れます。
 </Tip>
 
-To simulate users causing order status events, run the following in a Python shell or script:
+注文ステータス イベントを引き起こすユーザーをシミュレートするには、Python シェルまたはスクリプトで次を実行します:
 
 ```python simulate_events.py
 import time
@@ -897,27 +902,25 @@ for event_name, user_id in [
     print(f"{user_id} emitted {event_name}")
 ```
 
-In the above example:
+上記の例では、次のようになります。
 
-- `user_id_1` creates and then completes an order, triggering a run of our deployment.
-- `user_id_2` creates an order, but no completed event is emitted so no deployment is triggered.
+- `user_id_1` が注文を作成し、完了すると、デプロイメントの実行がトリガーされます。
+- `user_id_2` が注文を作成しますが、完了イベントが発行されないため、デプロイメントはトリガーされません。
 
-### Detect and respond to zombie flows
+### ゾンビフローの検出と対応
 
-If the infrastructure a flow is running on suddenly fails (for example, the machine crashes or a container is evicted), 
-Prefect's orchestration engine will be unable to report state changes and the flow run will get stuck in the running state.
+フローが実行されているインフラストラクチャに突然障害が発生した場合（例：マシンのクラッシュやコンテナの強制終了）、Prefect のオーケストレーションエンジンは状態の変化を報告できず、フロー実行は実行状態のままになります。
 
-Fortunately, flow runs triggered via deployment can emit heartbeats as they are running, and a Prefect automation can update 
-a flow run's state to crashed if the server stops receiving heartbeats for that flow run.
+幸いなことに、デプロイメントによってトリガーされたフロー実行は、実行中にハートビートを送信できます。また、Prefect のオートメーションは、サーバーがそのフロー実行のハートビートの受信を停止した場合、フロー実行の状態を「クラッシュ」に更新できます。
 
 <Note>
-**Enable flow run heartbeat events**
+**フロー実行ハートビートイベントを有効にする**
 
-You will need to ensure you're running Prefect version 3.1.8 or greater and set `PREFECT_RUNNER_HEARTBEAT_FREQUENCY`
-to an integer greater than 30 to emit flow run heartbeat events.
+フロー実行ハートビートイベントを送信するには、Prefect バージョン 3.1.8 以降を実行していることを確認し、`PREFECT_RUNNER_HEARTBEAT_FREQUENCY` を 30 より大きい整数に設定する必要があります。
 </Note>
 
-To create an automation that marks zombie flow runs as crashed, run this script:
+ゾンビフロー実行をクラッシュとしてマークする自動化を作成するには、次のスクリプトを実行します:
+
 ```python
 from datetime import timedelta
 
@@ -957,17 +960,14 @@ if __name__ == "__main__":
     my_automation.create()
 ```
 
-The trigger definition says after each heartbeat event for a flow run we expect to see another heartbeat event or a
-terminal state event for that same flow run within 90 seconds of a heartbeat event. 
+トリガー定義では、フロー実行の各ハートビートイベントの後に、ハートビートイベントから90秒以内に、同じフロー実行の別のハートビートイベントまたは終了状態イベントが発生することが想定されています。
 
-If `PREFECT_RUNNER_HEARTBEAT_FREQUENCY` is set to `30`, the automation will trigger only after 3 heartbeats have been missed. 
-You can adjust `within` in the trigger definition and `PREFECT_RUNNER_HEARTBEAT_FREQUENCY` to change how quickly the automation
-will fire after the server stops receiving flow run heartbeats.
+`PREFECT_RUNNER_HEARTBEAT_FREQUENCY` が `30` に設定されている場合、オートメーションは 3 回のハートビートが失われた後にのみトリガーされます。
+トリガー定義の `within` と `PREFECT_RUNNER_HEARTBEAT_FREQUENCY` を調整することで、サーバーがフロー実行のハートビートの受信を停止してからオートメーションが起動するまでの時間を変更できます。
 
-You can also add additional actions to your automation to send a notification when zombie runs are detected.
+ゾンビ実行が検出されたときに通知を送信するアクションをオートメーションに追加することもできます。
 
-## See also
+## 参照
 
-- To learn more about Prefect events, which can trigger automations, see the [events docs](/v3/automate/events/events/).
-- See the [webhooks guide](/v3/automate/events/webhook-triggers/)
-to learn how to create webhooks and receive external events.
+- 自動化をトリガーできるPrefectイベントの詳細については、[イベントドキュメント](/v3/automate/events/events/)をご覧ください。
+- Webhookを作成し、外部イベントを受信する方法については、[Webhookガイド](/v3/automate/events/webhook-triggers/)をご覧ください。

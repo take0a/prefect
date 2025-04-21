@@ -1,25 +1,23 @@
 ---
-title: Override job configuration for specific deployments
-description: Override job variables on a deployment to set environment variables, specify a Docker image, allocate resources, and more.
+title: 特定のデプロイメントのジョブ構成をオーバーライドする
+description: デプロイメントのジョブ変数をオーバーライドして、環境変数の設定、Docker イメージの指定、リソースの割り当てなどを行います。
 ---
 
-There are two ways to deploy flows to work pools: with a [`prefect.yaml` file](/v3/deploy/infrastructure-concepts/prefect-yaml) or using the [Python `deploy` method](/v3/deploy/infrastructure-concepts/deploy-via-python). 
-In both cases, you can add or override job variables to the work pool's defaults for a given deployment.
-You can override both a work pool and a deployment when a flow run is triggered. 
+フローをワークプールにデプロイする方法は 2 つあります。[`prefect.yaml` ファイル](/v3/deploy/infrastructure-concepts/prefect-yaml) を使用する方法と、[Python `deploy` メソッド](/v3/deploy/infrastructure-concepts/deploy-via-python) を使用する方法です。
+どちらの場合も、特定のデプロイメントに対して、ワークプールのデフォルトにジョブ変数を追加またはオーバーライドできます。
+フロー実行がトリガーされたときに、ワークプールとデプロイメントの両方をオーバーライドできます。
 
-This guide explores common patterns for overriding job variables in 
-both deployment methods.
+このガイドでは、両方のデプロイメント方法でジョブ変数をオーバーライドするための一般的なパターンについて説明します。
 
-## Job variables
+## ジョブ変数
 
-Job variables are infrastructure-related values that are configurable on a work pool. 
-You can override job variables on a per-deployment or 
-per-flow run basis. This allows you to dynamically change infrastructure from the work pool's defaults.
+ジョブ変数は、ワークプールで設定可能なインフラストラクチャ関連の値です。
+ジョブ変数は、デプロイメントごと、またはフロー実行ごとにオーバーライドできます。これにより、ワークプールのデフォルトのインフラストラクチャを動的に変更できます。
 
-For example, when you create or edit a work pool, you can specify a set of environment variables to set in the 
-runtime environment of the flow run.
+例えば、ワークプールを作成または編集する際に、フロー実行の実行時環境に設定する環境変数のセットを指定できます。
 
-You could set the following value in the `env` field of any work pool:
+任意のワークプールの `env` フィールドに次の値を設定できます。
+
 ```json
 {
   "EXECUTION_ENV": "staging",
@@ -27,12 +25,12 @@ You could set the following value in the `env` field of any work pool:
 }
 ```
 
-Rather than hardcoding these values into your work pool in the UI (and making them available to all 
-deployments associated with that work pool), you can override these values for a specific deployment.
+UI でこれらの値を作業プールにハードコードする（そしてその作業プールに関連付けられているすべてのデプロイメントで使用できるように）のではなく、特定のデプロイメントに対してこれらの値をオーバーライドすることができます。
 
-## Override job variables on a deployment
+## デプロイメントでジョブ変数をオーバーライドする
 
-Here's an example repo structure:
+リポジトリ構造の例を以下に示します:
+
 ```
 » tree
 .
@@ -42,7 +40,7 @@ Here's an example repo structure:
 |   |── daily_flow.py
 ```
 
-With a `demo_flow.py` file like:
+次のような `demo_flow.py` ファイルの場合:
 
 ```python
 import os
@@ -67,10 +65,9 @@ def some_work():
 
     do_something_important(not_so_secret_value)
 ```
-### Use a `prefect.yaml` file
+### `prefect.yaml` ファイルを使用する
 
-Imagine you have the following deployment definition in a `prefect.yaml` file at the 
-root of your repository:
+リポジトリのルートにある `prefect.yaml` ファイルに、次のようなデプロイメント定義があるとします。
 
 ```yaml
 deployments:
@@ -82,9 +79,9 @@ deployments:
 ```
 
 <Note>
-    While not the focus of this guide, this deployment definition uses a default "global" `pull` step, 
-    because one is not explicitly defined on the deployment. For reference, here's what that would look like at 
-    the top of the `prefect.yaml` file:
+このガイドの焦点では​​ありませんが、このデプロイメント定義では、デプロイメントに明示的に定義されていないため、デフォルトの「グローバル」な `pull` ステップを使用します。
+参考までに、`prefect.yaml` ファイルの先頭でこれがどのように表示されるかを以下に示します。
+
     ```yaml
     pull:
     - prefect.deployments.steps.git_clone: &clone_repo
@@ -93,9 +90,9 @@ deployments:
     ```
 </Note>
 
-#### Hard-coded job variables
-To provide the `EXECUTION_ENVIRONMENT` and `MY_NOT_SO_SECRET_CONFIG` environment variables to this deployment, 
-you can add a `job_variables` section to your deployment definition in the `prefect.yaml` file:
+#### ハードコードされたジョブ変数
+
+このデプロイメントに `EXECUTION_ENVIRONMENT` および `MY_NOT_SO_SECRET_CONFIG` 環境変数を指定するには、`prefect.yaml` ファイルのデプロイメント定義に `job_variables` セクションを追加します:
 
 ```yaml
 deployments:
@@ -110,15 +107,15 @@ deployments:
   schedule: null
 ```
 
-Then run `prefect deploy -n demo-deployment` to deploy the flow with these job variables.
+次に、`prefect deploy -n demo-deployment` を実行して、これらのジョブ変数を含むフローをデプロイします。
 
-You should see the job variables in the `Configuration` tab of the deployment in the UI:
+UI のデプロイメントの `Configuration` タブにジョブ変数が表示されます:
 
 ![Job variables in the UI](/v3/img/guides/job-variables.png)
 
-#### Use existing environment variables
-To use environment variables that are already set in your local environment, you can template 
-these in the `prefect.yaml` file using the `{{ $ENV_VAR_NAME }}` syntax:
+#### 既存の環境変数を使用する
+
+ローカル環境に既に設定されている環境変数を使用するには、`prefect.yaml` ファイルで `{{ $ENV_VAR_NAME }}` 構文を使用してテンプレート化します。
 
 ```yaml
 deployments:
@@ -134,7 +131,7 @@ deployments:
 ```
 
 <Note>
-    This assumes that the machine where `prefect deploy` is run would have these environment variables set.
+    これは、`prefect deploy` が実行されるマシンにこれらの環境変数が設定されていることを前提としています。
 
     ```bash
     export EXECUTION_ENVIRONMENT=staging
@@ -143,15 +140,15 @@ deployments:
    
 </Note>
 
-Run `prefect deploy -n demo-deployment` to deploy the flow with these job variables, 
-and you should see them in the UI under the `Configuration` tab.
+`prefect deploy -n demo-deployment` を実行して、これらのジョブ変数を含むフローをデプロイすると、UI の `Configuration` タブに表示されます。
 
-### Use the `.deploy()` method
-If you're using the `.deploy()` method to deploy your flow, the process is similar. But instead of  
-`prefect.yaml` defining the job variables, you can pass them as a dictionary to the `job_variables` argument 
-of the `.deploy()` method.
+### `.deploy()` メソッドを使用する
 
-Add the following block to your `demo_project/daily_flow.py` file from the setup section:
+`.deploy()` メソッドを使用してフローをデプロイする場合も、プロセスは同様です。
+ただし、ジョブ変数を `prefect.yaml` で定義する代わりに、`.deploy()` メソッドの `job_variables` 引数に辞書として渡すことができます。
+
+`demo_project/daily_flow.py` ファイルの setup セクションに次のブロックを追加します:
+
 ```python
 if __name__ == "__main__":
     flow.from_source(
@@ -170,8 +167,8 @@ if __name__ == "__main__":
 ```
 
 <Note>
-    The above example works assuming a couple things:
-    - the machine where this script is run would have these environment variables set.
+    上記の例は、いくつかの条件を前提として動作します。
+    - このスクリプトが実行されるマシンには、これらの環境変数が設定されている必要があります。
 
     ```bash
     export EXECUTION_ENVIRONMENT=staging
@@ -179,35 +176,35 @@ if __name__ == "__main__":
     ```
 
 
-    - `demo_project/daily_flow.py` _already exists_ in the repository at the specified path
+    - `demo_project/daily_flow.py` は指定されたパスのリポジトリに_既に存在します_
 </Note>
 
-Run the script to deploy the flow with the specified job variables. 
+スクリプトを実行して、指定されたジョブ変数を使用してフローをデプロイします。
 
 ```bash
 python demo_project/daily_flow.py
 ```
 
-The job variables should be visible in the UI under the `Configuration` tab.
+ジョブ変数は、UI の `Configuration` タブの下に表示されます。
 
 ![Job variables in the UI](/v3/img/guides/job-variables.png)
 
 
-## Override job variables on a flow run
+## フロー実行時にジョブ変数をオーバーライドする
 
-When running flows, you can pass in job variables that override any values set on the work pool or deployment. 
-Any interface that runs deployments can accept job variables.
+フロー実行時に、ワークプールまたはデプロイメントに設定された値をオーバーライドするジョブ変数を渡すことができます。
+デプロイメントを実行するすべてのインターフェースでジョブ変数を受け入れることができます。
 
-### Use the custom run form in the UI
+### UI のカスタム実行フォームを使用する
 
-Custom runs allow you to pass in a dictionary of variables into your flow run infrastructure. Using the same 
-`env` example from above, you could do the following:
+カスタム実行を使用すると、変数の辞書をフロー実行インフラストラクチャに渡すことができます。
+上記と同じ `env` の例を使用して、次のように実行できます:
 
 ![Job variables through custom run](/v3/img/ui/deployment-job-variables.png)
 
-### Use the CLI
+### CLI を使用する
 
-Similarly, runs kicked off through the CLI accept job variables with the `-jv` or `--job-variable` flag.
+同様に、CLI から開始された実行では、`-jv` または `--job-variable` フラグを使用してジョブ変数を指定できます。
 
 ```bash
 prefect deployment run \
@@ -216,17 +213,16 @@ prefect deployment run \
   --job-variable HELLO=THERE
 ```
 
-### Use job variables in Terraform
+### Terraform でジョブ変数を使用する
 
 import { TF } from "/snippets/resource-management/terraform.mdx"
 import { deployments } from "/snippets/resource-management/vars.mdx"
 
 <TF name="job variables" href={deployments.tf} />
 
-### Use job variables in automations
+### 自動化でジョブ変数を使用する
 
-Additionally, runs kicked off through automation actions can use job variables, including ones rendered from Jinja 
-templates.
+さらに、自動化アクションを通じて開始された実行では、Jinja テンプレートからレンダリングされたものも含め、ジョブ変数を使用できます。
 
 ![Job variables through automation action](/v3/img/ui/automations-action-job-variable.png)
 

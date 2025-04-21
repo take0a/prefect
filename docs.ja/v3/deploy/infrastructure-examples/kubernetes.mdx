@@ -1,33 +1,32 @@
 ---
-title: Run flows on Kubernetes
-description: Learn how to run flows on Kubernetes using containers.
+title: Kubernetes でフローを実行する
+description: コンテナを使用して Kubernetes 上でフローを実行する方法を学習します。
 ---
 
-This guide explains how to run flows on Kubernetes.
-Though much of the guide is general to any Kubernetes cluster, it focuses on 
-Amazon Elastic Kubernetes Service (EKS). Prefect is tested against 
-Kubernetes 1.26.0 and newer minor versions.
+このガイドでは、Kubernetes 上でフローを実行する方法について説明します。
+ガイドの大部分はあらゆる Kubernetes クラスターに共通する内容ですが、Amazon Elastic Kubernetes Service (EKS) に焦点を当てています。
+Prefect は Kubernetes 1.26.0 以降のマイナーバージョンでテストされています。
 
-## Prerequisites
+## 前提条件
 
-1. A Prefect Cloud account
-2. A cloud provider (AWS, GCP, or Azure) account
-3. Python and Prefect [installed](/v3/get-started/install/)
-4. Helm [installed](https://helm.sh/docs/intro/install/) 
-5. Kubernetes CLI (kubectl)[installed](https://kubernetes.io/docs/tasks/tools/install-kubectl/) 
-6. Admin access for Prefect Cloud and your cloud provider. You can downgrade it after this setup.
+1. Prefect Cloud アカウント
+2. クラウドプロバイダー（AWS、GCP、または Azure）アカウント
+3. Python と Prefect [インストール済み](/v3/get-started/install/)
+4. Helm [インストール済み](https://helm.sh/docs/intro/install/)
+5. Kubernetes CLI (kubectl) [インストール済み](https://kubernetes.io/docs/tasks/tools/install-kubectl/)
+6. Prefect Cloud とクラウドプロバイダーの管理者権限。この設定後にダウングレードできます。
 
-## Create a cluster
+## クラスターを作成する
 
-If you already have one, skip ahead to the next section.
+すでにクラスターがある場合は、次のセクションに進んでください。
 
 <Tabs>
   <Tab title="AWS">
 
-    One easy way to get set up with a cluster in EKS is with [`eksctl`](https://eksctl.io/).
-    Node pools can be backed by either EC2 instances or FARGATE.
-    Choose FARGATE so there's less to manage.
-    The following command takes around 15 minutes and must not be interrupted:
+    EKS でクラスターをセットアップする簡単な方法の一つは、[`eksctl`](https://eksctl.io/) を使用することです。
+    ノードプールは、EC2 インスタンスまたは FARGATE のいずれかでバックアップできます。
+    管理負担を軽減するには、FARGATE を選択してください。
+    以下のコマンドは約 15 分かかります。中断しないでください:
 
     ```bash
     # Replace the cluster name with your own value
@@ -39,13 +38,11 @@ If you already have one, skip ahead to the next section.
   </Tab>
   <Tab title="GCP">
 
-    You can get a GKE cluster up and running with a few commands using the 
-    [`gcloud` CLI](https://cloud.google.com/sdk/docs/install).
-    This builds a bare-bones cluster that is accessible over the open 
-    internet - but it should **not** be used in a production environment.
-    To deploy the cluster, your project must have a VPC network configured.
+    [`gcloud` CLI](https://cloud.google.com/sdk/docs/install) を使えば、いくつかのコマンドで GKE クラスタを起動して実行できます。
+    これにより、オープンなインターネット経由でアクセスできるベアボーンクラスタが構築されますが、本番環境では**使用しないでください**。
+    クラスタをデプロイするには、プロジェクトに VPC ネットワークが設定されている必要があります。
 
-    First, authenticate to GCP by setting the following configuration options:
+    まず、以下の構成オプションを設定して GCP に認証します。
 
     ```bash
     # Authenticate to gcloud
@@ -57,8 +54,8 @@ If you already have one, skip ahead to the next section.
     gcloud config set compute/zone <AVAILABILITY-ZONE>
     ```
 
-    Next, deploy the cluster. This command takes ~15 minutes to complete.
-    Once the cluster has been created, authenticate to the cluster.
+    次に、クラスターをデプロイします。このコマンドは完了までに約15分かかります。
+    クラスターが作成されたら、クラスターに対して認証を行います。
 
     ```bash
     # Create cluster
@@ -71,38 +68,34 @@ If you already have one, skip ahead to the next section.
     ```
 
 <Warning>
-**GCP potential errors**
+**GCP の潜在的なエラー**
 
 ```
 ERROR: (gcloud.container.clusters.create) ResponseError: code=400, message=Service account "000000000000-compute@developer.gserviceaccount.com" is disabled.
 ```
-- You must enable the default service account in the IAM console, or 
-specify a different service account with the appropriate permissions.
+- IAM コンソールでデフォルトのサービス アカウントを有効にするか、適切な権限を持つ別のサービス アカウントを指定する必要があります。
 
 ```
 creation failed: Constraint constraints/compute.vmExternalIpAccess violated for project 000000000000. Add instance projects/<GCP-PROJECT-NAME>/zones/us-east1-b/instances/gke-gke-guide-1-default-pool-c369c84d-wcfl to the constraint to use external IP with it."
 ```
-- Organization policy blocks creation of external (public) IPs. Override 
-this policy (if you have the appropriate permissions) under the `Organizational Policy` 
-page within IAM.
+- 組織のポリシーにより、外部（パブリック）IPの作成がブロックされています。
+適切な権限がある場合は、IAM の「組織ポリシー」ページでこのポリシーをオーバーライドしてください。
 
 
 </Warning>
   </Tab>
   <Tab title="Azure">
 
-    Create an AKS cluster using the 
-    [Azure CLI](https://learn.microsoft.com/en-us/cli/azure/get-started-with-azure-cli), 
-    or use the Cloud Shell directly from the Azure portal [shell.azure.com](https://shell.azure.com).
+    [Azure CLI](https://learn.microsoft.com/en-us/cli/azure/get-started-with-azure-cli) を使用して AKS クラスターを作成するか、Azure ポータル [shell.azure.com](https://shell.azure.com) から直接 Cloud Shell を使用します。
 
-    First, authenticate to Azure if not already done.
+    まだ認証していない場合は、まず Azure への認証を行ってください。
 
     ```bash
       az login
     ```
 
-    Next, deploy the cluster - this command takes ~4 minutes to complete. 
-    Once the cluster is created, authenticate to the cluster.
+    次に、クラスターをデプロイします。このコマンドは完了までに約4分かかります。
+    クラスターが作成されたら、クラスターに対して認証を行います。
 
     ```bash
 
@@ -121,18 +114,16 @@ page within IAM.
   </Tab>
 </Tabs>
 
-## Create a container registry
+## コンテナレジストリを作成する
 
-Besides a cluster, the other critical resource is a container registry.
-A registry is not strictly required, but in most cases you'll want to use custom 
-images and/or have more control over where images are stored.
-If you already have a registry, skip ahead to the next section.
+クラスタに加えて、もう一つの重要なリソースはコンテナレジストリです。
+レジストリは必ずしも必須ではありませんが、多くの場合、カスタムイメージを使用したり、イメージの保存場所をより細かく制御したりする必要があるでしょう。
+既にレジストリをお持ちの場合は、次のセクションに進んでください。
 
 <Tabs>
   <Tab title="AWS">
 
-    Create a registry using the AWS CLI and authenticate the docker daemon to 
-    that registry:
+    AWS CLI を使用してレジストリを作成し、そのレジストリに対して docker デーモンを認証します:
 
     ```bash
     # Replace the image name with your own value
@@ -145,8 +136,7 @@ If you already have a registry, skip ahead to the next section.
     ```
   </Tab>
   <Tab title="GCP">
-    Create a registry using the gcloud CLI and authenticate the docker daemon to 
-    that registry:
+    gcloud CLI を使用してレジストリを作成し、そのレジストリに対して docker デーモンを認証します:
 
     ```bash
     # Create artifact registry repository to host your custom image
@@ -160,8 +150,7 @@ If you already have a registry, skip ahead to the next section.
     ```
   </Tab>
 <Tab title="Azure">
-    Create a registry using the Azure CLI and authenticate the docker daemon to 
-    that registry:
+    Azure CLI を使用してレジストリを作成し、そのレジストリに対して docker デーモンを認証します:
 
     ```bash
     # Name must be a lower-case alphanumeric
@@ -181,91 +170,82 @@ If you already have a registry, skip ahead to the next section.
   </Tab>
 </Tabs>
 
-## Create a Kubernetes work pool
+## Kubernetes ワークプールを作成する
 
-[Work pools](/v3/deploy/infrastructure-concepts/work-pools/) allow you to manage deployment 
-infrastructure.
-This section shows you how to configure the default values for your 
-Kubernetes base job template.
-These values can be overridden by individual deployments.
+[ワークプール](/v3/deploy/infrastructure-concepts/work-pools/) を使用すると、デプロイメント インフラストラクチャを管理できます。
 
-Switch to the Prefect Cloud UI to create a new Kubernetes work pool. 
-(Alternatively, you could use the Prefect CLI to create a work pool.)
+このセクションでは、Kubernetes ベースジョブテンプレートのデフォルト値を設定する方法について説明します。
 
-1. Click on the **Work Pools** tab on the left sidebar
-2. Click the **+** button at the top of the page
-3. Select **Kubernetes** as the work pool type
-4. Click **Next** to configure the work pool settings
-5. Set the `namespace` field to `prefect`
+これらの値は、個々のデプロイメントでオーバーライドできます。
+
+Prefect Cloud UI に切り替えて、新しい Kubernetes ワークプールを作成します。
+(または、Prefect CLI を使用してワークプールを作成することもできます。)
+
+1. 左側のサイドバーにある [**Work Pools**] タブをクリックします。
+2. ページ上部の [**+**] ボタンをクリックします。
+3. ワークプールの種類として [**Kubernetes**] を選択します。
+4. [**Next**] をクリックして、ワークプールの設定を構成します。
+5. [`namespace`] フィールドを [`prefect`] に設定します。
 
 <Note>
-If you set a different namespace, use your selected namespace instead of `prefect` in all commands below.
+別の名前空間を設定する場合は、以下のすべてのコマンドで `prefect` の代わりに選択した名前空間を使用します。
 </Note>
 
 
-You may come back to this page to configure the work pool options at any time.
+いつでもこのページに戻って作業プールのオプションを構成することができます。
 
-### Configure work pool options
+### ワークプールのオプションを構成する
 
-Here are some popular configuration options.
+以下に一般的な構成オプションをいくつか示します。
 
-**Environment Variables**
+**環境変数**
 
-Add environment variables to set when starting a flow run.
-If you are using a Prefect-maintained image and haven't overwritten the image's 
-entrypoint, you can specify Python packages to install at runtime with `{"EXTRA_PIP_PACKAGES":"my_package"}`.
-For example `{"EXTRA_PIP_PACKAGES":"pandas==1.2.3"}` installs pandas version 1.2.3.
-Alternatively, you can specify package installation in a custom Dockerfile, which  
-allows you to use image caching.
-As shown below, Prefect can help create a Dockerfile with your flow code and the 
-packages specified in a `requirements.txt` file baked in.
+フロー実行の開始時に設定する環境変数を追加します。
+Prefect が管理するイメージを使用しており、イメージのエントリポイントを上書きしていない場合は、`{"EXTRA_PIP_PACKAGES":"my_package"}` を使用して、実行時にインストールする Python パッケージを指定できます。
+例えば、`{"EXTRA_PIP_PACKAGES":"pandas==1.2.3"}` は、pandas バージョン 1.2.3 をインストールします。
+また、カスタム Dockerfile でパッケージのインストールを指定することもできます。これにより、イメージのキャッシュを利用できるようになります。
+以下に示すように、Prefect は、フローコードと `requirements.txt` ファイルで指定されたパッケージが組み込まれた Dockerfile の作成を支援します。
 
-**Namespace**
+**名前空間**
 
-Set the Kubernetes namespace to create jobs within, such as `prefect`. By default, set 
-to **default**.
+`prefect` など、ジョブを作成する Kubernetes 名前空間を設定します。デフォルトでは **default** に設定されています。
 
-**Image**
+**イメージ**
 
-Specify the Docker container image for created jobs.
-If not set, the latest Prefect 3 image is used (for example, `prefecthq/prefect:3-latest`).
-You can override this on each deployment through `job_variables`.
+作成されたジョブの Docker コンテナイメージを指定します。
+設定されていない場合は、最新の Prefect 3 イメージが使用されます（例：`prefecthq/prefect:3-latest`）。
+`job_variables` を使用して、各デプロイメントでこの設定を上書きできます。
 
-**Image Pull Policy**
+**イメージプルポリシー**
 
-Select from the dropdown options to specify when to pull the image.
-When using the `IfNotPresent` policy, make sure to use unique image tags, or  
-old images may get cached on your nodes.
+ドロップダウンオプションから選択して、イメージをプルするタイミングを指定します。
+`IfNotPresent` ポリシーを使用する場合は、必ず一意のイメージタグを使用してください。そうしないと、古いイメージがノードにキャッシュされる可能性があります。
 
-**Finished Job TTL**
+**完了ジョブ TTL**
 
-Number of seconds before finished jobs are automatically cleaned up by the Kubernetes 
-controller.
-Set to 60 so completed flow runs are cleaned up after a minute.
+完了したジョブが Kubernetes コントローラーによって自動的にクリーンアップされるまでの秒数です。
 
-**Pod Watch Timeout Seconds**
+完了したフロー実行が 1 分後にクリーンアップされるように、60 に設定します。
 
-Number of seconds for pod creation to complete before timing out.
-Consider setting to 300, especially if using a **serverless** type node pool, as 
-these tend to have longer startup times.
+**Pod Watch タイムアウト秒数**
 
-**Kubernetes cluster config**
+Pod の作成がタイムアウトするまでの秒数です。
+特に**サーバーレス**タイプのノードプールを使用している場合は、起動時間が長くなる傾向があるため、300 に設定することを検討してください。
 
-Specify a KubernetesClusterConfig block to configure the Kubernetes cluster for job creation.
-In most cases, leave the cluster config blank since the worker should already have appropriate 
-access and permissions.
-We recommend using this setting when deploying a worker to a cluster that differs from the one 
-executing the flow runs.
+**Kubernetes クラスター構成**
+
+KubernetesClusterConfig ブロックを指定して、ジョブ作成用の Kubernetes クラスターを構成します。
+ほとんどの場合、ワーカーには適切なアクセス権と権限が既に付与されているため、クラスター構成は空白のままにしておきます。
+フロー実行を実行するクラスターとは異なるクラスターにワーカーをデプロイする場合は、この設定を使用することをお勧めします。
 
 <Note>
-**Advanced Settings**
+**詳細設定**
 
-    Modify the default base job template to add other fields or delete existing 
-    fields.
+    デフォルトのベースジョブテンプレートを変更して、他のフィールドを追加したり、既存のフィールドを削除したりできます。
 
-    Select the **Advanced** tab and edit the JSON representation of the base job template.
+    **Advanced**  タブを選択し、ベースジョブテンプレートのJSON表現を編集します。
 
-    For example, to set a CPU request, add the following section under variables:
+    例えば、CPUリクエストを設定するには、変数の下に次のセクションを追加します。
 
     ```json
     "cpu_request": {
@@ -276,7 +256,7 @@ executing the flow runs.
     },
     ```
 
-    Next add the following to the first `containers` item under `job_configuration`:
+    次に、`job_configuration` の下の最初の `containers` 項目に以下を追加します:
 
     ```json
     ...
@@ -293,62 +273,62 @@ executing the flow runs.
     ...
     ```
 
-    Running deployments with this work pool will request the specified CPU.
+    この作業プールを使用してデプロイメントを実行すると、指定された CPU が要求されます。
 </Note>
 
-After configuring the work pool settings, move to the next screen.
+ワークプールの設定が完了したら、次の画面に進みます。
 
-Give the work pool a name and save.
+ワークプールに名前を付けて保存します。
 
-Your new Kubernetes work pool should appear in the list of work pools.
+新しい Kubernetes ワークプールがワークプールのリストに表示されます。
 
-## Create a Prefect Cloud API key
+## Prefect Cloud API キーを作成する
 
-If you already have a Prefect Cloud API key, you can skip these steps.
+すでに Prefect Cloud API キーをお持ちの場合は、以下の手順を省略できます。
 
-To create a Prefect Cloud API key:
+Prefect Cloud API キーを作成するには：
 
-1. Log in to the Prefect Cloud UI.
-1. Click on your profile avatar picture in the top right corner.
-1. Click on your name to go to your profile settings.
-1. In the left sidebar, click on [API Keys](https://app.prefect.cloud/my/api-keys).
-1. Click the **+** button to create a new API key.
-1. Securely store the API key, ideally using a password manager.
+1. Prefect Cloud UI にログインします。
+1. 右上にあるプロフィールアバター画像をクリックします。
+1. 名前をクリックしてプロフィール設定に移動します。
+1. 左側のサイドバーで [API キー](https://app.prefect.cloud/my/api-keys) をクリックします。
+1. **+** ボタンをクリックして新しい API キーを作成します。
+1. API キーは、できればパスワードマネージャーなどを使用して安全に保管してください。
 
-## Deploy a worker using Helm
+## Helm を使用してワーカーをデプロイする
 
-After you create a cluster and work pool, the next step is to deploy a worker. 
-The worker sets up the necessary Kubernetes infrastructure to run your flows. 
-The recommended method for deploying a worker is with the [Prefect Helm Chart](https://github.com/PrefectHQ/prefect-helm/tree/main/charts/prefect-worker).
+クラスターとワークプールを作成したら、次のステップはワーカーをデプロイすることです。
+ワーカーは、フローを実行するために必要な Kubernetes インフラストラクチャをセットアップします。
+ワーカーをデプロイするには、[Prefect Helm Chart](https://github.com/PrefectHQ/prefect-helm/tree/main/charts/prefect-worker) を使用することをお勧めします。
 
-### Add the Prefect Helm repository
+### Prefect Helm リポジトリを追加します
 
-Add the Prefect Helm repository to your Helm client:
+Helm クライアントに Prefect Helm リポジトリを追加します:
 
 ```bash
 helm repo add prefect https://prefecthq.github.io/prefect-helm
 helm repo update
 ```
 
-### Create a namespace
+### 名前空間を作成する
 
-Create a new namespace in your Kubernetes cluster to deploy the Prefect worker:
+Kubernetes クラスターに新しい名前空間を作成し、Prefect ワーカーをデプロイします:
 
 ```bash
 kubectl create namespace prefect
 ```
 
-### Create a Kubernetes secret for the Prefect API key
+### Prefect APIキー用のKubernetesシークレットを作成する
 
 ```bash
 kubectl create secret generic prefect-api-key \
 --namespace=prefect --from-literal=key=your-prefect-cloud-api-key
 ```
 
-### Configure Helm chart values
+### Helm チャートの値を設定する
 
-Create a `values.yaml` file to customize the Prefect worker configuration.
-Add the following contents to the file:
+Prefect ワーカーの設定をカスタマイズするために、`values.yaml` ファイルを作成します。
+ファイルに以下の内容を追加します:
 
 ```yaml
 worker:
@@ -359,15 +339,14 @@ worker:
     workPool: <target work pool name>
 ```
 
-These settings ensure that the worker connects to the proper account, workspace, 
-and work pool.
+これらの設定により、ワーカーが適切なアカウント、ワークスペース、ワークプールに接続できるようになります。
 
-View your Account ID and Workspace ID in your browser URL when logged into Prefect Cloud.
-For example: \<https://app.prefect.cloud/account/abc-my-account-id-is-here/workspaces/123-my-workspace-id-is-here>.
+Prefect Cloud にログインすると、ブラウザの URL でアカウント ID とワークスペース ID を確認できます。
+例: \<https://app.prefect.cloud/account/abc-my-account-id-is-here/workspaces/123-my-workspace-id-is-here>。
 
-### Create a Helm release
+### Helm リリースを作成する
 
-Install the Prefect worker using the Helm chart with your custom `values.yaml` file:
+カスタム `values.yaml` ファイルを使用して、Helm チャートを使用して Prefect ワーカーをインストールします。
 
 ```bash
 helm install prefect-worker prefect/prefect-worker \
@@ -375,18 +354,18 @@ helm install prefect-worker prefect/prefect-worker \
   -f values.yaml
 ```
 
-### Verify deployment
+### デプロイメントの確認
 
-Check the status of your Prefect worker deployment:
+Prefect Worker デプロイメントのステータスを確認します:
 
 ```bash
 kubectl get pods -n prefect
 ```
 
-## Define a flow
+## フローを定義する
 
-Start simple with a flow that just logs a message.
-In a directory named `flows`, create a file named `hello.py` with the following contents:
+まずは、メッセージを記録するだけのシンプルなフローから始めましょう。
+`flows` というディレクトリに、以下の内容の `hello.py` というファイルを作成します:
 
 ```python
 from prefect import flow, tags
@@ -402,25 +381,21 @@ if __name__ == "__main__":
         hello()
 ```
 
-Run the flow locally with `python hello.py` to verify that it works.
-Use the `tags` context manager to tag the flow run as `local`.
-This step is not required, but does add some helpful metadata.
+`python hello.py` を使用してフローをローカルで実行し、動作を確認します。
+`tags` コンテキストマネージャーを使用して、フロー実行に `local` のタグを付けます。
+この手順は必須ではありませんが、役立つメタデータを追加します。
 
-## Define a Prefect deployment
+## Prefect デプロイメントを定義する
 
-Prefect has two recommended options for creating a deployment with dynamic infrastructure.
-You can define a deployment in a Python script using the `flow.deploy` mechanics or in a 
-`prefect.yaml` definition file.
-The `prefect.yaml` file currently allows for more customization in terms of push and pull 
-steps.
+Prefect には、動的なインフラストラクチャを備えたデプロイメントを作成するための推奨オプションが 2 つあります。
+デプロイメントは、`flow.deploy` メカニズムを使用して Python スクリプトで定義するか、`prefect.yaml` 定義ファイルで定義できます。
+`prefect.yaml` ファイルでは現在、プッシュおよびプルの手順に関して、より詳細なカスタマイズが可能です。
 
-To learn about the Python deployment creation method with `flow.deploy` see 
-[Workers](/v3/deploy/infrastructure-examples/docker/).
+`flow.deploy` を使用した Python デプロイメントの作成方法については、[Workers](/v3/deploy/infrastructure-examples/docker/) を参照してください。
 
-The [`prefect.yaml`](/v3/deploy/infrastructure-concepts/prefect-yaml/#managing-deployments) file is used 
-by the `prefect deploy` command to deploy your flows.
-As a part of that process it also builds and pushes your image.
-Create a new file named `prefect.yaml` with the following contents:
+[`prefect.yaml`](/v3/deploy/infrastructure-concepts/prefect-yaml/#managing-deployments) ファイルは、`prefect deploy` コマンドによってフローのデプロイに使用されます。
+このプロセスの一環として、イメージのビルドとプッシュも行われます。
+以下の内容を含む `prefect.yaml` という名前の新しいファイルを作成します。
 
 ```yaml
 # Generic metadata about this project
@@ -476,25 +451,21 @@ deployments:
   work_pool: *common_work_pool
 ```
 
-We define two deployments of the `hello` flow: `default` and `arthur`.
-By specifying `dockerfile: auto`, Prefect automatically creates a dockerfile 
-that installs any `requirements.txt` and copies over the current directory.
+`hello` フローの 2 つのデプロイメント（`default` と `arthur`）を定義します。
+`dockerfile: auto` を指定すると、Prefect は自動的に dockerfile を作成し、`requirements.txt` をインストールして現在のディレクトリにコピーします。
 
-You can pass a custom Dockerfile instead with `dockerfile: Dockerfile` or 
-`dockerfile: path/to/Dockerfile`.
-We are specifically building for the `linux/amd64` platform.
-This specification is often necessary when images are built on Macs with M series chips 
-but run on cloud provider instances.
+`dockerfile: Dockerfile` または `dockerfile: path/to/Dockerfile` を使用することで、カスタム Dockerfile を渡すこともできます。
+ここでは特に `linux/amd64` プラットフォーム向けにビルドしています。
+この指定は、M シリーズチップを搭載した Mac でイメージをビルドし、クラウドプロバイダーのインスタンスで実行する場合などに必要になることが多いです。
 
 <Note>
-**Deployment specific build, push, and pull**
+**デプロイメント固有のビルド、プッシュ、プル**
 
-    You can override the build, push, and pull steps for each deployment.
-    This allows for more custom behavior, such as specifying a different image for each 
-    deployment.
+  各デプロイメントのビルド、プッシュ、プルの手順をオーバーライドできます。
+  これにより、デプロイメントごとに異なるイメージを指定するなど、よりカスタマイズされた動作が可能になります。
 </Note>
 
-Define your requirements in a `requirements.txt` file:
+`requirements.txt` ファイルで要件を定義します:
 
 ```
 prefect>=3.0.0
@@ -502,7 +473,7 @@ prefect-docker>=0.4.0
 prefect-kubernetes>=0.3.1
 ```
 
-The directory should now look something like this:
+ディレクトリは次のようになります:
 
 ```
 .
@@ -512,15 +483,12 @@ The directory should now look something like this:
     └── hello.py
 ```
 
-### Tag images with a Git SHA
+### Git SHA でイメージにタグを付ける
 
-If your code is stored in a GitHub repository, it's good practice to tag your images
-with the Git SHA of the code used to build it.
-Do this in the `prefect.yaml` file with a few minor modifications, since it's not yet 
-an option with the Python deployment creation method.
+コードを GitHub リポジトリに保存している場合は、ビルドに使用したコードの Git SHA でイメージにタグを付けることをお勧めします。
+Python デプロイメント作成方法ではまだオプションとして利用できないため、`prefect.yaml` ファイルで若干の修正を加えてタグを付けてください。
 
-Use the `run_shell_script` command to grab the SHA and pass it to the `tag` 
-parameter of `build_docker_image`:
+`run_shell_script` コマンドを使用して SHA を取得し、`build_docker_image` の `tag` パラメータに渡します。
 
 ```yaml
 build:
@@ -537,7 +505,7 @@ build:
     platform: "linux/amd64"
 ```
 
-Set the SHA as a tag for easy identification in the UI:
+UI で簡単に識別できるように、SHA をタグとして設定します:
 
 ```yaml
 definitions:
@@ -550,12 +518,12 @@ definitions:
       image: "{{ build-image.image }}"
 ```
 
-## Authenticate to Prefect
+## Prefect への認証
 
-Before deploying the flows to Prefect, you need to authenticate through the Prefect CLI.
-You also need to ensure that all of your flow's dependencies are present at `deploy` time.
+フローを Prefect にデプロイする前に、Prefect CLI で認証する必要があります。
+また、フローの依存関係がすべてデプロイ時に存在していることを確認する必要があります。
 
-This example uses a virtual environment to ensure consistency across environments.
+この例では、環境間の一貫性を確保するために仮想環境を使用しています。
 
 ```bash
 # Create a virtualenv & activate it
@@ -570,12 +538,11 @@ prefect-demo/bin/pip install -r requirements.txt
 prefect-demo/bin/prefect cloud login
 ```
 
-## Deploy the flows
+## フローをデプロイする
 
-You're ready to deploy your flows to build your images.
-The image name determines its registry.
-You have configured our `prefect.yaml` file to get the image name from the 
-`PREFECT_IMAGE_NAME` environment variable, so set that first:
+フローをデプロイしてイメージをビルドする準備が整いました。
+イメージ名によってレジストリが決まります。
+`prefect.yaml` ファイルで、`PREFECT_IMAGE_NAME` 環境変数からイメージ名を取得するように設定してあるので、まずこれを設定しましょう:
 
 <Tabs>
   <Tab title="AWS">
@@ -598,17 +565,16 @@ You have configured our `prefect.yaml` file to get the image name from the
   </Tab>
 </Tabs>
 
-To deploy your flows, ensure your Docker daemon is running. Deploy all the 
-flows with `prefect deploy --all` or deploy them individually by name: `prefect deploy 
--n hello/default` or `prefect deploy -n hello/arthur`.
+フローをデプロイするには、Docker デーモンが実行中であることを確認してください。
+`prefect deploy --all` ですべてのフローをデプロイするか、`prefect deploy -n hello/default` または `prefect deploy -n hello/arthur` で名前を指定して個別にデプロイします。
 
-## Run the flows
+## フローを実行する
 
-Once the deployments are successfully created, you can run them from the UI or the CLI:
+デプロイメントが正常に作成されたら、UI または CLI から実行できます:
 
 ```bash
 prefect deployment run hello/default
 prefect deployment run hello/arthur
 ```
 
-You can now check the status of your two deployments in the UI.
+これで、UI で 2 つのデプロイメントのステータスを確認できるようになりました。

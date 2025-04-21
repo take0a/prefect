@@ -1,22 +1,26 @@
 ---
-title: Measure reliability with Service Level Agreements
-description: Service Level Agreements (SLAs) are a way to define the performance expectations for your flows and to enable automated alerts when those expectations are not met.
+title: サービスレベル契約で信頼性を測定
+description: サービス レベル アグリーメント (SLA) は、フローのパフォーマンスの期待値を定義し、その期待値が満たされなかった場合に自動アラートを有効にする方法です。
 ---
-<Warning> <b>Experimental:</b> This feature is experimental and may change in the future.</Warning>
+<Warning> <b>実験的:</b> この機能は実験的なもので、将来変更される可能性があります。</Warning>
 
 ## Prerequisites
 - Prefect Client Version 3.1.12 or later
 - Prefect Cloud account (SLAs are only available in Prefect Cloud)
 - (If using Terraform) [Prefect Terraform Provider](https://registry.terraform.io/providers/PrefectHQ/prefect/latest/docs) version 2.22.0 or later
 
-## Service Level Agreements
+## サービスレベルアグリーメント（SLA）
 
-<span class="badge cloud"></span> Service Level Agreements (SLAs) help you set and monitor performance standards for your data stack. By establishing specific thresholds for flow runs on your Deployments, you can automatically detect when your system isn't meeting expectations.
-When you set up an SLA, you define specific performance criteria - such as a maximum runtime of 10 minutes for a flow. If a flow run exceeds this threshold, the system generates an alert event. You can then use these events to trigger automated responses, whether that's sending notifications to your team or initiating other corrective actions through automations.
+<span class="badge cloud"></span> サービスレベルアグリーメント（SLA）は、データスタックのパフォーマンス基準の設定と監視に役立ちます。
+デプロイメントにおけるフロー実行に特定のしきい値を設定することで、システムが期待を満たしていない場合に自動的に検出できます。
+SLAを設定する際には、フローの最大実行時間を10分にするなど、具体的なパフォーマンス基準を定義します。
+フロー実行がこのしきい値を超えると、システムはアラートイベントを生成します。
+これらのイベントを使用して、チームへの通知の送信や、自動化によるその他の是正措置の開始など、自動応答をトリガーできます。
 
-## Defining SLAs
+## SLA の定義
 
-To define an SLA you can add it to the deployment through a `prefect.yaml` file, a `.deploy` method, or the CLI:
+SLA を定義するには、`prefect.yaml` ファイル、`.deploy` メソッド、または CLI を使用してデプロイメントに追加します。
+
 <AccordionGroup>
 
 <Accordion title="Defining SLAs in your prefect.yaml file">
@@ -101,53 +105,54 @@ resource "prefect_resource_sla" "slas" {
 
 </AccordionGroup>
 
-## Types of SLAs
+## SLAの種類
 
-### Time to Completion SLA
+### 完了時間SLA
 
-A Time to Completion SLA describes how long flow runs should take and the severity of going over that duration.
-The SLA is triggered when a flow run takes longer than the specified duration to complete.
+完了時間SLAは、フロー実行にかかる時間と、その時間を超えた場合の重大性を定義します。
+このSLAは、フロー実行が指定された時間よりも長く完了するとトリガーされます。
 
-The Time to Completion SLA requires one unique parameter:
-- `duration`: The maximum allowed duration in seconds before the SLA is violated
+完了時間SLAには、次の1つの固有パラメータが必要です:
+- `duration`：SLA違反となるまでの最大許容時間（秒単位）
 
-This SLA is useful for monitoring long-running flows and ensuring they complete within an expected timeframe.
-For example, if you set a Time to Completion SLA on your deployment with a `duration` of 600 seconds (10 minutes) the backend will emit an `prefect.sla.violation` event if a flow run does not complete within that timeframe.
+このSLAは、長時間実行されるフローを監視し、想定された時間枠内で完了するようにするのに役立ちます。
+例えば、デプロイメントで完了時間SLAを`duration`として600秒（10分）に設定した場合、フロー実行がその時間枠内で完了しない場合、バックエンドは`prefect.sla.violation`イベントを発行します。
 
-### Frequency SLA
+### 頻度SLA
 
-A Frequency SLA describes the interval a deployment should run at and the severity of missing that interval.
+頻度SLAは、デプロイメントを実行する間隔と、その間隔を守れなかった場合の重大性を定義します。
 
-The Frequency SLA requires one unique parameter:
-- `stale_after`: The maximum allowed time between flow runs (e.g. `1 hour` for hourly jobs)
+頻度SLAには、以下の固有のパラメータが必要です:
+- `stale_after`：フロー実行間隔の最大許容時間（例：1時間ごとのジョブの場合は`1時間`）
 
-For example, if you have a deployment that should run every hour, you can set up a Frequency SLA with a `stale_after` of 1 hour.
-This SLA triggers when more than an hour passes between `Completed` flow runs.
+例えば、1時間ごとに実行する必要があるデプロイメントがある場合、頻度SLAの`stale_after`を1時間に設定できます。
+このSLAは、`Completed`フロー実行間隔が1時間を超えた場合にトリガーされます。
 
-### Lateness SLA
+### 遅延SLA
 
-A Lateness SLA describes the severity of a flow run failing to start at its scheduled time.
+遅延SLAは、フロー実行がスケジュールされた時間に開始されない場合の重大度を表します。
 
-The Lateness SLA requires one unique parameter:
-- `within`: The amount of startup time allotted to a flow run before the SLA is violated.
+遅延SLAには、次の1つの固有パラメータが必要です:
+- `within`：SLA違反となるまでのフロー実行に割り当てられる起動時間。
 
-For example, if a deployment is scheduled to run every day at 10am, and has a Lateness SLA of 5 minutes, the backend will emit an SLA violation event if a flow run does not start by 10:05am.
+例えば、デプロイメントが毎日午前10時に実行されるようにスケジュールされており、遅延SLAが5分の場合、フロー実行が午前10時5分までに開始されない場合、バックエンドはSLA違反イベントを発行します。
 
-## Monitoring SLAs
+## SLA の監視
 
-You can monitor SLAs in the Prefect Cloud UI. On the runs page you can see the SLA status in the top level metrics:
+Prefect Cloud UI で SLA を監視できます。実行ページでは、トップレベルのメトリクスで SLA のステータスを確認できます:
 
 ![SLA status](/v3/img/ui/sla-overview.png)
 
 
-## Setting up an automation
+## 自動化の設定
 
-To set up an automation to notify a team or to take other actions when an SLA is triggered, you can use the [automations](/v3/automate/events/automations-triggers/) feature. To create the automation first you'll need to create a trigger.
+SLAがトリガーされた際にチームに通知したり、その他のアクションを実行したりする自動化を設定するには、[自動化](/v3/automate/events/automations-triggers/)機能を使用します。
+自動化を作成するには、まずトリガーを作成する必要があります。
 
-1. Choose trigger type 'Custom'.
-2. Choose any event matching: `prefect.sla.violation`
-3. For "From the Following Resources" choose: `prefect.flow-run.*`
+1. トリガータイプとして「カスタム」を選択します。
+2. `prefect.sla.violation` に一致するイベントを選択します。
+3. 「次のリソースから」で `prefect.flow-run.*` を選択します。
 
 ![Create an automation](/v3/img/ui/sla-trigger-automation.png)
 
-After creating the trigger, you can create an automation to notify a team or to take other actions when an SLA is triggered using [automations](/v3/automate/events/automations-triggers/).
+トリガーを作成したら、[自動化](/v3/automate/events/automations-triggers/) を使用して、SLA がトリガーされたときにチームに通知したり、その他のアクションを実行したりするための自動化を作成できます。

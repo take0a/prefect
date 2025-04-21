@@ -1,26 +1,25 @@
 ---
-title: Run flows on Prefect Managed infrastructure
-description: Learn how Prefect runs deployments on Prefect's infrastructure.
+title: Prefect マネージド インフラストラクチャでフローを実行する
+description: Prefect が Prefect のインフラストラクチャ上でデプロイメントを実行する方法について学習します。
 ---
 
-<span class="badge cloud"></span> Prefect Cloud can run your flows on your behalf with Prefect Managed work pools.
+<span class="badge cloud"></span> Prefect Cloud は、Prefect マネージドワークプールを使用して、お客様に代わってフローを実行できます。
 
-Flows that run with this work pool do not require a worker or cloud provider
-account—Prefect handles the infrastructure and code execution for you.
+このワークプールで実行されるフローには、ワーカーアカウントやクラウドプロバイダーアカウントは必要ありません。Prefect がインフラストラクチャとコード実行を処理します。
 
-Managed execution is a great option for users who want to get started quickly, with no infrastructure setup.
+マネージド実行は、インフラストラクチャをセットアップせずにすぐに使い始めたいユーザーに最適なオプションです。
 
-## Create a managed deployment
+## マネージドデプロイメントの作成
 
-1. Create a new work pool of type Prefect Managed in the UI or the CLI.
-   Use this command to create a new work pool using the CLI:
+1. UI または CLI で、Prefect Managed タイプの新しいワークプールを作成します。
+    CLI を使用して新しいワークプールを作成するには、次のコマンドを使用します。
 
    ```bash
    prefect work-pool create my-managed-pool --type prefect:managed
    ```
 
-1. Create a deployment using the flow `deploy` method or `prefect.yaml`.
-   Specify the name of your managed work pool, as shown in this example that uses the `deploy` method:
+1. フローの `deploy` メソッドまたは `prefect.yaml` を使用してデプロイメントを作成します。
+    `deploy` メソッドを使用する次の例に示すように、マネージド ワークプールの名前を指定します。
 
    ```python managed-execution.py
    from prefect import flow
@@ -35,21 +34,20 @@ Managed execution is a great option for users who want to get started quickly, w
        )
    ```
 
-1. With your [CLI authenticated to your Prefect Cloud workspace](/v3/manage/cloud/manage-users/api-keys/), run the script to create your deployment:
+1. [Prefect Cloud ワークスペースに認証された CLI](/v3/manage/cloud/manage-users/api-keys/) を使用して、スクリプトを実行し、デプロイメントを作成します:
 
    ```bash
    python managed-execution.py
    ```
 
-1. Run the deployment from the UI or from the CLI.
+1. UI または CLI からデプロイメントを実行します。
 
-   This process runs a flow on remote infrastructure without any infrastructure setup, starting a worker, or requiring a cloud provider account.
+    このプロセスでは、インフラストラクチャのセットアップ、ワーカーの起動、クラウドプロバイダーアカウントの取得を必要とせずに、リモートインフラストラクチャ上でフローを実行します。
 
-## Add dependencies
+## 依存関係の追加
 
-Prefect can install Python packages in the container that runs your flow at runtime.
-Specify these dependencies in the **Pip Packages** field in the UI, or by configuring
-`job_variables={"pip_packages": ["pandas", "prefect-aws"]}` in your deployment creation like this:
+Prefect は、実行時にフローを実行するコンテナに Python パッケージをインストールできます。
+これらの依存関係は、UI の **Pip パッケージ** フィールドで指定するか、デプロイメント作成時に次のように `job_variables={"pip_packages": ["pandas", "prefect-aws"]}` を設定することで指定できます。
 
 ```python
 from prefect import flow
@@ -65,45 +63,43 @@ if __name__ == "__main__":
     )
 ```
 
-Alternatively, you can create a `requirements.txt` file and reference it in your [prefect.yaml pull step](/v3/deploy/infrastructure-concepts/prefect-yaml#utility-steps).
+あるいは、`requirements.txt` ファイルを作成し、[prefect.yaml プル ステップ](/v3/deploy/infrastructure-concepts/prefect-yaml#utility-steps) で参照することもできます。
 
-## Networking
+## ネットワーキング
 
-### Static Outbound IP addresses
+### 静的送信IPアドレス
 
-Flows running on Prefect Managed infrastructure can be assigned static IP addresses on outbound traffic, which will pose as the `source` address for requests interacting with your system or database.
+Prefect Managed Infrastructureで実行されるフローには、送信トラフィックに静的IPアドレスを割り当てることができます。このIPアドレスは、システムまたはデータベースとやり取りするリクエストの「送信元」アドレスとして機能します。
 
-Include these `source` addresses in your firewall rules to explicitly allow flows to communicate with your environment.
+これらの「送信元」アドレスをファイアウォールルールに含めることで、フローが環境と通信することを明示的に許可できます。
 
 - `184.73.85.134`
 - `52.4.218.198`
 - `44.217.117.74`
 
-### Images
+### イメージ
 
-Managed execution requires that you run an official Prefect Docker image, such as `prefecthq/prefect:3-latest`.
-However, as noted above, you can install Python package dependencies at runtime.
-If you need to use your own image, we recommend using another type of work pool.
+マネージド実行では、`prefecthq/prefect:3-latest` などの公式の Prefect Docker イメージを実行する必要があります。
+ただし、前述のとおり、実行時に Python パッケージの依存関係をインストールできます。
+独自のイメージを使用する必要がある場合は、別の種類のワークプールを使用することをお勧めします。
 
-### Code storage
+### コードストレージ
 
-You must store flow code in an accessible remote location.
-Prefect supports git-based cloud providers such as GitHub, Bitbucket, or GitLab.
-Remote block-based storage is also supported, so S3, GCS, and Azure Blob are additional code storage options.
+フローコードはアクセス可能なリモートロケーションに保存する必要があります。
+Prefect は、GitHub、Bitbucket、GitLab などの Git ベースのクラウドプロバイダーをサポートしています。
+リモートブロックベースストレージもサポートされているため、S3、GCS、Azure Blob もコードストレージの追加のオプションとして利用できます。
 
-### Resources & Limitations
+### リソースと制限事項
 
-All flow runs receive:
-- 4vCPUs
-- 16GB of RAM
-- 128GB of ephemeral storage
+すべてのフロー実行には以下のリソースが提供されます。
+- 4vCPU
+- 16GBのRAM
+- 128GBの一時ストレージ
 
-Maximum flow run time is limited to 24 hours.
+フローの最大実行時間は24時間に制限されています。
 
-## Next steps
+## 次のステップ
 
-Read more about creating deployments in [Run flows in Docker containers](/v3/deploy/infrastructure-examples/docker/).
+デプロイメントの作成について詳しくは、[Docker コンテナ内でフローを実行する](/v3/deploy/infrastructure-examples/docker/) をご覧ください。
 
-For more control over your infrastructure, such as the ability to run
-custom Docker images, [serverless push work pools](/v3/deploy/infrastructure-examples/serverless/)
-are a good option.
+カスタム Docker イメージの実行など、インフラストラクチャをより細かく制御したい場合は、[サーバーレス プッシュ ワークプール](/v3/deploy/infrastructure-examples/serverless/) が適しています。

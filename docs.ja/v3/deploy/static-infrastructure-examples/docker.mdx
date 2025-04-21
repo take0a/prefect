@@ -1,21 +1,21 @@
 ---
-title: Serve flows in a long-lived Docker container
-description: Learn how to serve a flow in a long-lived Docker container
+title: 長期 Docker コンテナでフローを提供する
+description: 長期 Docker コンテナでフローを提供する方法を学ぶ
 ---
 
-The `.serve` method allows you to easily elevate a flow to a deployment, listening for scheduled work to execute [as a local process](/v3/deploy/run-flows-in-local-processes).
+`.serve` メソッドを使用すると、フローを簡単にデプロイメントに昇格させ、スケジュールされた作業を [ローカルプロセスとして](/v3/deploy/run-flows-in-local-processes) 実行するようにリッスンできます。
 
-However, this _"local"_ process does not need to be on your local machine. In this example we show how to run a flow in Docker container on your local machine, but you could use a Docker container on any machine that has [Docker installed](https://docs.docker.com/engine/install/).
+ただし、この _「ローカル」_ プロセスはローカルマシン上に存在する必要はありません。この例では、ローカルマシン上の Docker コンテナでフローを実行する方法を示していますが、[Docker がインストールされている](https://docs.docker.com/engine/install/) 任意のマシン上の Docker コンテナを使用できます。
 
-## Overview
-In this example, you will set up:
+## 概要
+この例では、以下を設定します。
 
-- a simple flow that retrieves the number of stars for some GitHub repositories
-- a `Dockerfile` that packages up your flow code and dependencies into a container image
+- いくつかの GitHub リポジトリのスター数を取得するシンプルなフロー
+- フローのコードと依存関係をコンテナイメージにパッケージ化する `Dockerfile`
 
-## Writing the flow
+## フローの作成
 
-Say we have a flow that retrieves the number of stars for a GitHub repository:
+GitHub リポジトリのスター数を取得するフローがあるとします:
 
 ```python serve_retrieve_github_stars.py {19-23}
 import httpx
@@ -43,23 +43,23 @@ if __name__ == "__main__":
     )
 ```
 
-We can serve this flow on our local machine using:
+このフローをローカルマシン上で提供するには、次の操作を実行します:
 
 ```bash
 python serve_retrieve_github_stars.py
 ```
 
-... but how can we package this up so we can run it on other machines?
+...しかし、これを他のマシンで実行できるようにパッケージ化するにはどうすればよいでしょうか?
 
-## Writing the Dockerfile
+## Dockerfile の作成
 
-Assuming we have our Python requirements defined in a file:
+Python の要件がファイルに定義されていると仮定します:
 
 ```txt requirements.txt
 prefect
 ```
 
-and this directory structure:
+そしてこのディレクトリ構造:
 
 ```
 ├── Dockerfile
@@ -67,7 +67,7 @@ and this directory structure:
 └── serve_retrieve_github_stars.py
 ```
 
-We can package up our flow into a Docker container using a `Dockerfile`.
+`Dockerfile` を使用して、フローを Docker コンテナにパッケージ化できます。
 
 <CodeGroup>
 
@@ -119,69 +119,71 @@ ENTRYPOINT ["python", "serve_retrieve_github_stars.py"]
 </CodeGroup>
 
 <Note>
-Using `pip`, the image is built in about 20 seconds, and using `uv`, the image is built in about 3 seconds.
+`pip` を使用すると約 20 秒でイメージがビルドされ、`uv` を使用すると約 3 秒でイメージがビルドされます。
 
-You can learn more about using `uv` in the [Astral documentation](https://docs.astral.sh/uv/guides/integration/docker/).
+`uv` の使用方法の詳細については、[Astral ドキュメント](https://docs.astral.sh/uv/guides/integration/docker/) をご覧ください。
 </Note>
 
-## Build and run the container
+## コンテナをビルドして実行する
 
-Now that we have a flow and a Dockerfile, we can build the image from the Dockerfile and run a container from this image.
+フローとDockerfileが準備できたので、Dockerfileからイメージをビルドし、そのイメージからコンテナを実行できます。
 
-### Build (and push) the image
+### イメージをビルド（およびプッシュ）する
 
-We can build the image with the `docker build` command and the `-t` flag to specify a name for the image.
+`docker build` コマンドと `-t` フラグを使用してイメージ名を指定することで、イメージをビルドできます。
 
 ```bash
 docker build -t my-flow-image .
 ```
 
-At this point, you may also want to push the image to a container registry such as [Docker Hub](https://hub.docker.com/) or [GitHub Container Registry](https://docs.github.com/en/packages/working-with-a-github-packages-registry/working-with-the-container-registry). Please refer to each registry's respective documentation for details on authentication and registry naming conventions.
+この時点で、[Docker Hub](https://hub.docker.com/) や [GitHub Container Registry](https://docs.github.com/en/packages/working-with-a-github-packages-registry/working-with-the-container-registry) などのコンテナレジストリにイメージをプッシュすることもできます。
+認証とレジストリの命名規則の詳細については、各レジストリのドキュメントを参照してください。
 
-### Run the container
+### コンテナを実行する
 
-You'll likely want to inject some environment variables into your container, so let's define a `.env` file:
+コンテナに環境変数を挿入する必要があると思われるので、`.env` ファイルを定義しましょう:
 
 ```bash .env
 PREFECT_API_URL=<YOUR-API-URL>
 PREFECT_API_KEY=<YOUR-API-KEY-IF-USING-PREFECT-CLOUD>
 ```
 
-Then, run the container in [detached mode](https://docs.docker.com/engine/reference/commandline/run/#detached-d) (in other words, in the background):
+次に、コンテナを [デタッチ モード](https://docs.docker.com/engine/reference/commandline/run/#detached-d) (つまり、バックグラウンド) で実行します:
 
 ```bash
 docker run -d --env-file .env my-flow-image
 ```
 
-#### Verify the container is running
+#### コンテナが実行中であることを確認する
 
 ```bash
 docker ps | grep my-flow-image
 ```
 
-You should see your container in the list of running containers, note the `CONTAINER ID` as we'll need it to view logs.
+実行中のコンテナのリストにコンテナが表示されます。ログを表示するために必要となるので、`CONTAINER ID` をメモしておいてください。
 
-#### View logs
+#### ログを表示
+
 ```bash
 docker logs <CONTAINER-ID>
 ```
 
-You should see logs from your newly served process, with the link to your deployment in the UI.
+新しく提供されたプロセスからのログと、UI のデプロイメントへのリンクが表示されます。
 
-### Stop the container
+### コンテナを停止する
 
 ```bash
 docker stop <CONTAINER-ID>
 ```
 
-## Next steps
+## 次のステップ
 
-Congratulations! You have packaged and served a flow on a long-lived Docker container.
+おめでとうございます！フローをパッケージ化し、長期稼働の Docker コンテナ上で提供できました。
 
-You may now easily deploy this container to other infrastructures, such as:
+これで、このコンテナを他のインフラストラクチャに簡単にデプロイできます。例えば、以下のようになります。
 - [Modal](https://modal.com/)
 - [Google Cloud Run](https://cloud.google.com/run)
 - [AWS Fargate / ECS](https://aws.amazon.com/fargate/)
-- Managed Kubernetes (For example: GKE, EKS, or AKS)
+- マネージド Kubernetes (例: GKE、EKS、AKS)
 
-or anywhere else you can run a Docker container!
+または、Docker コンテナを実行できるあらゆる場所にデプロイできます。

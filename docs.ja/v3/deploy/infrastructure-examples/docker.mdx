@@ -1,96 +1,97 @@
 ---
-title: Run flows in Docker containers
-description: Learn how to deploy a flow to a Docker work pool with workers
+title: Dockerコンテナでフローを実行する
+description: ワーカーを使用してDockerワークプールにフローをデプロイする方法を学びます
 ---
 
-In this example, you will set up:
+この例では、以下を設定します:
 
-- a Docker [**work pool**](/v3/deploy/infrastructure-concepts/work-pools/): stores the infrastructure configuration for your deployment
-- a Docker [**worker**](/v3/deploy/infrastructure-concepts/workers/): process that polls the Prefect API for flow runs to execute as Docker containers
-- a [**deployment**](/v3/deploy/index/): a flow that should run according to the configuration on your Docker work pool
+- Docker [**ワークプール**](/v3/deploy/infrastructure-concepts/work-pools/): デプロイメントのインフラストラクチャ構成を保存します。
+- Docker [**ワーカー**](/v3/deploy/infrastructure-concepts/workers/): Prefect API をポーリングし、Docker コンテナとして実行するフロー実行情報を取得します。
+- [**デプロイメント**](/v3/deploy/index/): Docker ワークプールの構成に従って実行されるフローです。
 
-Then you can execute your deployment via the Prefect API (through the SDK, CLI, UI, etc).
+その後、Prefect API (SDK、CLI、UI など) を介してデプロイメントを実行できます。
 
-You must have [Docker](https://docs.docker.com/engine/install/) installed and running on your machine.
+お使いのマシンに [Docker](https://docs.docker.com/engine/install/) がインストールされ、実行されている必要があります。
 
 <Note>
-**Executing flows in a long-lived container**
+**長期コンテナでのフロー実行**
 
-This guide shows how to run a flow in an ephemeral container that is removed after the flow run completes.
-To instead learn how to run flows in a static, long-lived container, see [this](/v3/deploy/static-infrastructure-examples/docker/) guide.
+このガイドでは、フロー実行完了後に削除される一時的なコンテナでフローを実行する方法を説明します。
+静的な長期コンテナでフローを実行する方法については、[この](/v3/deploy/static-infrastructure-examples/docker/)ガイドをご覧ください。
 
 </Note>
 
-### Create a work pool
+### ワークプールを作成する
 
-A work pool provides default infrastructure configurations that all jobs inherit and can override.
-You can adjust many defaults, such as the base Docker image, container cleanup behavior, and resource limits. 
+ワークプールは、すべてのジョブが継承し、オーバーライド可能なデフォルトのインフラストラクチャ構成を提供します。
+ベースDockerイメージ、コンテナのクリーンアップ動作、リソース制限など、多くのデフォルトを調整できます。
 
-To set up a **Docker** type work pool with the default values, run:
+デフォルト値を使用して **Docker** タイプの作業プールを設定するには、次のコマンドを実行します:
 
 ```bash
 prefect work-pool create --type docker my-docker-pool
 ```
 
-... or create the work pool in the UI.
+または、UI で作業プールを作成します。
 
-To confirm the work pool creation was successful, run:
+作業プールの作成が成功したことを確認するには、次のコマンドを実行します:
 
 ```bash
 prefect work-pool ls
 ```
 
-You should see your new `my-docker-pool` listed in the output.
+出力に新しい「my-docker-pool」が表示されるはずです。
 
-Next, check that you can see this work pool in your Prefect UI.
-Navigate to the **Work Pools** tab and verify that you see `my-docker-pool` listed.
-When you click into `my-docker-pool`, you should see a red status icon signifying that this work pool is not ready.
+次に、Prefect UI でこのワークプールが表示されていることを確認します。
 
-To make the work pool ready, you'll need to start a worker.
-We'll show how to do this next.
+**Work Pools** タブに移動し、「my-docker-pool」が表示されていることを確認します。
+「my-docker-pool」をクリックすると、このワークプールがまだ準備ができていないことを示す赤いステータスアイコンが表示されます。
 
-### Start a worker
+ワークプールを準備するには、ワーカーを起動する必要があります。
+次に、その方法を説明します。
 
-Workers are a lightweight polling process that kick off scheduled flow runs on a specific type of infrastructure (such as Docker).
-To start a worker on your local machine, open a new terminal and confirm that your virtual environment has `prefect` installed.
+### ワーカーを起動する
 
-Run the following command in this new terminal to start the worker:
+ワーカーは、特定の種類のインフラストラクチャ（Docker など）上でスケジュールされたフロー実行を開始する軽量のポーリングプロセスです。
+ローカルマシンでワーカーを起動するには、新しいターミナルを開き、仮想環境に「prefect」がインストールされていることを確認します。
+
+この新しいターミナルで次のコマンドを実行してワーカーを起動します。
 
 ```bash
 prefect worker start --pool my-docker-pool
 ```
 
-You should see the worker start.
-It's now polling the Prefect API to check for any scheduled flow runs it should pick up and then submit for execution.
-You'll see your new worker listed in the UI under the **Workers** tab of the Work Pools page with a recent last polled date.
-The work pool should have a `Ready` status indicator.
+ワーカーが起動しているのが確認できます。
+現在、ワーカーは Prefect API をポーリングして、取得して実行のために送信するスケジュール済みのフロー実行があるかどうかを確認しています。
+新しいワーカーは、ワークプールページの **Workers** タブのUIに、最新のポーリング日付とともに表示されます。
+ワークプールには `Ready` ステータスインジケーターが表示されます。
 
 <Tip>
-**Pro Tip:**
+**プロのヒント:**
 
-If `my-docker-pool` does not already exist, the below command will create it for you automatically with the default settings for that work pool type, in this case `docker`.
+`my-docker-pool` がまだ存在しない場合は、以下のコマンドを実行すると、その作業プールタイプ（この場合は `docker`）のデフォルト設定で自動的に作成されます。
 
 ```bash
 prefect worker start --pool my-docker-pool --type docker
 ```
 </Tip>
 
-Keep this terminal session active for the worker to continue to pick up jobs.
-Since you are running this worker locally, the worker will if you close the terminal.
-In a production setting this worker should run as a [daemonized or managed process](/v3/deploy/daemonize-processes/).
+ワーカーがジョブを引き続き取得できるようにするには、このターミナルセッションをアクティブにしておいてください。
+このワーカーはローカルで実行されているため、ターミナルを閉じるとワーカーも終了します。
+本番環境では、このワーカーは[デーモン化または管理されたプロセス](/v3/deploy/daemonize-processes/)として実行する必要があります。
 
-## Create the deployment
+## デプロイメントを作成する
 
-From the previous steps, you now have:
+前の手順で、以下のものが作成されました。
 
-- A work pool
-- A worker
+- ワークプール
+- ワーカー
 
-Next, you'll create a deployment from your flow code.
+次に、フローコードからデプロイメントを作成します。
 
-### Automatically bake your code into a Docker image
+### コードを Docker イメージに自動的にベイクします
 
-Create a deployment from Python code by calling the `.deploy` method on a flow:
+フローで `.deploy` メソッドを呼び出して、Python コードからデプロイメントを作成します。
 
 ```python deploy_buy.py
 from prefect import flow
@@ -107,33 +108,31 @@ if __name__ == "__main__":
     )
 ```
 
-Now, run the script to create a deployment (in future examples this step is omitted for brevity):
+次に、スクリプトを実行してデプロイメントを作成します (以降の例では、簡潔にするためにこの手順は省略されます):
 
 ```bash
 python deploy_buy.py
 ```
 
-You should see messages in your terminal that Docker is building your image.
-When the deployment build succeeds, you will see information in your terminal showing you how to start a worker for your
-deployment, and how to run your deployment.
-Your deployment is visible on the `Deployments` page in the UI.
+ターミナルに、Docker がイメージをビルド中であることを示すメッセージが表示されます。
+デプロイメントのビルドが成功すると、デプロイメント用のワーカーの起動方法とデプロイメントの実行方法を示す情報がターミナルに表示されます。
+デプロイメントは UI の「デプロイメント」ページに表示されます。
 
-By default, `.deploy` builds a Docker image with your flow code baked into it and pushes the image to the
-[Docker Hub](https://hub.docker.com/) registry specified in the `image` argument`.
+デフォルトでは、「.deploy」はフローコードが組み込まれた Docker イメージをビルドし、「image」引数で指定された [Docker Hub](https://hub.docker.com/) レジストリにプッシュします。
 
 <Note>
-**Authentication to Docker Hub**
+**Docker Hub への認証**
 
-    Your environment must be authenticated to your Docker registry to push an image to it.
+Docker レジストリにイメージをプッシュするには、環境が認証されている必要があります。
 </Note>
 
-You can specify a registry other than Docker Hub by providing the full registry path in the `image` argument.
+`image` 引数に完全なレジストリ パスを指定することで、Docker Hub 以外のレジストリを指定できます。
 
 <Warning>
-    If building a Docker image, your environment with your deployment needs Docker installed and running.
+    Docker イメージを構築する場合、デプロイメントの環境に Docker がインストールされ、実行されている必要があります。
 </Warning>
 
-To avoid pushing to a registry, set `push=False` in the `.deploy` method:
+レジストリへのプッシュを回避するには、`.deploy` メソッドで `push=False` を設定します:
 
 ```python
 
@@ -146,7 +145,7 @@ if __name__ == "__main__":
     )
 ```
 
-To avoid building an image, set `build=False` in the `.deploy` method:
+イメージのビルドを回避するには、`.deploy` メソッドで `build=False` を設定します:
 
 ```python
 
@@ -159,15 +158,14 @@ if __name__ == "__main__":
     )
 ```
 
-The specified image must be available in your deployment's execution environment for accessible flow code.
+フローコードにアクセスできるようにするには、指定されたイメージがデプロイメントの実行環境で利用可能である必要があります。
 
-Prefect generates a Dockerfile for you that builds an image based off of one of Prefect's published images.
-The generated Dockerfile copies the current directory into the Docker image and installs any dependencies listed
-in a `requirements.txt` file.
+Prefect は、Prefect が公開しているイメージの 1 つに基づいてイメージをビルドするための Dockerfile を生成します。
+生成された Dockerfile は、現在のディレクトリを Docker イメージにコピーし、`requirements.txt` ファイルにリストされている依存関係をインストールします。
 
-### Automatically build a custom Docker image with a local Dockerfile
+### ローカルの Dockerfile を使用してカスタム Docker イメージを自動ビルドする
 
-If you want to use a custom Dockerfile, specify the path to the Dockerfile with the `DockerImage` class:
+カスタム Dockerfile を使用する場合は、`DockerImage` クラスを使用して Dockerfile へのパスを指定します:
 
 ```python custom_dockerfile.py
 from prefect import flow
@@ -193,11 +191,11 @@ if __name__ == "__main__":
 
 ```
 
-The `DockerImage` object enables image customization.
+`DockerImage` オブジェクトを使用すると、イメージをカスタマイズできます。
 
-For example, you can install a private Python package from GCP's artifact registry like this:
+例えば、GCP のアーティファクト レジストリからプライベート Python パッケージをインストールするには、次のようにします:
 
-1. Create a custom base Dockerfile.
+1. カスタムのベース Dockerfile を作成します。
 
    ```
    FROM python:3.12
@@ -208,7 +206,7 @@ For example, you can install a private Python package from GCP's artifact regist
    RUN pip install --extra-index-url ${AUTHED_ARTIFACT_REG_URL} -r /requirements.txt
    ```
 
-1. Create your deployment with the DockerImage class:
+1. DockerImage クラスを使用してデプロイメントを作成します:
 
    ```python private-package.py
    from prefect import flow
@@ -237,24 +235,23 @@ For example, you can install a private Python package from GCP's artifact regist
        )
    ```
 
-Note that you used a [Prefect Secret block](/v3/develop/blocks/) to load the URL configuration for
-the artifact registry above.
+上記のアーティファクトレジストリの URL 設定を読み込むために、[Prefect Secret ブロック](/v3/develop/blocks/) を使用していることに注意してください。
 
-See all the optional keyword arguments for the [DockerImage class](https://docker-py.readthedocs.io/en/stable/images.html#docker.models.images.ImageCollection.build).
+[DockerImage クラス](https://docker-py.readthedocs.io/en/stable/images.html#docker.models.images.ImageCollection.build) のすべてのオプションのキーワード引数を参照してください。
 
 <Tip>
-**Default Docker namespace**
+**デフォルトの Docker 名前空間**
 
-    You can set the `PREFECT_DEFAULT_DOCKER_BUILD_NAMESPACE` setting to append a default Docker namespace to all images
-    you build with `.deploy`. This is helpful if you use a private registry to store your images.
+    `PREFECT_DEFAULT_DOCKER_BUILD_NAMESPACE` 設定を使用すると、`.deploy` でビルドするすべてのイメージにデフォルトの Docker 名前空間を追加できます。
+    これは、イメージの保存にプライベートレジストリを使用する場合に役立ちます。
 
-    To set a default Docker namespace for your current profile run:
+    現在のプロファイルにデフォルトの Docker 名前空間を設定するには、次のコマンドを実行します。
 
     ```bash
     prefect config set PREFECT_DEFAULT_DOCKER_BUILD_NAMESPACE=<docker-registry-url>/<organization-or-username>
     ```
 
-    Once set, you can omit the namespace from your image name when creating a deployment:
+    一度設定すると、デプロイメントを作成するときにイメージ名から名前空間を省略できます:
 
     ```python with_default_docker_namespace.py
     if __name__ == "__main__":
@@ -265,19 +262,16 @@ See all the optional keyword arguments for the [DockerImage class](https://docke
         )
     ```
 
-    The above code builds an image with the format `<docker-registry-url>/<organization-or-username>/my_image:my_image_tag`
-    when `PREFECT_DEFAULT_DOCKER_BUILD_NAMESPACE` is set.
+    上記のコードは、`PREFECT_DEFAULT_DOCKER_BUILD_NAMESPACE` が設定されている場合、`<docker-registry-url>/<organization-or-username>/my_image:my_image_tag` の形式でイメージを構築します。
 </Tip>
 
-### Store your code in git-based cloud storage
+### Gitベースのクラウドストレージにコードを保存する
 
-While baking code into Docker images is a popular deployment option, many teams store their workflow code in git-based
-storage, such as GitHub, Bitbucket, or GitLab.
+Dockerイメージにコードを焼き込むのは一般的なデプロイ方法ですが、多くのチームはワークフローコードをGitHub、Bitbucket、GitLabなどのGitベースのストレージに保存しています。
 
-If you don't specify an `image` argument for `.deploy`, you must specify where to pull the flow code from at runtime
-with the `from_source` method.
+`.deploy`に`image`引数を指定しない場合は、`from_source`メソッドを使用して、実行時にフローコードをプルする場所を指定する必要があります。
 
-Here's how to pull your flow code from a GitHub repository:
+GitHubリポジトリからフローコードをプルする方法は次のとおりです:
 
 ```python git_storage.py
 from prefect import flow
@@ -293,16 +287,15 @@ if __name__ == "__main__":
     )
 ```
 
-The `entrypoint` is the path to the file the flow is located in and the function name, separated by a colon.
+`entrypoint` は、フローが配置されているファイルへのパスと関数名をコロンで区切って指定します。
 
-See the [Store flow code](/v3/deploy/infrastructure-concepts/store-flow-code/) guide for more flow code storage options.
+フローコードの保存オプションの詳細については、[フローコードの保存](/v3/deploy/infrastructure-concepts/store-flow-code/)ガイドをご覧ください。
 
-### Additional configuration with `.deploy`
+### `.deploy` による追加設定
 
-Next, see deployment configuration options.
+次に、デプロイメント設定オプションをご覧ください。
 
-To pass parameters to your flow, you can use the `parameters` argument in the `.deploy` method. Just pass in a dictionary of
-key-value pairs.
+フローにパラメータを渡すには、`.deploy` メソッドの `parameters` 引数を使用します。キーと値のペアの辞書を渡すだけです。
 
 ```python pass_params.py
 from prefect import flow
@@ -322,12 +315,10 @@ if __name__ == "__main__":
     )
 ```
 
-The `job_variables` parameter allows you to fine-tune the infrastructure settings for a deployment.
-The values passed in override default values in the specified work pool's
-[base job template](/v3/deploy/infrastructure-concepts/work-pools/#base-job-template).
+`job_variables` パラメータを使用すると、デプロイメントのインフラストラクチャ設定を微調整できます。
+渡された値は、指定されたワークプールの [ベースジョブテンプレート](/v3/deploy/infrastructure-concepts/work-pools/#base-job-template) のデフォルト値をオーバーライドします。
 
-You can override environment variables, such as `image_pull_policy` and `image`, for a specific deployment with the `job_variables`
-argument.
+`job_variables` 引数を使用すると、特定のデプロイメントの `image_pull_policy` や `image` などの環境変数をオーバーライドできます。
 
 ```python job_var_image_pull.py
 if __name__ == "__main__":
@@ -340,7 +331,7 @@ if __name__ == "__main__":
     )
 ```
 
-Similarly, you can override the environment variables specified in a work pool through the `job_variables` parameter:
+同様に、`job_variables` パラメータを使用して、ワークプールで指定された環境変数をオーバーライドすることもできます:
 
 ```python job_var_env_vars.py
 if __name__ == "__main__":
@@ -353,19 +344,17 @@ if __name__ == "__main__":
     )
 ```
 
-The dictionary key "EXTRA_PIP_PACKAGES" denotes a special environment variable that Prefect uses to install additional
-Python packages at runtime.
-This approach is an alternative to building an image with a custom `requirements.txt` copied into it.
+辞書キー「EXTRA_PIP_PACKAGES」は、Prefect が実行時に追加の Python パッケージをインストールするために使用する特別な環境変数を表します。
+このアプローチは、カスタム `requirements.txt` をコピーしてイメージをビルドする代わりに使用できます。
 
-See [Override work pool job variables](/v3/deploy/infrastructure-concepts/customize) for more information about how to customize these variables.
+これらの変数をカスタマイズする方法の詳細については、[作業プールのジョブ変数のオーバーライド](/v3/deploy/infrastructure-concepts/customize)を参照してください。
 
-### Work with multiple deployments with `deploy`
+### `deploy` を使用した複数のデプロイメントの操作
 
-Create multiple deployments from one or more Python files that use `.deploy`.
-You can manage these deployments independently of one another to deploy the same flow with different configurations
-in the same codebase.
+`.deploy` を使用する 1 つ以上の Python ファイルから複数のデプロイメントを作成します。
+これらのデプロイメントを個別に管理することで、同じコードベースに異なる構成で同じフローをデプロイできます。
 
-To create multiple work pool-based deployments at once, use the `deploy` function, which is analogous to the `serve` function:
+複数のワークプールベースのデプロイメントを一度に作成するには、`serve` 関数に類似した `deploy` 関数を使用します。
 
 ```python
 from prefect import deploy, flow
@@ -385,8 +374,8 @@ if __name__ == "__main__":
     )
 ```
 
-In the example above you created two deployments from the same flow, but with different work pools.
-Alternatively, you can create two deployments from different flows:
+上記の例では、同じフローから異なるワークプールを使用して 2 つのデプロイメントを作成しました。
+または、異なるフローから 2 つのデプロイメントを作成することもできます。
 
 ```python
 from prefect import deploy, flow
@@ -412,10 +401,10 @@ if __name__ == "__main__":
     )
 ```
 
-In the example above, the code for both flows is baked into the same image.
+上記の例では、両方のフローのコードが同じイメージに焼き込まれています。
 
-You can specify one or more flows to pull from a remote location at runtime with the `from_source` method.
-Here's an example of deploying two flows, one defined locally and one defined in a remote repository:
+`from_source` メソッドを使用して、実行時にリモートの場所からプルするフローを1つ以上指定できます。
+以下は、ローカルで定義されたフローとリモートリポジトリで定義されたフローの2つをデプロイする例です:
 
 ```python
 from prefect import deploy, flow
@@ -440,11 +429,11 @@ if __name__ == "__main__":
     )
 ```
 
-You can pass any number of flows to the `deploy` function.
-This is useful if using a monorepo approach to your workflows.
+`deploy` 関数には任意の数のフローを渡すことができます。
+これは、ワークフローにモノレポアプローチを使用する場合に便利です。
 
-## Learn more
+## 詳細はこちら
 
-- [Deploy flows on Kubernetes](/v3/deploy/infrastructure-examples/kubernetes/)
-- [Deploy flows on serverless infrastructure](/v3/deploy/infrastructure-examples/serverless/)
-- [Daemonize workers](/v3/deploy/daemonize-processes/)
+- [Kubernetes へのフローのデプロイ](/v3/deploy/infrastructure-examples/kubernetes/)
+- [サーバーレス インフラストラクチャへのフローのデプロイ](/v3/deploy/infrastructure-examples/serverless/)
+- [ワーカーのデーモン化](/v3/deploy/daemonize-processes/)
