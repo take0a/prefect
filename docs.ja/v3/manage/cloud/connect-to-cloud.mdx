@@ -1,37 +1,36 @@
 ---
-title: Connect to Prefect Cloud
-description: Configure a local execution environment to access Prefect Cloud.
+title: Prefect Cloudに接続する
+description: Prefect Cloud にアクセスするためのローカル実行環境を構成します。
 ---
 
-To create flow runs in a local or remote execution environment, first connect with Prefect Cloud or a 
-Prefect server as the backend API server. 
+ローカルまたはリモート実行環境でフロー実行を作成するには、まずPrefect CloudまたはPrefectサーバー（バックエンドAPIサーバー）に接続します。
 
-This involves: 
+これには以下の手順が含まれます。
 
-- Configuring the execution environment with the location of the API.
-- Authenticating with the API, either by logging in or providing a valid API key (Prefect Cloud only).
+- APIの場所を指定して実行環境を構成する。
+- ログインまたは有効なAPIキーを入力してAPIで認証する（Prefect Cloudのみ）。
 
-## Log into Prefect Cloud from a terminal
+## ターミナルからPrefect Cloudにログインします。
 
-Configure a local execution environment to use Prefect Cloud as the API server for flow runs. 
-You will log in a to Prefect Cloud account from the local environment where you want to run a flow.
+フロー実行用のAPIサーバーとしてPrefect Cloudを使用するように、ローカル実行環境を設定します。
+フローを実行するローカル環境からPrefect Cloudアカウントにログインします。
 
-### Steps 
+### 手順
 
-1. Open a new terminal session.
-2. [Install Prefect](/v3/get-started/install/) in the environment where you want to execute flow runs.
+1. 新しいターミナルセッションを開きます。
+2. フローを実行する環境に[Prefectをインストール](/v3/get-started/install/)します。
 
 ```bash
 pip install -U prefect
 ```
 
-3. Use the `prefect cloud login` Prefect CLI command to log into Prefect Cloud from your environment.
+3. Prefect CLI コマンド「prefect cloud login」を使用して、自分の環境から Prefect Cloud にログインします。
 
 ```bash
 prefect cloud login
 ```
 
-The `prefect cloud login` command provides an interactive login experience. 
+`prefect cloud login` コマンドは、対話型のログイン エクスペリエンスを提供します。 
 
 ```bash
 prefect cloud login
@@ -48,34 +47,31 @@ Paste your authentication key:
 Authenticated with Prefect Cloud! Using workspace 'prefect/terry-prefect-workspace'.
 ```
 
-You can authenticate by manually pasting an [API key](/v3/manage/cloud/manage-users/api-keys/) or through a browser-based approval that auto-generates an API key with a 30-day expiration.
+[API キー](/v3/manage/cloud/manage-users/api-keys/) を手動で貼り付けるか、30 日間の有効期限を持つ API キーを自動生成するブラウザベースの承認を通じて認証できます。
 
-### Change workspaces
+### ワークスペースの変更
 
-To change which workspace to sync with, use the `prefect cloud workspace set` 
-Prefect CLI command while logged in, passing the account handle and workspace name:
+同期するワークスペースを変更するには、ログイン中に Prefect CLI コマンド「prefect cloud workspace set」を使用し、アカウントハンドルとワークスペース名を渡します。
 
 ```bash
 prefect cloud workspace set --workspace "prefect/my-workspace"
 ```
 
-If you don't provide a workspace, you will need to select one.
+ワークスペースを提供しない場合でも、一つを選択する必要があります。
 
-**Workspace Settings** also shows you the `prefect cloud workspace set` Prefect CLI 
-command to sync a local execution environment with a given workspace.
+**ワークスペース設定** では、ローカル実行環境を特定のワークスペースと同期するための Prefect CLI コマンド「prefect cloud workspace set」も表示されます。
 
-You may also use the `prefect cloud login` command with the `--workspace` or `-w` option to set the current workspace.
+また、「prefect cloud login」コマンドに「--workspace」または「-w」オプションを指定して、現在のワークスペースを設定することもできます。
 
 ```bash
 prefect cloud login --workspace "prefect/my-workspace"
 ```
 
-## Manually configure Prefect API settings
+## Prefect API 設定を手動で構成する
 
-You can manually configure the `PREFECT_API_URL` setting to specify the Prefect Cloud API.
+Prefect Cloud API を指定するには、`PREFECT_API_URL` 設定を手動で構成します。
 
-For Prefect Cloud, configure the `PREFECT_API_URL` and `PREFECT_API_KEY` settings to authenticate 
-with Prefect Cloud by using an account ID, workspace ID, and API key.
+Prefect Cloud の場合は、アカウント ID、ワークスペース ID、API キーを使用して Prefect Cloud で認証するために、`PREFECT_API_URL` と `PREFECT_API_KEY` 設定を構成します。
 
 ```bash
 prefect config set PREFECT_API_URL="https://api.prefect.cloud/api/accounts/[ACCOUNT-ID]/workspaces/[WORKSPACE-ID]"
@@ -83,32 +79,30 @@ prefect config set PREFECT_API_KEY="[API-KEY]"
 ```
 
 <Note>
-**Find account ID and workspace ID in the browser**
+**ブラウザでアカウントIDとワークスペースIDを確認する**
 
-When authenticated to your Prefect Cloud workspace in the browser, you can get the account ID and workspace ID for the `PREFECT_API_URL` string from the page URL.
+ブラウザでPrefect Cloudワークスペースに認証されると、ページURLから「PREFECT_API_URL」文字列のアカウントIDとワークスペースIDを取得できます。
 
-For example, if you're on the dashboard page, the URL looks like this: 
+例えば、ダッシュボードページの場合、URLは次のようになります:
 
 https://app.prefect.cloud/account/[ACCOUNT-ID]/workspace/[WORKSPACE-ID]/dashboard
 </Note>
 
-The example above configures `PREFECT_API_URL` and `PREFECT_API_KEY` in the default profile. 
+上記の例では、デフォルトプロファイルで `PREFECT_API_URL` と `PREFECT_API_KEY` を設定しています。
 
-You can use `prefect profile` CLI commands to create settings profiles for different configurations. 
-For example, you can configure a "cloud" profile to use the Prefect Cloud API URL and API key; 
-and another "local" profile for local development using a local Prefect API server started with `prefect server start`. 
-See [Settings](/v3/develop/settings-and-profiles/) for details.
+`prefect profile` CLI コマンドを使用して、異なる構成用の設定プロファイルを作成できます。
+例えば、Prefect Cloud API の URL と API キーを使用する「cloud」プロファイルと、`prefect server start` で起動したローカルの Prefect API サーバーを使用するローカル開発用の「local」プロファイルを設定できます。
+詳細は [設定](/v3/develop/settings-and-profiles/) を参照してください。
 
 <Note>
-**Environment variables**
+**環境変数**
 
-You can set `PREFECT_API_URL` and `PREFECT_API_KEY` just like any other environment variable. 
-Setting these environment variables is a good way to connect to Prefect Cloud in a remote serverless environment.
-See [Overriding defaults with environment variables](/v3/develop/settings-and-profiles/) for more information.
+`PREFECT_API_URL` と `PREFECT_API_KEY` は、他の環境変数と同様に設定できます。
+これらの環境変数を設定すると、リモートサーバーレス環境で Prefect Cloud に接続する際に便利です。
+詳細については、[環境変数によるデフォルト設定の上書き](/v3/develop/settings-and-profiles/) をご覧ください。
 
 </Note>
 
-## Install requirements in execution environments
+## 実行環境に要件をインストールする
 
-In local and remote execution environments, such as VMs and containers, ensure that you've installed any flow 
-requirements or dependencies before creating a flow run.
+VMやコンテナなどのローカルおよびリモート実行環境では、フロー実行を作成する前に、フローの要件または依存関係がインストールされていることを確認してください。

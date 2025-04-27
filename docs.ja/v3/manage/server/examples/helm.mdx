@@ -1,48 +1,48 @@
 ---
 title: Helm
-description: Self-host your own Prefect server and connect a Prefect worker to it with Helm.
+description: 独自の Prefect サーバーをセルフホストし、Helm を使用して Prefect ワーカーをそのサーバーに接続します。
 ---
 
-You can use Helm to manage a [self-hosted Prefect server](https://github.com/PrefectHQ/prefect-helm/tree/main/charts/prefect-server) and a [worker](https://github.com/PrefectHQ/prefect-helm/tree/main/charts/prefect-worker).
+Helm を使用して、[セルフホスト型 Prefect サーバー](https://github.com/PrefectHQ/prefect-helm/tree/main/charts/prefect-server) と [ワーカー](https://github.com/PrefectHQ/prefect-helm/tree/main/charts/prefect-worker) を管理できます。
 
-## Prerequisites
+## 前提条件
 
-- A Kubernetes cluster
-- Install the [Helm CLI](https://helm.sh/docs/intro/install/)
+- Kubernetes クラスター
+- [Helm CLI](https://helm.sh/docs/intro/install/) をインストールする
 
-## Deploy a server with Helm
+## Helmでサーバーをデプロイする
 
 <Warning>
-Configuring ingress or publicly exposing Prefect from the cluster is business dependent and not covered in this tutorial.
-For details on Ingress configuration, consult the [Kubernetes documentation](https://kubernetes.io/docs/concepts/services-networking/ingress/).
+Ingress の設定やクラスターからの Prefect の公開はビジネスに依存するため、このチュートリアルでは説明しません。
+Ingress の設定の詳細については、[Kubernetes ドキュメント](https://kubernetes.io/docs/concepts/services-networking/ingress/) を参照してください。
 </Warning>
 
-### Add the Prefect Helm repository:
+### Prefect Helm リポジトリを追加します:
 
 ```bash
 helm repo add prefect https://prefecthq.github.io/prefect-helm
 helm repo update
 ```
-### Create a namespace
+### 名前空間を作成する
 
-Create a new namespace for this tutorial (all commands will use this namespace):
+このチュートリアル用に新しい名前空間を作成します（すべてのコマンドでこの名前空間が使用されます）:
 
 ```bash
 kubectl create namespace prefect
 kubectl config set-context --current --namespace=prefect
 ```
 
-### Deploy the server
+### サーバーを展開する
 
-<Expandable title="Deploy with default values">
-For a simple deployment using only the default values defined in the chart:
+<Expandable title="デフォルト値でデプロイする">
+チャートに定義されているデフォルト値のみを使用する単純な展開の場合:
 ```bash
 helm install prefect-server prefect/prefect-server --namespace prefect
 ```
 </Expandable>
 
-<Expandable title="Deploy with customized values to configure basic authentication">
-For a customized deployment, first create a `server-values.yaml` file for the server (see [values.yaml template](https://github.com/PrefectHQ/prefect-helm/blob/main/charts/prefect-server/values.yaml)):
+<Expandable title="カスタマイズされた値を使用してデプロイし、基本認証を構成する">
+カスタマイズされたデプロイメントの場合、まずサーバーの `server-values.yaml` ファイルを作成します ([values.yaml テンプレート](https://github.com/PrefectHQ/prefect-helm/blob/main/charts/prefect-server/values.yaml) を参照)。
 
 ```yaml
 server:
@@ -51,14 +51,14 @@ server:
     existingSecret: server-auth-secret
 ```
 
-#### Create a secret for the API basic authentication username and password:
+#### API 基本認証のユーザー名とパスワードのシークレットを作成します:
 
 ```bash
 kubectl create secret generic server-auth-secret \
   --namespace prefect --from-literal auth-string='admin:password123'
 ```
 
-#### Install the server:
+#### サーバーをインストールします:
 
 ```bash
 helm install prefect-server prefect/prefect-server \
@@ -67,7 +67,7 @@ helm install prefect-server prefect/prefect-server \
 ```
 </Expandable>
 
-Expected output:
+期待される出力:
 ```
 NAME: prefect-server
 LAST DEPLOYED: Tue Mar  4 09:08:07 2025
@@ -82,20 +82,21 @@ $ kubectl --namespace prefect port-forward svc/prefect-server 4200:4200
 Visit http://localhost:4200 to use Prefect!
 ```
 
-### Access the Prefect UI:
+### Prefect UI にアクセスします:
 
 ```bash
 kubectl --namespace prefect port-forward svc/prefect-server 4200:4200
 ```
 
-Open `localhost:4200` in your browser. If using basic authentication, sign in with `admin:password123`.
+ブラウザで `localhost:4200` を開きます。
+Basic認証を使用する場合は、`admin:password123` でサインインしてください。
 
-## Deploy a worker with Helm
+## Helm でワーカーをデプロイする
 
-To connect a worker to your self-hosted Prefect server in the same cluster:
+同じクラスター内のセルフホスト型 Prefect サーバーにワーカーを接続するには、以下の手順を実行します:
 
-<Expandable title="Deploy with the minimum required values">
-Create a `worker-values.yaml` file for the worker (see [values.yaml template](https://github.com/PrefectHQ/prefect-helm/blob/main/charts/prefect-worker/values.yaml)):
+<Expandable title="必要最小限の値でデプロイする">
+ワーカー用の `worker-values.yaml` ファイルを作成します ([values.yaml テンプレート](https://github.com/PrefectHQ/prefect-helm/blob/main/charts/prefect-worker/values.yaml) を参照)。
 
 ```yaml
 worker:
@@ -106,7 +107,7 @@ worker:
     apiUrl: http://prefect-server.prefect.svc.cluster.local:4200/api
 ```
 
-#### Install the worker:
+#### ワーカーをインストールします:
 
 ```bash
 helm install prefect-worker prefect/prefect-worker \
@@ -115,8 +116,8 @@ helm install prefect-worker prefect/prefect-worker \
 ```
 </Expandable>
 
-<Expandable title="Deploy with customized values to configure basic authentication">
-Create a `worker-values.yaml` file for the worker (see [values.yaml template](https://github.com/PrefectHQ/prefect-helm/blob/main/charts/prefect-worker/values.yaml)):
+<Expandable title="カスタマイズされた値を使用してデプロイし、基本認証を構成する">
+ワーカー用の `worker-values.yaml` ファイルを作成します ([values.yaml テンプレート](https://github.com/PrefectHQ/prefect-helm/blob/main/charts/prefect-worker/values.yaml) を参照)。
 
 ```yaml
 worker:
@@ -130,14 +131,14 @@ worker:
       existingSecret: worker-auth-secret
 ```
 
-#### Create a secret for the API basic authentication username and password:
+#### API 基本認証のユーザー名とパスワードのシークレットを作成します:
 
 ```bash
 kubectl create secret generic worker-auth-secret \
   --namespace prefect --from-literal auth-string='admin:password123'
 ```
 
-#### Install the worker:
+#### ワーカーをインストールします:
 
 ```bash
 helm install prefect-worker prefect/prefect-worker \
@@ -146,7 +147,7 @@ helm install prefect-worker prefect/prefect-worker \
 ```
 </Expandable>
 
-Expected output:
+期待される出力:
 ```
 Release "prefect-worker" has been installed. Happy Helming!
 NAME: prefect-worker
@@ -158,28 +159,28 @@ TEST SUITE: None
 NOTES:
 ```
 
-## Cleanup
+## クリーンアップ
 
-To uninstall the self-hosted Prefect server and Prefect worker:
+セルフホスト型PrefectサーバーとPrefectワーカーをアンインストールするには:
 
 ```bash
 helm uninstall prefect-worker
 helm uninstall prefect-server
 ```
 
-## Troubleshooting
+## トラブルシューティング
 
-<Expandable title="Container creation error">
-If you see this error:
+<Expandable title="コンテナ作成エラー">
+このエラーが表示された場合:
 ```
 Error from server (BadRequest): container "prefect-server" in pod "prefect-server-7c87b7f7cf-sgqj2" is waiting to start: CreateContainerConfigError
 ```
 
-Run `kubectl events` and confirm that the `authString` is correct.
+`kubectl events` を実行し、`authString` が正しいことを確認します。
 </Expandable>
 
-<Expandable title="Authentication error">
-If you see this error:
+<Expandable title="認証エラー">
+このエラーが表示された場合:
 ```
 prefect.exceptions.PrefectHTTPStatusError: Client error '401 Unauthorized' for url 'http://prefect-server.prefect.svc.cluster.local:4200/api/work_pools/kube-test'
 Response: {'exception_message': 'Unauthorized'}
@@ -187,11 +188,11 @@ For more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/St
 An exception occurred.
 ```
 
-Ensure `basicAuth` is configured in the `worker-values.yaml` file.
+`worker-values.yaml` ファイルで `basicAuth` が設定されていることを確認します。
 </Expandable>
 
-<Expandable title="Connection error">
-If you see this error:
+<Expandable title="接続エラー">
+このエラーが表示された場合:
 ```
 File "/usr/local/lib/python3.11/site-packages/httpcore/_backends/anyio.py", line 113, in connect_tcp
   with map_exceptions(exc_map):
@@ -202,20 +203,20 @@ File "/usr/local/lib/python3.11/site-packages/httpcore/_exceptions.py", line 14,
 httpcore.ConnectError: [Errno -2] Name or service not known
 ```
 
-Ensure the `PREFECT_API_URL` environment variable is properly templated by running the following command:
+次のコマンドを実行して、`PREFECT_API_URL` 環境変数が適切にテンプレート化されていることを確認します:
 ```bash
 helm template prefect-worker prefect/prefect-worker -f worker-values.yaml
 ```
 
-The URL format should look like the following:
+URL の形式は次のようになります:
 
 ```
 http://prefect-server.prefect.svc.cluster.local:4200/api
 ```
 
 <Note>
-If the worker is not in the same cluster and namespace, the precise format will vary.
+ワーカーが同じクラスターおよび名前空間にない場合、正確な形式は異なります。
 </Note>
 
-For additional troubleshooting and configuration, review the [Prefect Worker Helm Chart](https://github.com/PrefectHQ/prefect-helm/tree/main/charts/prefect-worker).
+追加のトラブルシューティングと構成については、[Prefect Worker Helm Chart](https://github.com/PrefectHQ/prefect-helm/tree/main/charts/prefect-worker) を確認してください。
 </Expandable>

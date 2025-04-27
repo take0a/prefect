@@ -1,12 +1,11 @@
 ---
-title: Manage Prefect resources with infrastructure-as-code
+title: Infrastructure as Code で Prefect リソースを管理する
 sidebarTitle: Infrastructure as code
-description: Declaratively manage Prefect resources with additional tools
+description: 追加ツールを使ってPrefectリソースを宣言的に管理する
 ---
 
-You can manage many Prefect resources with tools like
-[Terraform](https://www.terraform.io/) and [Helm](https://helm.sh/).  These
-options are a viable alternative to Prefect's CLI and UI.
+[Terraform](https://www.terraform.io/) や [Helm](https://helm.sh/) などのツールを使用して、多くの Prefect リソースを管理できます。
+これらのオプションは、Prefect の CLI や UI に代わる有効な手段となります。
 
 ## Terraform
 
@@ -15,12 +14,10 @@ import { home } from "/snippets/resource-management/vars.mdx"
 
 <TF name="resources" href={home.tf} />
 
-This documentation represents all Prefect resources that are supported by Terraform.
-This Terraform provider is maintained by the Prefect team, and is undergoing active development
-to reach [parity with the Prefect API](https://github.com/PrefectHQ/terraform-provider-prefect/milestone/1).
+このドキュメントは、Terraform でサポートされているすべての Prefect リソースについて説明しています。
+この Terraform プロバイダーは Prefect チームによってメンテナンスされており、[Prefect API との同等性](https://github.com/PrefectHQ/terraform-provider-prefect/milestone/1) を実現するために積極的に開発が進められています。
 
-The Prefect team welcomes contributions, feature requests, and bug reports
-via our [issue tracker](https://github.com/PrefectHQ/terraform-provider-prefect/issues).
+Prefect チームは、[課題トラッカー](https://github.com/PrefectHQ/terraform-provider-prefect/issues) を通じて、貢献、機能リクエスト、バグレポートを歓迎します。
 
 ## Helm
 
@@ -28,11 +25,9 @@ import { HELM } from "/snippets/resource-management/helm.mdx"
 
 <HELM name="resources" href={home.helm} />
 
-Each Helm chart subdirectory contains usage documentation. There are two main charts:
+各Helmチャートのサブディレクトリには、使用方法のドキュメントが含まれています。主なチャートは2つあります。
 
-- The `prefect-server` chart is used to a deploy a Prefect server. This is an alternative to using
-  [Prefect Cloud](https://app.prefect.cloud/).
-- The `prefect-worker` chart is used to deploy a [Prefect worker](/v3/deploy/infrastructure-concepts/workers).
+- `prefect-server`チャートは、Prefectサーバーをデプロイするために使用されます。これは、[Prefect Cloud](https://app.prefect.cloud/)の代替手段です。
+- `prefect-worker`チャートは、[Prefectワーカー](/v3/deploy/infrastructure-concepts/workers)をデプロイするために使用されます。
 
-Finally, there is a `prefect-prometheus-exporter` chart that is used to deploy a Prometheus exporter,
-exposing Prefect metrics for monitoring and alerting.
+最後に、`prefect-prometheus-exporter`チャートがあります。これは、監視とアラート用のPrefectメトリクスを公開するPrometheusエクスポーターをデプロイするために使用されます。

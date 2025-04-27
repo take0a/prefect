@@ -1,57 +1,57 @@
 ---
-title: Prefect server overview
-description: Self-host your own Prefect server instance.
+title: Prefect サーバーの概要
+description: 独自の Prefect サーバー インスタンスを自己ホストします。
 ---
 
-After installing Prefect, you have a Python SDK client that can communicate with 
-either [Prefect Cloud](/v3/manage/cloud/) or a self-hosted Prefect server, backed by a database and a UI.
+Prefect をインストールすると、データベースと UI を備えた [Prefect Cloud](/v3/manage/cloud/) またはセルフホスト型 Prefect サーバーと通信できる Python SDK クライアントが利用できるようになります。
 
-Prefect Cloud and self-hosted Prefect server share a common set of capabilities. 
-Prefect Cloud provides the additional features required by organizations such as RBAC, Audit logs, and SSO. 
-See the [Prefect Cloud overview](/v3/manage/cloud/) for more information.
+Prefect Cloud とセルフホスト型 Prefect サーバーは共通の機能を備えています。
+Prefect Cloud は、RBAC、監査ログ、SSO など、組織に必要な追加機能も提供します。
+詳細については、[Prefect Cloud の概要](/v3/manage/cloud/) をご覧ください。
 
 <Warning>
-We recommend using the same version of `prefect` for the client and server.
-Old clients are compatible with new servers, but new clients can be incompatible with old servers as new fields are added to the REST API.
-The server will typically return a 422 status code if any issues occur.
+クライアントとサーバーで同じバージョンの `prefect` を使用することをお勧めします。
+古いクライアントは新しいサーバーと互換性がありますが、REST API に新しいフィールドが追加されるため、新しいクライアントは古いサーバーと互換性がない場合があります。
+問題が発生した場合、サーバーは通常 422 ステータスコードを返します。
 </Warning>
 
-## The Prefect database
+## Prefect データベース
 
-The Prefect database persists data to track the state of your flow runs and related Prefect concepts, including:
+Prefect データベースは、フロー実行の状態と関連する Prefect の概念を追跡するためのデータを保持します。これには以下が含まれます。
 
-- Flow run and task run state
-- Run history
-- Logs
-- Deployments
-- Flow and task run concurrency limits
-- Storage blocks for flow and task results
-- Variables
-- Artifacts
-- Work pool status
+- フロー実行とタスク実行の状態
+- 実行履歴
+- ログ
+- デプロイメント
+- フロー実行とタスク実行の同時実行制限
+- フローとタスクの結果のストレージブロック
+- 変数
+- アーティファクト
+- ワークプールのステータス
 
-Prefect supports the following databases:
+Prefect は以下のデータベースをサポートしています:
 
-- SQLite (default in Prefect): Recommended for lightweight, single-server deployments. SQLite requires essentially no setup.
-- PostgreSQL: Best for connecting to external databases, but requires additional setup (such as Docker). 
-Prefect uses the [`pg_trgm`](https://www.postgresql.org/docs/current/pgtrgm.html) extension, so it must be installed and enabled.
+- SQLite (Prefect のデフォルト): 軽量な単一サーバー環境に適しています。SQLite は基本的に設定不要です。
+- PostgreSQL: 外部データベースへの接続に最適ですが、Docker などの追加設定が必要です。
+Prefect は [`pg_trgm`](https://www.postgresql.org/docs/current/pgtrgm.html) 拡張機能を使用するため、インストールして有効化する必要があります。
 
-### Using the database
+### データベースの使用
 
-A local SQLite database is the default database and is configured upon Prefect installation. 
-The database is located at `~/.prefect/prefect.db` by default.
+ローカルの SQLite データベースはデフォルトのデータベースで、Prefect のインストール時に設定されます。
+データベースはデフォルトで `~/.prefect/prefect.db` に保存されます。
 
-To reset your database, run the CLI command:  
+データベースをリセットするには、以下の CLI コマンドを実行します:
 
 ```bash
 prefect server database reset -y
 ```
 
-This command clears all data and reapplies the schema.
+このコマンドはすべてのデータをクリアし、スキーマを再適用します。
 
-### Database settings
+### データベース設定
 
-Prefect provides several settings for configuring the database. The default settings are:
+Prefect には、データベースを構成するためのいくつかの設定が用意されています。
+デフォルト設定は次のとおりです:
 
 ```bash
 PREFECT_API_DATABASE_CONNECTION_URL='sqlite+aiosqlite:///${PREFECT_HOME}/prefect.db'
@@ -60,51 +60,48 @@ PREFECT_API_DATABASE_MIGRATE_ON_START='True'
 PREFECT_API_DATABASE_PASSWORD='None'
 ```
 
-Save a setting to your active Prefect profile with `prefect config set`.
+`prefect config set` を使用して、アクティブな Prefect プロファイルに設定を保存します。
 
-### Configure a PostgreSQL database
+### PostgreSQL データベースの設定
 
-Connect Prefect to a PostgreSQL database by setting the following environment variable:
+以下の環境変数を設定して、Prefect を PostgreSQL データベースに接続します:
 
 ```bash
 prefect config set PREFECT_API_DATABASE_CONNECTION_URL="postgresql+asyncpg://postgres:yourTopSecretPassword@localhost:5432/prefect"
 ```
 
-The above environment variable assumes:
+上記の環境変数は、以下のことを前提としています。
 
-- You have a username called `postgres`
-- Your password is set to `yourTopSecretPassword`
-- Your database runs on the same host as the Prefect server instance, `localhost`
-- You use the default PostgreSQL port `5432`
-- Your PostgreSQL instance has a database called `prefect`
+- ユーザー名は「postgres」です。
+- パスワードは「yourTopSecretPassword」に設定されています。
+- データベースはPrefectサーバーインスタンスと同じホスト（「localhost」）で実行されています。
+- PostgreSQLのデフォルトポート「5432」を使用しています。
+- PostgreSQLインスタンスには「prefect」というデータベースがあります。
 
-#### Quickstart: configure a PostgreSQL database with Docker 
+#### クイックスタート：Docker で PostgreSQL データベースを構成する
 
-Start a PostgreSQL instance to use as your Prefect database with the following command 
-(which starts a Docker container running PostgreSQL):
+以下のコマンドで、Prefect データベースとして使用する PostgreSQL インスタンスを起動します（PostgreSQL を実行する Docker コンテナを起動します）。
 
 ```bash
 docker run -d --name prefect-postgres -v prefectdb:/var/lib/postgresql/data -p 5432:5432 -e POSTGRES_USER=postgres -e POSTGRES_PASSWORD=yourTopSecretPassword -e POSTGRES_DB=prefect postgres:latest
 ```
 
-The above command:
+上記のコマンドは、以下の処理を実行します:
 
-- Pulls the [latest](https://hub.docker.com/_/postgres?tab=tags) version of the official `postgres` Docker image, 
-which is compatible with Prefect.
-- Starts a container with the name `prefect-postgres`.
-- Creates a database `prefect` with a user `postgres` and `yourTopSecretPassword` password.
-- Mounts the PostgreSQL data to a Docker volume called `prefectdb` to provide persistence if you ever have to restart or 
-rebuild that container.
+- Prefect と互換性のある公式 `postgres` Docker イメージの [最新](https://hub.docker.com/_/postgres?tab=tags) バージョンをプルします。
+- `prefect-postgres` という名前のコンテナを起動します。
+- ユーザー `postgres` とパスワード `yourTopSecretPassword` を使用して、データベース `prefect` を作成します。
+- コンテナを再起動または再構築する必要がある場合に備えて、PostgreSQL データを `prefectdb` という Docker ボリュームにマウントします。
 
-Run the command below to set your current Prefect Profile to the PostgreSQL database instance running in your Docker container.
+以下のコマンドを実行して、現在の Prefect プロファイルを、Docker コンテナで実行されている PostgreSQL データベースインスタンスに設定します。
 
 ```bash
 prefect config set PREFECT_API_DATABASE_CONNECTION_URL="postgresql+asyncpg://postgres:yourTopSecretPassword@localhost:5432/prefect"
 ```
 
-### Confirm your PostgreSQL database configuration
+### PostgreSQL データベースの設定を確認してください。
 
-Inspect your Prefect profile to confirm that the environment variable has been properly set:
+Prefect プロファイルを調べて、環境変数が正しく設定されていることを確認してください。
 
 ```bash
 prefect config view --show-sources
@@ -118,112 +115,109 @@ PREFECT_API_DATABASE_CONNECTION_URL='********' (from profile)
 PREFECT_API_URL='http://127.0.0.1:4200/api' (from profile)
 ```
 
-Start the Prefect server to use your PostgreSQL database instance:
+PostgreSQL データベース インスタンスを使用するには、Prefect サーバーを起動します:
 
 ```bash
 prefect server start
 ```
 
-### In-memory database
+### インメモリデータベース
 
-To use an in-memory SQLite database, set the following environment variable:
+インメモリ SQLite データベースを使用するには、次の環境変数を設定します:
 
 ```bash
 prefect config set PREFECT_API_DATABASE_CONNECTION_URL="sqlite+aiosqlite:///file::memory:?cache=shared&uri=true&check_same_thread=false"
 ```
 
 <Warning>
-**Use SQLite database for testing only**
+**SQLite データベースはテストのみに使用してください**
 
-SQLite does not support multiprocessing. For high orchestration volume, use PostgreSQL.
+SQLite はマルチプロセスをサポートしていません。大規模なオーケストレーションには PostgreSQL を使用してください。
 </Warning>
 
-### Migrations
+### 移行
 
-Prefect uses [Alembic](https://alembic.sqlalchemy.org/en/latest/) to manage database migrations. Alembic is a
-database migration tool to use with the SQLAlchemy Database Toolkit for Python. Alembic provides a framework for
-generating and applying schema changes to a database.
+Prefect は、データベース移行の管理に [Alembic](https://alembic.sqlalchemy.org/en/latest/) を使用します。
+Alembic は、Python 用 SQLAlchemy データベースツールキットと併用するデータベース移行ツールです。
+Alembic は、データベースのスキーマ変更を生成および適用するためのフレームワークを提供します。
 
-Apply migrations to your database with the following commands:
+次のコマンドを使用して、データベースにマイグレーションを適用します:
 
-To upgrade:
+アップグレードするには:
 
 ```bash
 prefect server database upgrade -y
 ```
 
-To downgrade:
+ダウングレードするには:
 
 ```bash
 prefect server database downgrade -y
 ```
 
-Use the `-r` flag to specify a specific migration version to upgrade or downgrade to.
-For example, to downgrade to the previous migration version, run:
+アップグレードまたはダウングレードする特定の移行バージョンを指定するには、`-r` フラグを使用します。
+たとえば、以前の移行バージョンにダウングレードするには、次のコマンドを実行します:
 
 ```bash
 prefect server database downgrade -y -r -1
 ```
 
-or to downgrade to a specific revision:
+または特定のリビジョンにダウングレードするには:
 
 ```bash
 prefect server database downgrade -y -r d20618ce678e
 ```
 
-To downgrade all migrations, use the `base` revision.
+すべてのマイグレーションをダウングレードするには、`base` リビジョンを使用してください。
 
-See the [contributing docs](/contribute/dev-contribute) to learn how to create a database migration.
+データベースマイグレーションの作成方法については、[貢献ドキュメント](/contribute/dev-contribute) を参照してください。
 
 
-## Prefect server installation notes
+## Prefect サーバーのインストールに関する注意事項
 
-Your self-hosted server must meet the following requirements and configuration settings.
+セルフホストサーバーは、以下の要件と構成設定を満たしている必要があります。
 
 ### SQLite
 
-SQLite is not packaged with the Prefect installation. But most systems already have SQLite installed, and it is typically bundled with Python.
+SQLite は Prefect のインストールには含まれていません。
+しかし、ほとんどのシステムには既に SQLite がインストールされており、通常は Python にもバンドルされています。
 
-If you self-host a Prefect server instance with a SQLite database, certain Linux versions of SQLite can be problematic.
-Compatible versions include Ubuntu 22.04 LTS and Ubuntu 20.04 LTS.
+SQLite データベースを使用して Prefect サーバーインスタンスをセルフホストする場合、特定の Linux バージョンの SQLite で問題が発生する可能性があります。
+互換性のあるバージョンには、Ubuntu 22.04 LTS と Ubuntu 20.04 LTS が含まれます。
 
-To confirm SQLite is installed, run:
+SQLite がインストールされていることを確認するには、次のコマンドを実行します:
 
 ```bash
 sqlite3 --version
 ```
 
-### Use a self-signed SSL certificate
+### 自己署名SSL証明書を使用する
 
-When using a self-signed SSL certificate, you need to configure your environment to trust the certificate.
-Add the certificate to your system bundle and point your tools to use that bundle by configuring the 
-`SSL_CERT_FILE` environment variable.
+自己署名SSL証明書を使用する場合は、証明書を信頼するように環境を設定する必要があります。
+証明書をシステムバンドルに追加し、`SSL_CERT_FILE`環境変数を設定して、ツールがそのバンドルを使用するように指定します。
 
-If the certificate is not part of your system bundle, set the
-`PREFECT_API_TLS_INSECURE_SKIP_VERIFY` to `True` to disable certificate verification altogether.
+証明書がシステムバンドルに含まれていない場合は、`PREFECT_API_TLS_INSECURE_SKIP_VERIFY`を`True`に設定して、証明書の検証を完全に無効にしてください。
 
 <Warning>
-Disabling certificate validation is insecure and only suggested as an option for testing.
+証明書の検証を無効にすることは安全ではないため、テスト用のオプションとしてのみ提案されます。
 </Warning>
 
-### Proxies
+### プロキシ
 
-Prefect supports communicating with proxies through environment variables.
-Whether you use a Prefect Cloud account or self-host a Prefect server instance, set `HTTPS_PROXY` and 
-`SSL_CERT_FILE` in your environment. 
-Then the underlying network libraries will route Prefect's requests appropriately.
+Prefect は、環境変数を介してプロキシとの通信をサポートしています。
+Prefect Cloud アカウントを使用する場合でも、Prefect サーバーインスタンスをセルフホストする場合でも、環境に `HTTPS_PROXY` と `SSL_CERT_FILE` を設定してください。
+そうすることで、基盤となるネットワークライブラリが Prefect のリクエストを適切にルーティングします。
 
-Alternatively, the Prefect library connects to the API through any proxies you have listed in the `HTTP_PROXY` or 
-`ALL_PROXY` environment variables.
-You may also use the `NO_PROXY` environment variable to specify which hosts should not pass through the proxy.
+また、Prefect ライブラリは、`HTTP_PROXY` または `ALL_PROXY` 環境変数に指定されたプロキシを介して API に接続します。
+また、`NO_PROXY` 環境変数を使用して、プロキシを経由しないホストを指定することもできます。
 
-For more information about these environment variables, see the [cURL documentation](https://everything.curl.dev/usingcurl/proxies/env).
+これらの環境変数の詳細については、[cURL ドキュメント](https://everything.curl.dev/usingcurl/proxies/env) を参照してください。
 
 #### UI
 
-When self-hosting the UI behind a proxy or reverse proxy, there are a few settings you may need to keep in mind:
+プロキシまたはリバースプロキシの背後でUIをセルフホストする場合、いくつかの設定に留意する必要があります。
 
-- `PREFECT_UI_API_URL`: the connection URL for communication from the UI to the API
-- `PREFECT_UI_SERVE_BASE`: the base URL path to serve the UI from
-- `PREFECT_UI_URL`: this is a convenience setting for _clients_ that print or log UI URLs (for example, the Prefect CLI)
+- `PREFECT_UI_API_URL`: UIからAPIへの通信用の接続URL
+- `PREFECT_UI_SERVE_BASE`: UIを提供するベースURLパス
+- `PREFECT_UI_URL`: UI URLを出力またはログに記録する_クライアント_（例: Prefect CLI）向けの便利な設定です。
 

@@ -1,33 +1,33 @@
 ---
-title: Secure access over PrivateLink
-description: Manage network access to Prefect Cloud accounts over PrivateLink.
+title: PrivateLink経由の安全なアクセス
+description: PrivateLink 経由で Prefect Cloud アカウントへのネットワーク アクセスを管理します。
 ---
 
-PrivateLink is an available upgrade to certain Enterprise plans.  
-[PrivateLink](https://aws.amazon.com/privatelink/) enables account administrators to restrict access to Prefect Cloud APIs and the UI at the network level, by routing all network traffic through AWS and GCP.  
-Traffic between your network and Prefect Cloud is encrypted, and does not traverse the public internet.  
+PrivateLink は、一部の Enterprise プランへのアップグレードとしてご利用いただけます。
+[PrivateLink](https://aws.amazon.com/privatelink/) を使用すると、アカウント管理者はすべてのネットワークトラフィックを AWS と GCP 経由でルーティングすることで、Prefect Cloud API と UI へのアクセスをネットワークレベルで制限できます。
+お客様のネットワークと Prefect Cloud 間のトラフィックは暗号化され、パブリックインターネットを経由することはありません。
 
-To learn more, please contact your account manager or the Prefect team at sales@prefect.io.
+詳細については、アカウントマネージャーまたは Prefect チーム（sales@prefect.io）までお問い合わせください。
 
-Your Prefect team will provide the service endpoint to register.
-Provide the following information for the registered endpoint so that Prefect can accept the connection:
+登録用のサービスエンドポイントは、Prefect チームが提供します。
+Prefect が接続を承認できるように、登録済みのエンドポイントについて以下の情報をご提供ください。
 
-- AWS Account Number
-- AWS VPC IDs
-- Source Region for each VPC (for example, `us-east-1`, `us-east-2`, etc.)
-- VPC Endpoint ID
+- AWS アカウント番号
+- AWS VPC ID
+- 各 VPC のソースリージョン（例：`us-east-1`、`us-east-2` など）
+- VPC エンドポイント ID
 
-Prefect will match your pending connection to the information provided, and accept the connection once approved.
+Prefect は、保留中の接続と提供された情報を照合し、承認されると接続を承認します。
 
-Once accepted, customers should enable "Modify Private DNS" to ensure the VPCs can resolve the Prefect service endpoint.
+承認後、VPC が Prefect サービスエンドポイントを解決できるように、「プライベート DNS の変更」を有効にする必要があります。
 
-With Private DNS and the accepted connection, connectivity can be validated through curl:
+プライベート DNS と承認された接続があれば、curl で接続を検証できます。
 
 ```bash
 curl -i https://api-internal.private.prefect.cloud/api/health
 ```
 
-To configure Prefect clients and workers to use the endpoint, `PREFECT_API_URL` and `PREFECT_CLOUD_API_URL` should be set to the endpoint provided by Prefect.
+エンドポイントを使用するように Prefect クライアントとワーカーを構成するには、`PREFECT_API_URL` と `PREFECT_CLOUD_API_URL` を Prefect が提供するエンドポイントに設定する必要があります。
 
 ```bash
 prefect config set PREFECT_API_URL=https://api-internal.private.prefect.cloud/api/accounts/<ACCOUNT_ID>/workspaces/<WORKSPACE_ID>

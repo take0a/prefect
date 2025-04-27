@@ -1,24 +1,24 @@
 ---
 title: Docker
-description: Self-host your own Prefect server instance with Docker.
+description: Docker を使用して独自の Prefect サーバー インスタンスをセルフホストします。
 ---
 
-You can use the official Prefect Docker image to run a server in a container.
+コンテナ内でサーバーを実行するには、Prefect 公式 Docker イメージを使用できます。
 
-If you're running a server in a Docker container, you need to:
+Docker コンテナ内でサーバーを実行する場合は、以下の手順が必要です。
 
-- Port forward the server to your local machine (e.g. `-p 4200:4200`)
-- Set the `--host` flag on the `prefect server start` command to `0.0.0.0`
-- Set the API server address, `PREFECT_API_URL`, to use Prefect within a container.
+- サーバーのポートをローカルマシンに転送します (例: `-p 4200:4200`)。
+- `prefect server start` コマンドの `--host` フラグを `0.0.0.0` に設定します。
+- コンテナ内で Prefect を使用するには、API サーバーのアドレス (`PREFECT_API_URL`) を設定します。
 
-For example:
+例:
 
 ```bash
 docker run -p 4200:4200 -d --rm prefecthq/prefect:3-latest -- prefect server start --host 0.0.0.0
 ```
 
 <Tip>
-The `-d` flag runs the container in detached mode (i.e. in the background) and the `--rm` flag removes the container once it is stopped.
+`-d` フラグはコンテナをデタッチモード (つまりバックグラウンド) で実行し、`--rm` フラグはコンテナが停止したらそれを削除します。
 </Tip>
 
-For more information, see the Docker topic about [Networking using the host network](https://docs.docker.com/network/network-tutorial-host/).
+詳細については、[ホスト ネットワークを使用したネットワーク](https://docs.docker.com/network/network-tutorial-host/)に関する Docker トピックを参照してください。

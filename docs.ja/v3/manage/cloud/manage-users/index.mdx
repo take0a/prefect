@@ -1,59 +1,51 @@
 ---
-title: Manage user accounts
-description: Special features for Prefect Cloud users
+title: ユーザーアカウントを管理する
+description: Prefect Cloudユーザー向けの特別な機能
 ---
 
-Sign up for a Prefect Cloud account at [app.prefect.cloud](https://app.prefect.cloud).
+[app.prefect.cloud](https://app.prefect.cloud) で Prefect Cloud アカウントにサインアップします。
 
 <Note>
-An individual user can be invited to become a member of other accounts.
+個々のユーザーを他のアカウントのメンバーになるよう招待することができます。
 </Note>
 
-## User settings
+## ユーザー設定
 
-You can access your personal settings in the [profile menu](https://app.prefect.cloud/my/profile), including:
+[プロフィールメニュー](https://app.prefect.cloud/my/profile)から、以下の個人設定にアクセスできます:
 
-- **Profile**: View and edit basic information, such as name.
-- **API keys**: Create and view [API keys](/v3/manage/cloud/manage-users/api-keys/) 
-for connecting to Prefect Cloud from the CLI or other environments.
-- **Preferences**: Manage settings, such as color mode and default time zone.
-- **Feature previews**: Enable or disable feature previews.
+- **プロフィール**: 名前などの基本情報の表示と編集。
+- **APIキー**: CLIやその他の環境からPrefect Cloudに接続するための[APIキー](/v3/manage/cloud/manage-users/api-keys/)の作成と表示。
+- **設定**: カラーモードやデフォルトのタイムゾーンなどの設定を管理。
+- **機能プレビュー**: 機能プレビューを有効または無効にできます。
 
-## Account roles
+## アカウントロール
 
-Users who are part of an account can hold the role of Admin or Member.
-Admins can invite other users to join the account and manage the account's workspaces and teams.
+アカウントに所属するユーザーは、管理者またはメンバーのロールを持つことができます。
+管理者は、他のユーザーをアカウントに招待し、アカウントのワークスペースとチームを管理できます。
 
-Admins on Pro and Enterprise tier Prefect Cloud accounts can grant members of the account 
-[roles](/v3/manage/cloud/manage-users/manage-roles/) in a workspace, such as Runner or Viewer.
-Custom roles are available on Enterprise tier accounts.
+Pro および Enterprise レベルの Prefect Cloud アカウントの管理者は、アカウントのメンバーにワークスペース内の [ロール](/v3/manage/cloud/manage-users/manage-roles/)（ランナーやビューアーなど）を付与できます。
+Enterprise レベルのアカウントでは、カスタムロールをご利用いただけます。
 
-## API keys
+## APIキー
 
-[API keys](/v3/manage/cloud/manage-users/api-keys/) enable you to authenticate an environment to work with Prefect Cloud.
+[APIキー](/v3/manage/cloud/manage-users/api-keys/)を使用すると、Prefect Cloud を使用する環境を認証できます。
 
-## Service accounts (Pro) (Enterprise)
+## サービスアカウント (Pro) (Enterprise)
 
-[Service accounts](/v3/manage/cloud/manage-users/service-accounts/) enable you to create a 
-Prefect Cloud API key that is not associated with a user account.
+[サービスアカウント](/v3/manage/cloud/manage-users/service-accounts/) を使用すると、ユーザーアカウントに関連付けられていない Prefect Cloud API キーを作成できます。
 
-## Single sign-on (Pro)
+## シングルサインオン（Pro）
 
-Enterprise tier plans offer [single sign-on (SSO)](/v3/manage/cloud/manage-users/configure-sso/) 
-integration with your team's identity provider, including options for 
-[directory sync and SCIM provisioning](/v3/manage/cloud/manage-users/configure-sso/#directory-sync).
+エンタープライズプランでは、チームのIDプロバイダとの[シングルサインオン（SSO）](/v3/manage/cloud/manage-users/configure-sso/)連携が利用可能で、[ディレクトリ同期]および[SCIM Pro]のオプションもご利用いただけます。visioning](/v3/manage/cloud/manage-users/configure-sso/#directory-sync).
 
-## Audit log (Pro) (Enterprise)
+## 監査ログ (Pro) (Enterprise)
 
-[Audit logs](/v3/manage/cloud/manage-users/audit-logs/) provide a chronological record of 
-activities performed by Prefect Cloud users who are members of an account.
+[監査ログ](/v3/manage/cloud/manage-users/audit-logs/) は、アカウントのメンバーである Prefect Cloud ユーザーが実行したアクティビティの時系列記録を提供します。
 
-## Object-level access control lists (Enterprise)
+## オブジェクトレベルのアクセス制御リスト(Enterprise)
 
-Prefect Cloud's Enterprise plan offers object-level access control lists (ACLs) to 
-restrict access to specific users and service accounts within a workspace.
+Prefect Cloud のエンタープライズプランでは、ワークスペース内の特定のユーザーとサービスアカウントへのアクセスを制限できるオブジェクトレベルのアクセス制御リスト（ACL）をご利用いただけます。
 
-## Teams (Enterprise)
+## チーム (Enterprise)
 
-Users of Enterprise tier Prefect Cloud accounts can be added to 
-[Teams](/v3/manage/cloud/manage-users/manage-teams/) to simplify access control governance.
+Prefect Cloud Enterprise アカウントのユーザーを [チーム](/v3/manage/cloud/manage-users/manage-teams/) に追加することで、アクセス制御ガバナンスを簡素化できます。

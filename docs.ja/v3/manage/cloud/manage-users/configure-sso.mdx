@@ -1,50 +1,47 @@
 ---
-title: Configure single sign-on
-description: Configure single sign-on (SSO) for your Prefect Cloud users.
+title: シングルサインオンを構成する
+description: Prefect Cloud ユーザー向けにシングル サインオン (SSO) を構成します。
 ---
 
-Prefect Cloud's [Enterprise plans](https://www.prefect.io/pricing) offer single sign-on (SSO) integration with your team's identity provider.
-You can set up SSO integration with any identity provider that supports:
+Prefect Cloud の [エンタープライズプラン](https://www.prefect.io/pricing) では、チームの ID プロバイダーとのシングルサインオン (SSO) 統合が提供されます。
+以下の機能をサポートする任意の ID プロバイダーと SSO 統合を設定できます:
 
 - OIDC
 - SAML 2.0
 
-When using SSO, Prefect Cloud won't store passwords for any accounts managed by your identity provider.
-Members of your Prefect Cloud account will log in and authenticate using your identity provider.
+SSO を使用する場合、Prefect Cloud は ID プロバイダが管理するアカウントのパスワードを保存しません。
+Prefect Cloud アカウントのメンバーは、ID プロバイダを使用してログインおよび認証します。
 
-Once your SSO integration is set up, non-admins are required to authenticate through the SSO provider when 
-accessing account resources.
+SSO 統合が設定されると、管理者以外のユーザーはアカウントリソースにアクセスする際に SSO プロバイダを介して認証する必要があります。
 
-See the [Prefect Cloud plans](https://www.prefect.io/pricing) to learn more about options for supporting more users and 
-workspaces, service accounts, and SSO.
+より多くのユーザー、ワークスペース、サービスアカウント、および SSO をサポートするためのオプションの詳細については、[Prefect Cloud プラン](https://www.prefect.io/pricing) をご覧ください。
 
-## Configure SSO
+## SSO の設定
 
-Within your account, select the **SSO** page to enable SSO for users.
+アカウント内で「**SSO**」ページを選択し、ユーザーの SSO を有効にしてください。
 
-If you haven't enabled SSO for a domain yet, enter the email domains for enabling SSO in Prefect Cloud, and save it.
+ドメインでまだ SSO を有効にしていない場合は、Prefect Cloud で SSO を有効にするメールドメインを入力し、保存してください。
 
-Under **Enabled Domains**, select the domains from the **Domains** list, then select **Generate Link**. 
-This step creates a link to configure SSO with your identity provider.
+「**有効なドメイン**」の下にある「**ドメイン**」リストからドメインを選択し、「**リンクを生成**」を選択してください。
+この手順により、ID プロバイダで SSO を設定するためのリンクが作成されます。
 
-
-Using the provided link, navigate to the Identity Provider Configuration dashboard and select your identity provider to continue 
-configuration. If your provider isn't listed, try `SAML` or `Open ID Connect` instead.
+提供されたリンクを使用して「ID プロバイダ設定」ダッシュボードに移動し、ID プロバイダを選択して設定を続行してください。
+ご利用のプロバイダがリストにない場合は、「SAML」または「Open ID Connect」をお試しください。
 
 ![Opening the Identity Provider Configuration dashboard.](/v3/img/ui/cloud-sso-dashboard.png)
 
-Once you complete SSO configuration, your users must authenticate through your identity provider when accessing account resources, giving you full control over application access.
+SSO 構成が完了すると、ユーザーはアカウント リソースにアクセスするときに ID プロバイダーを通じて認証する必要があり、アプリケーション アクセスを完全に制御できるようになります。
 
-## Directory sync
+## ディレクトリ同期
 
-**Directory sync** automatically provisions and de-provisions users for your account.
+**ディレクトリ同期** は、アカウントのユーザーのプロビジョニングとデプロビジョニングを自動的に実行します。
 
-Provisioned users are given basic “Member” roles and have access to any resources that role entails.
+プロビジョニングされたユーザーには基本的な「メンバー」ロールが付与され、そのロールに必要なすべてのリソースにアクセスできます。
 
-When a user is unassigned from the Prefect Cloud application in your identity provider, they automatically lose access to 
-Prefect Cloud resources. This allows your IT team to control access to Prefect Cloud without signing into the Prefect UI.
+アイデンティティプロバイダで Prefect Cloud アプリケーションからユーザーの割り当てが解除されると、そのユーザーは自動的に Prefect Cloud リソースにアクセスできなくなります。
+これにより、IT チームは Prefect UI にサインインすることなく、Prefect Cloud へのアクセスを制御できます。
 
-## SCIM Provisioning
+## SCIM プロビジョニング
 
-Enterprise plans have access to SCIM for user provisioning.
-The SSO tab provides access to enable SCIM provisioning.
+エンタープライズプランでは、ユーザープロビジョニングのために SCIM にアクセスできます。
+SSO タブから SCIM プロビジョニングを有効にすることができます。

@@ -1,96 +1,99 @@
 ---
-title: Manage workspaces
-description: Organize and compartmentalize your workflows with workspaces.
+title: ワークスペースを管理する
+description: ワークスペースを使用してワークフローを整理し、区分します。
 ---
 
-A workspace is a discrete environment within Prefect Cloud for your workflows and related information. 
-For example, you can use separate workspaces to isolate dev, staging, and prod environments, or to provide separation between different teams.
+ワークスペースとは、Prefect Cloud 内でワークフローや関連情報のための独立した環境です。
+たとえば、開発環境、ステージング環境、本番環境を分離したり、異なるチームを分離したりするために、個別のワークスペースを使用できます。
 
-## Get started with workspaces
+## ワークスペースを使い始めましょう
 
-When you first log into Prefect Cloud, you are prompted to create your own workspace. 
+Prefect Cloud に初めてログインすると、独自のワークスペースを作成するように求められます。
 
-To see all workspace workspaces you can access, click on your workspace name in the top of the navigation sidebar.
-To see all workspace workspaces you can access, click on your workspace name in the top of the navigation sidebar.
+アクセスできるすべてのワークスペースを表示するには、ナビゲーションサイドバーの上部にあるワークスペース名をクリックします。
+アクセスできるすべてのワークスペースを表示するには、ナビゲーションサイドバーの上部にあるワークスペース名をクリックします。
 
-Your list of available workspaces may include:
+利用可能なワークスペースのリストには、以下のものが含まれます。
 
-*   Your own account's workspace.
-*   Workspaces in an account you're invited to with Admin or Member access.
+* ご自身のアカウントのワークスペース。
+* 管理者またはメンバー権限で招待されたアカウントのワークスペース。
 
-Your user permissions within workspaces may vary. Account admins can assign roles and permissions at the workspace level.
+ワークスペース内のユーザー権限は異なる場合があります。アカウント管理者は、ワークスペースレベルで役割と権限を割り当てることができます。
 
-## Create a workspace
+## ワークスペースを作成する
 
-On the Account settings dropdown, select the "Create a new workspace" button to create a new workspace.
+アカウント設定のドロップダウンで、「新しいワークスペースを作成」ボタンを選択し、新しいワークスペースを作成します。
 
-Configure:
+以下の項目を設定します。
 
-*   The **Workspace Owner** from the dropdown account menu options.
-*   A unique **Workspace Name** must be unique within the account.
-*   An optional description for the workspace.
+* ドロップダウンのアカウントメニューオプションから、**ワークスペース所有者** を選択します。
+* **ワークスペース名** はアカウント内で一意である必要があります。
+* ワークスペースの説明（任意）
 
-Select **Create** to create the new workspace. The number of available workspaces varies by [Prefect Cloud plan](https://www.prefect.io/pricing/). 
-See [Pricing](https://www.prefect.io/pricing/) if you need additional workspaces or users.
+**作成** を選択して新しいワークスペースを作成します。利用可能なワークスペースの数は、[Prefect Cloud プラン](https://www.prefect.io/pricing/) によって異なります。
+追加のワークスペースまたはユーザーが必要な場合は、[料金](https://www.prefect.io/pricing/) をご覧ください。
 
-## Control access 
+## アクセス制御
 
-Within a Prefect Cloud Pro or Enterprise tier account, workspace owners can invite other people as members, and provision [service accounts](https://docs.prefect.io/ui/service-accounts/) to a workspace. 
-A workspace owner assigns a [workspace role](https://docs.prefect.io/ui/roles/) to the user and specifies the user's scope of permissions within the workspace.
+Prefect Cloud Pro または Enterprise レベルのアカウントでは、ワークスペースオーナーは他のユーザーをメンバーとして招待したり、ワークスペースに [サービスアカウント](https://docs.prefect.io/ui/service-accounts/) をプロビジョニングしたりできます。
+ワークスペースオーナーは、ユーザーに [ワークスペースロール](https://docs.prefect.io/ui/roles/) を割り当て、ワークスペース内でのユーザーの権限範囲を指定します。
 
-As a workspace owner, select **Workspaces -> Members** to manage members and **Workspaces -> Service Accounts** and service accounts for the workspace.
-Previously invited individuals or provisioned service accounts are listed here.
+ワークスペースオーナーは、**[ワークスペース] -> [メンバー]** を選択してメンバーを管理し、**[ワークスペース] -> [サービスアカウント]** を選択してワークスペースのサービスアカウントを管理します。
 
-To invite someone to an account, select the **Members +** icon. You can select from a list of existing account members.
+以前に招待されたユーザーやプロビジョニング済みのサービスアカウントがここに表示されます。
 
-Select a role for the user. This is the initial role for the user within the workspace.
-A workspace owner can change this role at any time.
+アカウントにユーザーを招待するには、**[メンバー +]** アイコンを選択します。既存のアカウントメンバーのリストから選択できます。
 
-To remove a workspace member, select **Remove** from the menu on the right side of the user information on this page.
+ユーザーのロールを選択します。これは、ワークスペース内でのユーザーの初期ロールです。
 
-To add a service account to a workspace, select the **Service Accounts +** icon. 
-Select a **Name**, **Account Role**, **Expiration Date**, and optionally, a **Workspace**. 
+ワークスペースオーナーは、このロールをいつでも変更できます。
 
-To update, delete, or rotate the API key for a service account, select an option for an existing service account from the menu on the right side of the service account.
+ワークスペースのメンバーを削除するには、このページのユーザー情報の右側にあるメニューから [**削除**] を選択します。
 
-## Transfer a workspace
+ワークスペースにサービスアカウントを追加するには、[**サービスアカウント +**] アイコンを選択します。
+**名前**、**アカウントロール**、**有効期限**、およびオプションで**ワークスペース** を選択します。
 
-Workspace transfer enables you to move an existing workspace from one account to another.
+サービスアカウントの API キーを更新、削除、またはローテーションするには、サービスアカウントの右側にあるメニューから既存のサービスアカウントのオプションを選択します。
 
-Workspace transfer retains existing workspace configuration and flow run history, including blocks, deployments, automations, work pools, and logs.
+## ワークスペースの移行
+
+ワークスペースの移行を使用すると、既存のワークスペースをあるアカウントから別のアカウントに移動できます。
+
+ワークスペースの移行では、ブロック、デプロイメント、オートメーション、ワークプール、ログなど、既存のワークスペース構成とフロー実行履歴が保持されます。
 
 <Note>
-**Workspace transfer permissions**
+**ワークスペースの移行権限**
 
-You must have administrator privileges to initiate or approve a workspace transfer.
+ワークスペースの移行を開始または承認するには、管理者権限が必要です。
 
-To initiate a workspace transfer between personal accounts, contact [support@prefect.io](mailto:support@prefect.io).
+個人アカウント間でワークスペースの移行を開始するには、[support@prefect.io](mailto:support@prefect.io) までご連絡ください。
 </Note>
 
-Click on the name of your workspace in the sidebar navigation and select **Workspace settings**.
+サイドバーナビゲーションでワークスペース名をクリックし、「**ワークスペース設定**」を選択します。
 
-From the three dot menu in the upper right of the page, select **Transfer**.
+ページ右上の3点メニューから、「**移行**」を選択します。
 
-The **Transfer Workspace** page shows the workspace to be transferred on the left. 
-Select the target account for the workspace on the right.
+「**ワークスペースの移行**」ページの左側に移行先のワークスペースが表示されます。
+右側で、ワークスペースの移行先アカウントを選択します。
 
 <Tip>
-**Workspace transfer impact on accounts**
+**ワークスペースの移行によるアカウントへの影響**
 
-Workspace transfer may impact resource usage and costs for source and target accounts.
+ワークスペースの移行は、移行元アカウントと移行先アカウントのリソース使用量とコストに影響を与える可能性があります。
 
-When you transfer a workspace, users, API keys, and service accounts may lose access to the workspace. 
-The audit log will no longer track activity on the workspace. 
-Flow runs ending outside of the destination account's flow run retention period will be removed. 
-You may also need to update Prefect CLI profiles and execution environment settings to access the workspace's new location.
+ワークスペースを移行すると、ユーザー、API キー、およびサービスアカウントはワークスペースにアクセスできなくなる可能性があります。
 
-You may incur new charges in the target account to accommodate the transferred workspace.
+監査ログはワークスペース上のアクティビティを追跡しなくなります。
+移行先アカウントのフロー実行保持期間外に終了したフロー実行は削除されます。
+また、ワークスペースの新しい場所にアクセスするために、Prefect CLI プロファイルと実行環境の設定を更新する必要がある場合もあります。
+
+移行先のアカウントで、移行されたワークスペースに対応するために新たな料金が発生する場合があります。
 </Tip>
 
-## Delete a workspace
+## ワークスペースを削除する
 
-Deleting a workspace deletes all of its data including deployments, flow run history, work pools, and automations.
+ワークスペースを削除すると、デプロイメント、フロー実行履歴、ワークプール、自動化など、そのワークスペースのすべてのデータが削除されます。
 
-Click on the name of your workspace in the sidebar navigation and select **Workspace settings**.
+サイドバーナビゲーションでワークスペース名をクリックし、「**ワークスペース設定**」を選択します。
 
-From the three dot menu in the upper right of the page, select **Delete**.
+ページ右上の3点メニューから、「**削除**」を選択します。

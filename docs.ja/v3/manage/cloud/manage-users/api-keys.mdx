@@ -1,47 +1,45 @@
 ---
-title: Manage API keys
-description: Create an API key to access Prefect Cloud from a local execution environment.
+title: APIキーを管理する
+description: ローカル実行環境から Prefect Cloud にアクセスするための API キーを作成します。
 ---
 
-API keys enable you to authenticate a local environment to work with Prefect Cloud.
+APIキーを使用すると、Prefect Cloud を使用するためのローカル環境の認証が可能になります。
 
-If you run `prefect cloud login` from your CLI, you can authenticate through your browser or by pasting an API key.
+CLI から `prefect cloud login` を実行する場合、ブラウザ経由、または API キーを貼り付けて認証できます。
 
-Authenticating through the browser directs you to an authorization page.
-After you grant approval to connect, you're redirected to the CLI and the API key is saved to your local 
-[Prefect profile](/v3/develop/settings-and-profiles/).
+ブラウザ経由で認証すると、認証ページが表示されます。
+接続を承認すると、CLI にリダイレクトされ、API キーがローカルの [Prefect プロファイル](/v3/develop/settings-and-profiles/) に保存されます。
 
-If you choose to authenticate by pasting an API key, you must create an API key in the Prefect Cloud UI first.
+APIキーを貼り付けて認証する場合は、まず Prefect Cloud UI で API キーを作成する必要があります。
 
-## Create an API key
+## APIキーの作成
 
-1. Select the account icon at the bottom-left corner of the UI.
-2. Select **API Keys**.
-The page displays a list of previously generated keys, and allows you to create or delete API keys.
-3. Select the **+** button to create a new API key.
-Provide a name for the key and an expiration date.
+1. UIの左下にあるアカウントアイコンを選択します。
+2. **APIキー**を選択します。
+このページには、以前に生成されたキーのリストが表示され、APIキーの作成または削除が可能です。
+3. **+**ボタンを選択して、新しいAPIキーを作成します。
+キーの名前と有効期限を入力します。
 
 <Warning>
-Copy the key to a secure location since an API key cannot be revealed again in the UI after it is generated. 
+API キーは生成後に UI で再度公開することはできないため、キーを安全な場所にコピーします。
 </Warning>
 
-## Log in to Prefect Cloud with an API Key
+## APIキーでPrefect Cloudにログインする
 
 ```bash
 prefect cloud login -k '<my-api-key>'
 ```
 
-Alternatively, if you don't have a CLI available - for example, if you are connecting to Prefect Cloud within a remote serverless environment - set the `PREFECT_API_KEY` environment variable. 
+あるいは、CLI が利用できない場合（例えば、リモートサーバーレス環境内で Prefect Cloud に接続する場合など）は、`PREFECT_API_KEY` 環境変数を設定してください。
 
-For more information see [Connect to Prefect Cloud](/v3/manage/cloud/connect-to-cloud).
+詳細については、[Prefect Cloud への接続](/v3/manage/cloud/connect-to-cloud) を参照してください。
 
-## Service account API keys (Pro) (Enterprise)
+## サービスアカウント API キー (Pro) (Enterprise)
 
-Service accounts are a feature of Prefect Cloud [Pro and Enterprise tier plans](https://www.prefect.io/pricing) that enable you to 
-create a Prefect Cloud API key that is not associated with a user account.
+サービスアカウントは、Prefect Cloud [Pro および Enterprise プラン](https://www.prefect.io/pricing) の機能であり、ユーザーアカウントに関連付けられていない Prefect Cloud API キーを作成できます。
 
-Service accounts are useful for configuring API access for running workers, or executing flow runs on remote infrastructure. 
-Events and logs for flow runs in those environments are associated with the service account rather than a user. Manage or revoke API access by  
-configuring or removing the service account without disrupting user access.
+サービスアカウントは、ワーカーの実行やリモートインフラストラクチャでのフロー実行のための API アクセスを構成する際に便利です。
+これらの環境でのフロー実行のイベントとログは、ユーザーではなくサービスアカウントに関連付けられます。
+サービスアカウントを構成したり削除したりすることで、ユーザーアクセスを中断することなく API アクセスを管理または取り消すことができます。
 
-See [service accounts](/v3/manage/cloud/manage-users/service-accounts/) for more information.
+詳細については、[サービスアカウント](/v3/manage/cloud/manage-users/service-accounts/) をご覧ください。

@@ -1,43 +1,42 @@
 ---
-title: Rate limits and data retention
-description: Prefect Cloud API rate limits.
+title: レート制限とデータ保持
+description: Prefect Cloud API のレート制限。
 ---
 
-Prefect Cloud has controls in place to ensure stability.
+Prefect Cloud には、安定性を確保するための制御機能が備わっています。
 
-## API Rate Limits
+## API レート制限
 
 <Note>
-**Prefect Cloud rate limits are subject to change**
+**Prefect Cloud のレート制限は変更される場合があります**
 
-**API rate limits are subject to change.**
-Contact Prefect support at [help@prefect.io](mailto:help@prefect.io) with questions about rate limits.
+**API のレート制限は変更される場合があります**
+レート制限に関するご質問は、Prefect サポート（[help@prefect.io](mailto:help@prefect.io)）までお問い合わせください。
 </Note>
 
-Prefect Cloud's API rate limits restrict the number of requests that a single client can make to certain endpoints in a given time period. 
-The `flow_runs`, `task_runs`, and `flows` endpoints and their subroutes are limited to:
+Prefect Cloud の API レート制限は、特定のエンドポイントに対して、一定期間内に単一のクライアントから送信できるリクエスト数を制限します。
+`flow_runs`、`task_runs`、`flows` エンドポイントとそのサブルートは、以下のレート制限を受けます。
 
-- 400 requests per minute for Free accounts
-- 2,000 requests per minute for Pro accounts
+- Free アカウントの場合、1 分あたり 400 リクエスト
+- Pro アカウントの場合、1 分あたり 2,000 リクエスト
 
-These endpoints return a `429` response with an appropriate `Retry-After` header if this limit is triggered. See [ClientSettings](/v3/develop/settings-ref#clientsettings) for more information on how retries are handled client-side and how to modify the default behavior.
+これらのエンドポイントは、この制限に達した場合、適切な `Retry-After` ヘッダーを含む `429` レスポンスを返します。
+クライアント側での再試行の処理方法とデフォルトの動作を変更する方法の詳細については、[ClientSettings](/v3/develop/settings-ref#clientsettings) を参照してください。
 
-The `logs` endpoint is limited to:
+`logs` エンドポイントの制限は以下のとおりです。
 
-- 700 logs per minute for Free accounts
-- 10,000 logs per minute for Pro accounts
+- 無料アカウントの場合、1分あたり700件のログ
+- Pro アカウントの場合、1分あたり10,000件のログ
 
-The endpoint returns a `429` response if this limit is triggered.
+この制限を超えた場合、エンドポイントは `429` レスポンスを返します。
 
-## Metadata retention period
+## メタデータの保持期間
 
-Flow run, task run, and artifact metadata is retained according to your Prefect Cloud account's retention period.
-The retention period applies to all workspaces that belong to the account.
+フロー実行、タスク実行、およびアーティファクトのメタデータは、Prefect Cloud アカウントの保持期間に従って保持されます。
+この保持期間は、アカウントに属するすべてのワークスペースに適用されます。
 
-The retention period is the number of days that metadata is available after it is created. 
-For flow and task runs, it is calculated from the time the run reaches a 
-[terminal state](/v3/develop/manage-states/#state-types). 
-Subflow runs are retained independently from their parent flow runs. They are removed based on 
-the time each subflow run reaches a terminal state.
+保持期間とは、メタデータが作成されてから利用可能な日数です。
+フロー実行とタスク実行の場合、保持期間は実行が[ターミナル状態](/v3/develop/manage-states/#state-types)に達した時点から計算されます。
+サブフロー実行は、親フロー実行とは独立して保持されます。各サブフロー実行がターミナル状態に達した時点に基づいて削除されます。
 
-If you have needs that require a custom retention period, [contact Prefect's sales team](https://www.prefect.io/pricing).
+カスタム保持期間が必要な場合は、[Prefect の営業チームにお問い合わせください](https://www.prefect.io/pricing)。

@@ -1,47 +1,49 @@
 ---
-title: Prefect Cloud overview
-description: Observe and orchestrate workflow applications with the Prefect Cloud platform.
+title: Prefect Cloudの概要
+description: Prefect Cloud プラットフォームを使用してワークフロー アプリケーションを監視および調整します。
 ---
 
-Prefect Cloud is a hosted workflow application platform with all the capabilities of the open source Prefect server plus additional features.
+Prefect Cloud は、オープンソースの Prefect サーバーの全機能に加え、追加機能を備えたホスト型ワークフローアプリケーションプラットフォームです。
 
-- [Connect to Prefect Cloud](/v3/manage/cloud/connect-to-cloud/) shows how to configure a local execution environment to access Prefect Cloud.
+- [Prefect Cloud への接続](/v3/manage/cloud/connect-to-cloud/) では、Prefect Cloud にアクセスするためのローカル実行環境の設定方法を説明します。
 
-The pages that follow provide detailed information about the features and capabilities of Prefect Cloud:
+以下のページでは、Prefect Cloud の機能について詳しく説明します:
 
-- [Manage workspaces](/v3/manage/cloud/workspaces/) shows how to use isolated environments for organizing activity.
+- [ワークスペースの管理](/v3/manage/cloud/workspaces/) では、アクティビティを整理するために分離された環境を使用する方法を説明します。
 
-The **Manage accounts** subsection covers aspects of Prefect Cloud accounts:
-- [Manage user accounts](/v3/manage/cloud/manage-users/) explains how to use Prefect Cloud's personal accounts.
-- [Manage service accounts](/v3/manage/cloud/manage-users/service-accounts/) describes how to configure API access for running workers or executing flow runs on remote infrastructure through API keys that are not associated with a user account. <span class="badge pro"></span> <span class="badge enterprise"></span>
-- [Manage teams](/v3/manage/cloud/manage-users/manage-teams/) demonstrates how groups of users can be managed together. <span class="badge enterprise"></span>
-- [Manage account roles](/v3/manage/cloud/manage-users/manage-roles/) shows how to use role-based access controls (RBAC): granular permissions to perform certain activities within an account or a workspace. Enterprise plans allow for custom roles with specific permissions. 
-- [Manage API keys](/v3/manage/cloud/manage-users/api-keys/) explains how to grant access to Prefect Cloud from a local execution environment.
-- [Configure single sign-on](/v3/manage/cloud/manage-users/configure-sso/) describes how (SSO) authentication integration is supported through identity providers with OIDC and SAML. Directory Sync and SCIM provisioning is also available. <span class="badge enterprise"></span>
-- [Audit Cloud activity](/v3/manage/cloud/manage-users/audit-logs/) shows how Prefect provides a record of user activities to monitor for security and compliance. <span class="badge pro"></span> <span class="badge enterprise"></span>
-- [Object access control lists](/v3/manage/cloud/manage-users/object-access-control-lists/) (ACLs) allow privileged users to restrict deployment and block access to individual users. <span class="badge enterprise"></span> 
-- [Secure access by IP](/v3/manage/cloud/manage-users/secure-access-by-ip-address/) shows how to restrict access to Prefect Cloud by IP address. <span class="badge enterprise"></span>
-- [Secure access by PrivateLink](/v3/manage/cloud/manage-users/secure-access-by-private-link/) shows how to restrict access to Prefect Cloud by PrivateLink. <span class="badge enterprise"></span>
+**アカウントの管理** サブセクションでは、Prefect Cloud アカウントに関する以下の側面について説明します:
 
-The remaining Prefect Cloud pages in this section cover various aspects of Prefect Cloud:
+- [ユーザーアカウントの管理](/v3/manage/cloud/manage-users/) では、Prefect Cloud の個人アカウントの使用方法について説明します。
+- [サービスアカウントの管理](/v3/manage/cloud/manage-users/service-accounts/) では、ユーザーアカウントに関連付けられていない API キーを使用して、リモートインフラストラクチャ上でワーカーを実行したりフローを実行したりするための API アクセスを構成する方法について説明します。<span class="badge pro"></span> <span class="badge enterprise"></span>
+- [チームの管理](/v3/manage/cloud/manage-users/manage-teams/) では、ユーザーグループをまとめて管理する方法を説明します。 <span class="badge enterprise"></span>
+- [アカウントロールの管理](/v3/manage/cloud/manage-users/manage-roles/)では、ロールベースのアクセス制御（RBAC）の使用方法を説明します。RBACは、アカウントまたはワークスペース内で特定のアクティビティを実行するためのきめ細かな権限設定です。エンタープライズプランでは、特定の権限を持つカスタムロールを作成できます。
+- [APIキーの管理](/v3/manage/cloud/manage-users/api-keys/)では、ローカル実行環境からPrefect Cloudへのアクセスを許可する方法について説明します。
+- [シングルサインオンの設定](/v3/manage/cloud/manage-users/configure-sso/)では、OIDCおよびSAMLを使用したIDプロバイダーによる(SSO)認証統合のサポート方法について説明します。ディレクトリ同期とSCIMプロビジョニングも利用できます。 <span class="badge enterprise"></span>
+- [Audit Cloud Activity](/v3/manage/cloud/manage-users/audit-logs/) は、Prefect がセキュリティとコンプライアンスを監視するためにユーザーアクティビティの記録を提供する仕組みを示しています。<span class="badge pro"></span> <span class="badge enterprise"></span>
+- [Object Access Control List](/v3/manage/cloud/manage-users/object-access-control-lists/) (ACL) を使用すると、特権ユーザーはデプロイメントを制限し、個々のユーザーへのアクセスをブロックできます。<span class="badge enterprise"></span>
+- [Secure access by IP](/v3/manage/cloud/manage-users/secure-access-by-ip-address/) は、IP アドレスで Prefect Cloud へのアクセスを制限する仕組みを示しています。 <span class="badge enterprise"></span>
+- [PrivateLink によるセキュアアクセス](/v3/manage/cloud/manage-users/secure-access-by-private-link/) では、PrivateLink による Prefect Cloud へのアクセスを制限する方法を説明します。<span class="badge enterprise"></span>
 
-- [Rate limits and data retention](/v3/manage/cloud/rate-limits/) discusses rate limits and data retention for Prefect Cloud.
-- [Terraform provider](https://registry.terraform.io/providers/PrefectHQ/prefect/latest/docs/guides/getting-started) links to the Prefect Cloud Terraform provider docs for infrastructure as code.
-- [Troubleshoot Prefect Cloud](/v3/manage/cloud/troubleshoot-cloud/) contains common solutions for troubleshooting Prefect Cloud.
+このセクションの残りのPrefect Cloudページでは、Prefect Cloudのさまざまな側面について説明します:
 
-Pages relevant to Prefect Cloud found elsewhere in the documentation include:
+- [レート制限とデータ保持](/v3/manage/cloud/rate-limits/)では、Prefect Cloudのレート制限とデータ保持について説明します。
+- [Terraformプロバイダ](https://registry.terraform.io/providers/PrefectHQ/prefect/latest/docs/guides/getting-started)では、Infrastructure as Code用のPrefect Cloud Terraformプロバイダドキュメントへのリンクを示します。
+- [Prefect Cloudのトラブルシューティング](/v3/manage/cloud/troubleshoot-cloud/)では、Prefect Cloudのトラブルシューティングに関する一般的な解決策を紹介します。
 
-- [Push work pools](/v3/deploy/infrastructure-examples/serverless/) allow you to run flows on your serverless infrastructure without running a worker.
-- [Managed work pools](/v3/deploy/infrastructure-examples/managed/) allow you to run flows on Prefect's infrastructure without running a worker.
-- [Webhooks](/v3/automate/events/webhook-triggers/) .
+ドキュメント内の他の場所にある Prefect Cloud 関連のページには、以下が含まれます。
 
-Error summaries (enabled by Marvin AI) distill the error logs of `Failed` and `Crashed` flow runs into actionable information. To enable this feature visit the **Settings** page for your account.
+- [プッシュワークプール](/v3/deploy/infrastructure-examples/serverless/) を使用すると、ワーカーを実行せずにサーバーレスインフラストラクチャ上でフローを実行できます。
+- [マネージドワークプール](/v3/deploy/infrastructure-examples/managed/) を使用すると、ワーカーを実行せずに Prefect インフラストラクチャ上でフローを実行できます。
+- [Webhook](/v3/automate/events/webhook-triggers/) 。
 
-The [Prefect Cloud REST API](/v3/api-ref/rest-api/) is used to send and receive data for orchestration and monitoring between Prefect clients and Prefect Cloud.
-Prefect interactive Cloud REST API documentation is available at <a href="https://app.prefect.cloud/api/docs" target="_blank">https://app.prefect.cloud/api/docs</a>.
+Marvin AI によって有効化されたエラーサマリーは、「失敗」および「クラッシュ」したフロー実行のエラーログを実用的な情報に抽出します。
+この機能を有効にするには、アカウントの**設定**ページにアクセスしてください。
+
+[Prefect Cloud REST API](/v3/api-ref/rest-api/) は、Prefect クライアントと Prefect Cloud 間のオーケストレーションと監視のためのデータの送受信に使用されます。
+Prefect のインタラクティブ Cloud REST API ドキュメントは、<a href="https://app.prefect.cloud/api/docs" target="_blank">https://app.prefect.cloud/api/docs</a> でご覧いただけます。
 
 
-## Try Prefect Cloud
+## Prefect Cloud を試す
 
-To try Prefect Cloud, create a free account at [app.prefect.cloud](https://app.prefect.cloud/).
-Follow the steps in the UI to create and run your first workflow in Prefect Cloud. 
+Prefect Cloud を試すには、[app.prefect.cloud](https://app.prefect.cloud/) で無料アカウントを作成してください。
+UI の手順に従って、Prefect Cloud で最初のワークフローを作成し、実行してください。

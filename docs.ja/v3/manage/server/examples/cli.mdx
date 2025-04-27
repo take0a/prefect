@@ -1,33 +1,33 @@
 ---
 title: CLI
-description: Self-host your own Prefect server instance with the CLI.
+description: CLI を使用して独自の Prefect サーバー インスタンスをセルフホストします。
 ---
 
-The [Prefect CLI](/v3/get-started/install) is the easiest way to start a local instance of Prefect server.
+[Prefect CLI](/v3/get-started/install) は、Prefect サーバーのローカル インスタンスを起動する最も簡単な方法です。
 
-### Start the server
+### サーバーを起動する
 
-1. Spin up a self-hosted Prefect server instance UI with the `prefect server start` CLI command in the terminal:
+1. ターミナルで「prefect server start」CLIコマンドを実行し、セルフホスト型PrefectサーバーインスタンスUIを起動します。
 
 ```bash
 prefect server start
 ```
 
-2. Open the URL for the Prefect server UI ([http://127.0.0.1:4200](http://127.0.0.1:4200) by default) in a browser.
+2. ブラウザでPrefectサーバーUIのURL（デフォルトでは[http://127.0.0.1:4200](http://127.0.0.1:4200)）を開きます。
 
 ![Viewing the dashboard in the Prefect UI.](/v3/img/ui/self-hosted-server-dashboard.png)
 
-3. Shut down the Prefect server with ctrl  +  c in the terminal.
+3. ターミナルで Ctrl + C を押して Prefect サーバーをシャットダウンします。
 
-### Configure the server
+### サーバーの設定
 
-Go to your terminal session and run this command to set the API URL to point to a self-hosted Prefect server instance:
+ターミナルセッションに移動し、次のコマンドを実行して、API URL をセルフホスト型 Prefect サーバーインスタンスに設定するように設定します:
 
 ```bash
 prefect config set PREFECT_API_URL="http://127.0.0.1:4200/api"
 ```
 
 
-You can save the API server address in a Prefect profile. 
-Whenever that profile is active, the API endpoint is at that address.
-See [Profiles and configuration](/v3/develop/settings-and-profiles/) for more information on profiles and configurable Prefect settings.
+APIサーバーのアドレスはPrefectプロファイルに保存できます。
+プロファイルがアクティブな場合、APIエンドポイントはそのアドレスに存在します。
+プロファイルとPrefectの設定の詳細については、[プロファイルと設定](/v3/develop/settings-and-profiles/)を参照してください。
