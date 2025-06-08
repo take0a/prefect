@@ -1,3 +1,7 @@
+default_install_hook_types: 
+  - pre-commit
+  - pre-push
+
 repos:
   - repo: https://github.com/astral-sh/ruff-pre-commit
     rev: v0.9.5
@@ -30,16 +34,16 @@ repos:
           )$
   - repo: https://github.com/astral-sh/uv-pre-commit
     # uv version.
-    rev: 0.6.11
+    rev: 0.6.17
     hooks:
       - id: uv-lock
 
   - repo: local
     hooks:
-      - id: generate-mintlify-openapi-docs
-        name: Generating OpenAPI docs for Mintlify
+      - id: auto-generate-documentation
+        name: Auto-generating Documentation
         language: system
-        entry: uv run -p 3.9 --with 'pydantic>=2.9.0' ./scripts/generate_mintlify_openapi_docs.py
+        entry: uv run --isolated -p 3.9 --with 'pydantic>=2.9.0' ./scripts/run_precommit_generation_scripts.py
         pass_filenames: false
         files: |
           (?x)^(
@@ -47,30 +51,14 @@ repos:
               src/prefect/server/api/.*|
               src/prefect/server/schemas/.*|
               src/prefect/server/events/.*|
-              scripts/generate_mintlify_openapi_docs.py
-          )$
-      - id: generate-settings-schema
-        name: Generating Settings Schema
-        language: system
-        entry: uv run -p 3.9 --with 'pydantic>=2.9.0' ./scripts/generate_settings_schema.py
-        pass_filenames: false
-        files: |
-          (?x)^(
-              .pre-commit-config.yaml|
               src/prefect/settings/models/.*|
-              scripts/generate_settings_schema.py
+              scripts/generate_mintlify_openapi_docs.py|
+              scripts/generate_settings_schema.py|
+              scripts/generate_settings_ref.py|
+              scripts/run_precommit_generation_scripts.py
           )$
-      - id: generate-settings-ref
-        name: Generating Settings Reference
-        language: system
-        entry: uv run -p 3.9 --with 'pydantic>=2.9.0' ./scripts/generate_settings_ref.py
-        pass_filenames: false
-        files: |
-          (?x)^(
-              .pre-commit-config.yaml|
-              src/prefect/settings/models/.*|
-              scripts/generate_settings_ref.py
-          )$
+        stages:
+          - pre-push
       - id: check-ui-v2
         name: Check UI v2
         language: system
@@ -106,3 +94,5 @@ repos:
               ui-v2/package.json
           )$
         pass_filenames: false
+        stages:
+          - pre-push

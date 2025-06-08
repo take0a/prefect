@@ -90,13 +90,14 @@ from typing_extensions import ParamSpec, Self
 from prefect.client.schemas.objects import TaskRunInput
 from prefect.context import serialize_context
 from prefect.futures import PrefectFuture, PrefectFutureList, PrefectWrappedFuture
-from prefect.logging.loggers import get_logger, get_run_logger
+from prefect.logging.loggers import get_logger
 from prefect.states import State, exception_to_crashed_state
 from prefect.task_engine import run_task_async, run_task_sync
 from prefect.task_runners import TaskRunner
 from prefect.tasks import Task
 from prefect.utilities.asyncutils import run_coro_as_sync
 from prefect.utilities.collections import visit_collection
+from prefect.utilities.engine import collect_task_run_inputs_sync
 from prefect.utilities.importtools import lazy_import
 from prefect_ray.context import RemoteOptionsContext
 
@@ -159,26 +160,6 @@ class PrefectRayFuture(PrefectWrappedFuture[R, "ray.ObjectRef"]):
             self._wrapped_future._on_completed(call_with_self)
             return
         fn(self)
-
-    def __del__(self):
-        # If we already have a final state, skip
-        if self._final_state:
-            return
-
-        try:
-            ray.get(self.wrapped_future, timeout=0)
-        except ray.exceptions.GetTimeoutError:
-            pass
-
-        # logging in __del__ can also fail at shutdown
-        try:
-            local_logger = get_run_logger()
-        except Exception:
-            local_logger = logger
-        local_logger.warning(
-            "A future was garbage collected before it resolved."
-            " Please call `.wait()` or `.result()` on futures to ensure they resolve."
-        )
 
 
 class RayTaskRunner(TaskRunner[PrefectRayFuture[R]]):
@@ -269,12 +250,22 @@ class RayTaskRunner(TaskRunner[PrefectRayFuture[R]]):
             raise RuntimeError(
                 "The task runner must be started before submitting work."
             )
+        task_run_id = uuid4()
+        task_inputs = {
+            k: collect_task_run_inputs_sync(v, future_cls=PrefectRayFuture)
+            for k, v in parameters.items()
+        }
+        context = serialize_context(
+            asset_ctx_kwargs={
+                "task": task,
+                "task_run_id": task_run_id,
+                "task_inputs": task_inputs,
+            }
+        )
 
         parameters, upstream_ray_obj_refs = self._exchange_prefect_for_ray_futures(
             parameters
         )
-        task_run_id = uuid4()
-        context = serialize_context()
 
         remote_options = RemoteOptionsContext.get().current_remote_options
         if remote_options:
@@ -392,7 +383,7 @@ class RayTaskRunner(TaskRunner[PrefectRayFuture[R]]):
         super().__enter__()
 
         if ray.is_initialized():
-            self.logger.info(
+            self.logger.debug(
                 "Local Ray instance is already initialized. "
                 "Using existing local instance."
             )

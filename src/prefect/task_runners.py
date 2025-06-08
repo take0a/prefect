@@ -11,16 +11,14 @@ from typing import (
     TYPE_CHECKING,
     Any,
     Coroutine,
-    Dict,
     Generic,
     Iterable,
-    List,
-    Optional,
     overload,
 )
 
 from typing_extensions import ParamSpec, Self, TypeVar
 
+from prefect._internal.uuid7 import uuid7
 from prefect.client.schemas.objects import TaskRunInput
 from prefect.exceptions import MappingLengthMismatch, MappingMissingIterable
 from prefect.futures import (
@@ -109,7 +107,7 @@ class TaskRunner(abc.ABC, Generic[F]):
         self,
         task: "Task[P, R]",
         parameters: dict[str, Any | unmapped[Any] | allow_failure[Any]],
-        wait_for: Optional[Iterable[PrefectFuture[R]]] = None,
+        wait_for: Iterable[PrefectFuture[R]] | None = None,
     ) -> PrefectFutureList[F]:
         """
         Submit multiple tasks to the task run engine.
@@ -182,7 +180,7 @@ class TaskRunner(abc.ABC, Generic[F]):
 
         map_length = list(lengths)[0]
 
-        futures: List[PrefectFuture[Any]] = []
+        futures: list[PrefectFuture[Any]] = []
         for i in range(map_length):
             call_parameters: dict[str, Any] = {
                 key: value[i] for key, value in iterable_parameters.items()
@@ -228,15 +226,32 @@ class TaskRunner(abc.ABC, Generic[F]):
 
 
 class ThreadPoolTaskRunner(TaskRunner[PrefectConcurrentFuture[R]]):
-    def __init__(self, max_workers: Optional[int] = None):
+    """
+    A task runner that executes tasks in a separate thread pool.
+
+    Attributes:
+        max_workers: The maximum number of threads to use for executing tasks.
+            Defaults to `PREFECT_TASK_RUNNER_THREAD_POOL_MAX_WORKERS` or `sys.maxsize`.
+
+    Note:
+        This runner uses `contextvars.copy_context()` for thread-safe context propagation.
+        However, because contextvars are thread-local, frequent task submissions
+        that modify context (e.g., using `prefect.tags` in a loop) can lead to
+        new thread creation per task. This may cause an increase in threads and
+        file descriptors, potentially hitting OS limits (`OSError: Too many open files`).
+        If this occurs, consider minimizing context changes within looped tasks or
+        adjusting system limits for open file descriptors.
+    """
+
+    def __init__(self, max_workers: int | None = None):
         super().__init__()
-        self._executor: Optional[ThreadPoolExecutor] = None
+        self._executor: ThreadPoolExecutor | None = None
         self._max_workers = (
             (PREFECT_TASK_RUNNER_THREAD_POOL_MAX_WORKERS.value() or sys.maxsize)
             if max_workers is None
             else max_workers
         )
-        self._cancel_events: Dict[uuid.UUID, threading.Event] = {}
+        self._cancel_events: dict[uuid.UUID, threading.Event] = {}
 
     def duplicate(self) -> "ThreadPoolTaskRunner[R]":
         return type(self)(max_workers=self._max_workers)
@@ -281,10 +296,16 @@ class ThreadPoolTaskRunner(TaskRunner[PrefectConcurrentFuture[R]]):
         if not self._started or self._executor is None:
             raise RuntimeError("Task runner is not started")
 
+        if wait_for and task.tags and (self._max_workers <= len(task.tags)):
+            self.logger.warning(
+                f"Task {task.name} has {len(task.tags)} tags but only {self._max_workers} workers available"
+                "This may lead to dead-locks. Consider increasing the value of `PREFECT_TASK_RUNNER_THREAD_POOL_MAX_WORKERS` or `max_workers`."
+            )
+
         from prefect.context import FlowRunContext
         from prefect.task_engine import run_task_async, run_task_sync
 
-        task_run_id = uuid.uuid4()
+        task_run_id = uuid7()
         cancel_event = threading.Event()
         self._cancel_events[task_run_id] = cancel_event
         context = copy_context()

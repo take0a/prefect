@@ -29,11 +29,21 @@ Example:
 
 """
 
+from __future__ import annotations
+
 import importlib
 import tempfile
 from datetime import datetime, timedelta
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, ClassVar, Iterable, List, Optional, Union
+from typing import (
+    TYPE_CHECKING,
+    Any,
+    ClassVar,
+    Iterable,
+    List,
+    Optional,
+    Union,
+)
 from uuid import UUID
 
 from pydantic import (
@@ -56,6 +66,7 @@ from prefect._internal.schemas.validators import (
     reconcile_paused_deployment,
     reconcile_schedules_runner,
 )
+from prefect._versioning import VersionType, get_inferred_version_info
 from prefect.client.base import ServerType
 from prefect.client.orchestration import PrefectClient, get_client
 from prefect.client.schemas.actions import DeploymentScheduleCreate, DeploymentUpdate
@@ -63,6 +74,7 @@ from prefect.client.schemas.filters import WorkerFilter, WorkerFilterStatus
 from prefect.client.schemas.objects import (
     ConcurrencyLimitConfig,
     ConcurrencyOptions,
+    VersionInfo,
 )
 from prefect.client.schemas.schedules import (
     SCHEDULE_TYPES,
@@ -151,6 +163,13 @@ class RunnerDeployment(BaseModel):
     version: Optional[str] = Field(
         default=None, description="An optional version for the deployment."
     )
+    version_type: Optional[VersionType] = Field(
+        default=None,
+        description=(
+            "The type of version information to use for the deployment. The version type"
+            " will be inferred if not provided."
+        ),
+    )
     tags: ListOfNonEmptyStrings = Field(
         default_factory=list,
         description="One of more tags to apply to this deployment.",
@@ -216,6 +235,7 @@ class RunnerDeployment(BaseModel):
             " a built runner."
         ),
     )
+
     # (Experimental) SLA configuration for the deployment. May be removed or modified at any time. Currently only supported on Prefect Cloud.
     _sla: Optional[Union[SlaTypes, list[SlaTypes]]] = PrivateAttr(
         default=None,
@@ -229,6 +249,9 @@ class RunnerDeployment(BaseModel):
     _parameter_openapi_schema: ParameterSchema = PrivateAttr(
         default_factory=ParameterSchema,
     )
+    _version_from_flow: bool = PrivateAttr(
+        default=False,
+    )
 
     @property
     def entrypoint_type(self) -> EntrypointType:
@@ -237,6 +260,20 @@ class RunnerDeployment(BaseModel):
     @property
     def full_name(self) -> str:
         return f"{self.flow_name}/{self.name}"
+
+    def _get_deployment_version_info(
+        self, version_type: Optional[VersionType] = None
+    ) -> VersionInfo:
+        if inferred_version := run_coro_as_sync(
+            get_inferred_version_info(version_type)
+        ):
+            if not self.version or self._version_from_flow:
+                self.version = inferred_version.version  # TODO: maybe reconsider
+
+            inferred_version.version = self.version
+            return inferred_version
+
+        return VersionInfo(version=self.version or "", type="prefect:simple")
 
     @field_validator("name", mode="before")
     @classmethod
@@ -281,7 +318,10 @@ class RunnerDeployment(BaseModel):
         return reconcile_schedules_runner(values)
 
     async def _create(
-        self, work_pool_name: Optional[str] = None, image: Optional[str] = None
+        self,
+        work_pool_name: Optional[str] = None,
+        image: Optional[str] = None,
+        version_info: VersionInfo | None = None,
     ) -> UUID:
         work_pool_name = work_pool_name or self.work_pool_name
 
@@ -312,6 +352,7 @@ class RunnerDeployment(BaseModel):
                 work_queue_name=self.work_queue_name,
                 work_pool_name=work_pool_name,
                 version=self.version,
+                version_info=version_info,
                 paused=self.paused,
                 schedules=self.schedules,
                 concurrency_limit=self.concurrency_limit,
@@ -367,7 +408,12 @@ class RunnerDeployment(BaseModel):
 
             return deployment_id
 
-    async def _update(self, deployment_id: UUID, client: PrefectClient):
+    async def _update(
+        self,
+        deployment_id: UUID,
+        client: PrefectClient,
+        version_info: VersionInfo | None,
+    ):
         parameter_openapi_schema = self._parameter_openapi_schema.model_dump(
             exclude_unset=True
         )
@@ -375,7 +421,7 @@ class RunnerDeployment(BaseModel):
         update_payload = self.model_dump(
             mode="json",
             exclude_unset=True,
-            exclude={"storage", "name", "flow_name", "triggers"},
+            exclude={"storage", "name", "flow_name", "triggers", "version_type"},
         )
 
         if self.storage:
@@ -388,6 +434,7 @@ class RunnerDeployment(BaseModel):
             deployment_id,
             deployment=DeploymentUpdate(
                 **update_payload,
+                version_info=version_info,
                 parameter_openapi_schema=parameter_openapi_schema,
             ),
         )
@@ -428,7 +475,10 @@ class RunnerDeployment(BaseModel):
 
     @sync_compatible
     async def apply(
-        self, work_pool_name: Optional[str] = None, image: Optional[str] = None
+        self,
+        work_pool_name: Optional[str] = None,
+        image: Optional[str] = None,
+        version_info: Optional[VersionInfo] = None,
     ) -> UUID:
         """
         Registers this deployment with the API and returns the deployment's ID.
@@ -439,22 +489,26 @@ class RunnerDeployment(BaseModel):
             image: The registry, name, and tag of the Docker image to
                 use for this deployment. Only used when the deployment is
                 deployed to a work pool.
-
+            version_info: The version information to use for the deployment.
         Returns:
             The ID of the created deployment.
         """
+
+        version_info = version_info or self._get_deployment_version_info(
+            self.version_type
+        )
 
         async with get_client() as client:
             try:
                 deployment = await client.read_deployment_by_name(self.full_name)
             except ObjectNotFound:
-                return await self._create(work_pool_name, image)
+                return await self._create(work_pool_name, image, version_info)
             else:
                 if image:
                     self.job_variables["image"] = image
                 if work_pool_name:
                     self.work_pool_name = work_pool_name
-                return await self._update(deployment.id, client)
+                return await self._update(deployment.id, client, version_info)
 
     async def _create_slas(self, deployment_id: UUID, client: PrefectClient):
         if not isinstance(self._sla, list):
@@ -554,6 +608,7 @@ class RunnerDeployment(BaseModel):
 
         if not self.version:
             self.version = flow.version
+            self._version_from_flow = True
         if not self.description:
             self.description = flow.description
 
@@ -576,6 +631,7 @@ class RunnerDeployment(BaseModel):
         description: Optional[str] = None,
         tags: Optional[List[str]] = None,
         version: Optional[str] = None,
+        version_type: Optional[VersionType] = None,
         enforce_parameter_schema: bool = True,
         work_pool_name: Optional[str] = None,
         work_queue_name: Optional[str] = None,
@@ -606,6 +662,7 @@ class RunnerDeployment(BaseModel):
             tags: A list of tags to associate with the created deployment for organizational
                 purposes.
             version: A version for the created deployment. Defaults to the flow's version.
+            version_type: The type of version information to use for the deployment.
             enforce_parameter_schema: Whether or not the Prefect API should enforce the
                 parameter schema for this deployment.
             work_pool_name: The name of the work pool to use for this deployment.
@@ -646,6 +703,7 @@ class RunnerDeployment(BaseModel):
             parameters=parameters or {},
             description=description,
             version=version,
+            version_type=version_type,
             enforce_parameter_schema=enforce_parameter_schema,
             work_pool_name=work_pool_name,
             work_queue_name=work_queue_name,
@@ -685,7 +743,9 @@ class RunnerDeployment(BaseModel):
                 entry_path = (
                     Path(flow_file).absolute().relative_to(Path.cwd().absolute())
                 )
-                deployment.entrypoint = f"{entry_path}:{flow.fn.__name__}"
+                deployment.entrypoint = (
+                    f"{entry_path}:{getattr(flow.fn, '__qualname__', flow.fn.__name__)}"
+                )
 
         if entrypoint_type == EntrypointType.FILE_PATH and not deployment._path:
             deployment._path = "."
@@ -821,6 +881,7 @@ class RunnerDeployment(BaseModel):
         description: Optional[str] = None,
         tags: Optional[List[str]] = None,
         version: Optional[str] = None,
+        version_type: Optional[VersionType] = None,
         enforce_parameter_schema: bool = True,
         work_pool_name: Optional[str] = None,
         work_queue_name: Optional[str] = None,
@@ -854,6 +915,8 @@ class RunnerDeployment(BaseModel):
             tags: A list of tags to associate with the created deployment for organizational
                 purposes.
             version: A version for the created deployment. Defaults to the flow's version.
+            version_type: The type of version information to use for the deployment. The version type
+                will be inferred if not provided.
             enforce_parameter_schema: Whether or not the Prefect API should enforce the
                 parameter schema for this deployment.
             work_pool_name: The name of the work pool to use for this deployment.
@@ -905,6 +968,7 @@ class RunnerDeployment(BaseModel):
             parameters=parameters or {},
             description=description,
             version=version,
+            version_type=version_type,
             entrypoint=entrypoint,
             enforce_parameter_schema=enforce_parameter_schema,
             storage=storage,
@@ -943,6 +1007,7 @@ class RunnerDeployment(BaseModel):
         description: Optional[str] = None,
         tags: Optional[List[str]] = None,
         version: Optional[str] = None,
+        version_type: Optional[VersionType] = None,
         enforce_parameter_schema: bool = True,
         work_pool_name: Optional[str] = None,
         work_queue_name: Optional[str] = None,
@@ -976,6 +1041,8 @@ class RunnerDeployment(BaseModel):
             tags: A list of tags to associate with the created deployment for organizational
                 purposes.
             version: A version for the created deployment. Defaults to the flow's version.
+            version_type: The type of version information to use for the deployment. The version type
+                will be inferred if not provided.
             enforce_parameter_schema: Whether or not the Prefect API should enforce the
                 parameter schema for this deployment.
             work_pool_name: The name of the work pool to use for this deployment.
@@ -1025,6 +1092,7 @@ class RunnerDeployment(BaseModel):
             parameters=parameters or {},
             description=description,
             version=version,
+            version_type=version_type,
             entrypoint=entrypoint,
             enforce_parameter_schema=enforce_parameter_schema,
             storage=storage,
@@ -1154,14 +1222,14 @@ async def deploy(
                 " or specify a remote storage location for the flow with `.from_source`."
                 " If you are attempting to deploy a flow to a local process work pool,"
                 " consider using `flow.serve` instead. See the documentation for more"
-                " information: https://docs.prefect.io/latest/deploy/run-flows-in-local-processes"
+                " information: https://docs.prefect.io/latest/how-to-guides/deployments/run-flows-in-local-processes"
             )
         elif work_pool.type == "process" and not ignore_warnings:
             console.print(
                 "Looks like you're deploying to a process work pool. If you're creating a"
                 " deployment for local development, calling `.serve` on your flow is a great"
                 " way to get started. See the documentation for more information:"
-                " https://docs.prefect.io/latest/deploy/run-flows-in-local-processes "
+                " https://docs.prefect.io/latest/how-to-guides/deployments/run-flows-in-local-processes "
                 " Set `ignore_warnings=True` to suppress this message.",
                 style="yellow",
             )

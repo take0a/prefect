@@ -22,13 +22,11 @@ check-uv:
 
 # Build and serve documentation
 docs: check-uv
-    cd docs && uv run mintlify dev
+    cd docs && npx mintlify dev
 
 # Install development dependencies
 install: check-uv
-    echo "this solves prefect + integrations deps into a uv.lock, so the first install is slow, subsequent syncs are fast"
-    # TODO: commit the uv.lock file
-    uv sync --dev
+    uv sync --group perf
 
 # Clean up environment
 clean: check-uv

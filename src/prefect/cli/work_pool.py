@@ -7,7 +7,7 @@ from __future__ import annotations
 import datetime
 import json
 import textwrap
-from typing import Annotated
+from typing import Annotated, Any
 
 import typer
 from rich.pretty import Pretty
@@ -21,9 +21,15 @@ from prefect.cli._utilities import (
 )
 from prefect.cli.root import app, is_interactive
 from prefect.client.collections import get_collections_metadata_client
-from prefect.client.orchestration import get_client
-from prefect.client.schemas.actions import WorkPoolCreate, WorkPoolUpdate
+from prefect.client.orchestration import PrefectClient, get_client
+from prefect.client.schemas.actions import (
+    BlockDocumentCreate,
+    BlockDocumentUpdate,
+    WorkPoolCreate,
+    WorkPoolUpdate,
+)
 from prefect.client.schemas.objects import (
+    BlockDocument,
     FlowRun,
     WorkPool,
     WorkPoolStorageConfiguration,
@@ -706,6 +712,14 @@ def _determine_storage_type(storage_config: WorkPoolStorageConfiguration) -> str
         "prefect_aws" in step for step in storage_config.bundle_upload_step.keys()
     ):
         return "S3"
+    if storage_config.bundle_upload_step and any(
+        "prefect_gcp" in step for step in storage_config.bundle_upload_step.keys()
+    ):
+        return "GCS"
+    if storage_config.bundle_upload_step and any(
+        "prefect_azure" in step for step in storage_config.bundle_upload_step.keys()
+    ):
+        return "Azure Blob Storage"
     return "Unknown"
 
 
@@ -763,6 +777,52 @@ async def storage_inspect(
             exit_with_error(f"Work pool {work_pool_name!r} does not exist.")
 
 
+async def _create_or_update_result_storage_block(
+    client: PrefectClient,
+    block_document_name: str,
+    block_document_data: dict[str, Any],
+    block_type_slug: str,
+    missing_block_definition_error: str,
+) -> BlockDocument:
+    try:
+        existing_block_document = await client.read_block_document_by_name(
+            name=block_document_name, block_type_slug=block_type_slug
+        )
+    except ObjectNotFound:
+        existing_block_document = None
+
+    if existing_block_document is not None:
+        await client.update_block_document(
+            block_document_id=existing_block_document.id,
+            block_document=BlockDocumentUpdate(
+                data=block_document_data,
+            ),
+        )
+        block_document = existing_block_document
+    else:
+        try:
+            block_type = await client.read_block_type_by_slug(slug=block_type_slug)
+            block_schema = await client.get_most_recent_block_schema_for_block_type(
+                block_type_id=block_type.id
+            )
+        except ObjectNotFound:
+            exit_with_error(missing_block_definition_error)
+        else:
+            if block_schema is None:
+                exit_with_error(missing_block_definition_error)
+
+        block_document = await client.create_block_document(
+            block_document=BlockDocumentCreate(
+                name=block_document_name,
+                block_type_id=block_type.id,
+                block_schema_id=block_schema.id,
+                data=block_document_data,
+            )
+        )
+
+    return block_document
+
+
 work_pool_storage_configure_app: PrefectTyper = PrefectTyper(
     name="configure", help="EXPERIMENTAL: Configure work pool storage."
 )
@@ -771,14 +831,11 @@ work_pool_storage_app.add_typer(work_pool_storage_configure_app)
 
 @work_pool_storage_configure_app.command()
 async def s3(
-    work_pool_name: Annotated[
-        str,
-        typer.Argument(
-            ...,
-            help="The name of the work pool to configure storage for.",
-            show_default=False,
-        ),
-    ],
+    work_pool_name: str = typer.Argument(
+        ...,
+        help="The name of the work pool to configure storage for.",
+        show_default=False,
+    ),
     bucket: str = typer.Option(
         ...,
         "--bucket",
@@ -789,7 +846,7 @@ async def s3(
     credentials_block_name: str = typer.Option(
         ...,
         "--aws-credentials-block-name",
-        help="The name of the credentials block to use.",
+        help="The name of the AWS credentials block to use.",
         show_default=False,
         prompt="Enter the name of the AWS credentials block to use",
     ),
@@ -799,18 +856,35 @@ async def s3(
 
     \b
     Examples:
-        $ prefect work-pool storage configure s3 "my-pool" --bucket my-bucket --credentials-block-name my-credentials
+        $ prefect work-pool storage configure s3 "my-pool" --bucket my-bucket --aws-credentials-block-name my-credentials
     """
     # TODO: Allow passing in AWS keys and creating a block for the user.
     async with get_client() as client:
         try:
-            await client.read_block_document_by_name(
+            credentials_block_document = await client.read_block_document_by_name(
                 name=credentials_block_name, block_type_slug="aws-credentials"
             )
         except ObjectNotFound:
             exit_with_error(
                 f"AWS credentials block {credentials_block_name!r} does not exist. Please create one using `prefect block create aws-credentials`."
             )
+
+        result_storage_block_document_name = f"default-{work_pool_name}-result-storage"
+        block_data = {
+            "bucket_name": bucket,
+            "bucket_folder": "results",
+            "credentials": {
+                "$ref": {"block_document_id": credentials_block_document.id}
+            },
+        }
+
+        block_document = await _create_or_update_result_storage_block(
+            client=client,
+            block_document_name=result_storage_block_document_name,
+            block_document_data=block_data,
+            block_type_slug="s3-bucket",
+            missing_block_definition_error="S3 bucket block definition does not exist server-side. Please install `prefect-aws` and run `prefect blocks register -m prefect_aws`.",
+        )
 
         try:
             await client.update_work_pool(
@@ -831,6 +905,7 @@ async def s3(
                                 "aws_credentials_block_name": credentials_block_name,
                             }
                         },
+                        default_result_storage_block_id=block_document.id,
                     ),
                 ),
             )
@@ -838,3 +913,175 @@ async def s3(
             exit_with_error(f"Work pool {work_pool_name!r} does not exist.")
 
         exit_with_success(f"Configured S3 storage for work pool {work_pool_name!r}")
+
+
+@work_pool_storage_configure_app.command()
+async def gcs(
+    work_pool_name: str = typer.Argument(
+        ...,
+        help="The name of the work pool to configure storage for.",
+        show_default=False,
+    ),
+    bucket: str = typer.Option(
+        ...,
+        "--bucket",
+        help="The name of the Google Cloud Storage bucket to use.",
+        show_default=False,
+        prompt="Enter the name of the Google Cloud Storage bucket to use",
+    ),
+    credentials_block_name: str = typer.Option(
+        ...,
+        "--gcp-credentials-block-name",
+        help="The name of the Google Cloud credentials block to use.",
+        show_default=False,
+        prompt="Enter the name of the Google Cloud credentials block to use",
+    ),
+):
+    """
+    EXPERIMENTAL: Configure Google Cloud storage for a work pool.
+
+    \b
+    Examples:
+        $ prefect work-pool storage configure gcs "my-pool" --bucket my-bucket --gcp-credentials-block-name my-credentials
+    """
+    async with get_client() as client:
+        try:
+            credentials_block_document = await client.read_block_document_by_name(
+                name=credentials_block_name, block_type_slug="gcp-credentials"
+            )
+        except ObjectNotFound:
+            exit_with_error(
+                f"GCS credentials block {credentials_block_name!r} does not exist. Please create one using `prefect block create gcp-credentials`."
+            )
+
+        result_storage_block_document_name = f"default-{work_pool_name}-result-storage"
+        block_data = {
+            "bucket_name": bucket,
+            "bucket_folder": "results",
+            "credentials": {
+                "$ref": {"block_document_id": credentials_block_document.id}
+            },
+        }
+
+        block_document = await _create_or_update_result_storage_block(
+            client=client,
+            block_document_name=result_storage_block_document_name,
+            block_document_data=block_data,
+            block_type_slug="gcs-bucket",
+            missing_block_definition_error="GCS bucket block definition does not exist server-side. Please install `prefect-gcp` and run `prefect blocks register -m prefect_gcp`.",
+        )
+
+        try:
+            await client.update_work_pool(
+                work_pool_name=work_pool_name,
+                work_pool=WorkPoolUpdate(
+                    storage_configuration=WorkPoolStorageConfiguration(
+                        bundle_upload_step={
+                            "prefect_gcp.experimental.bundles.upload": {
+                                "requires": "prefect-gcp",
+                                "bucket": bucket,
+                                "gcp_credentials_block_name": credentials_block_name,
+                            }
+                        },
+                        bundle_execution_step={
+                            "prefect_gcp.experimental.bundles.execute": {
+                                "requires": "prefect-gcp",
+                                "bucket": bucket,
+                                "gcp_credentials_block_name": credentials_block_name,
+                            }
+                        },
+                        default_result_storage_block_id=block_document.id,
+                    ),
+                ),
+            )
+        except ObjectNotFound:
+            exit_with_error(f"Work pool {work_pool_name!r} does not exist.")
+
+        exit_with_success(f"Configured GCS storage for work pool {work_pool_name!r}")
+
+
+@work_pool_storage_configure_app.command()
+async def azure_blob_storage(
+    work_pool_name: str = typer.Argument(
+        ...,
+        help="The name of the work pool to configure storage for.",
+        show_default=False,
+    ),
+    container: str = typer.Option(
+        ...,
+        "--container",
+        help="The name of the Azure Blob Storage container to use.",
+        show_default=False,
+        prompt="Enter the name of the Azure Blob Storage container to use",
+    ),
+    credentials_block_name: str = typer.Option(
+        ...,
+        "--azure-blob-storage-credentials-block-name",
+        help="The name of the Azure Blob Storage credentials block to use.",
+        show_default=False,
+        prompt="Enter the name of the Azure Blob Storage credentials block to use",
+    ),
+):
+    """
+    EXPERIMENTAL: Configure Azure Blob Storage for a work pool.
+
+    \b
+    Examples:
+        $ prefect work-pool storage configure azure-blob-storage "my-pool" --container my-container --azure-blob-storage-credentials-block-name my-credentials
+    """
+    async with get_client() as client:
+        try:
+            credentials_block_document = await client.read_block_document_by_name(
+                name=credentials_block_name,
+                block_type_slug="azure-blob-storage-credentials",
+            )
+        except ObjectNotFound:
+            exit_with_error(
+                f"Azure Blob Storage credentials block {credentials_block_name!r} does not exist. Please create one using `prefect block create azure-blob-storage-credentials`."
+            )
+
+        result_storage_block_document_name = f"default-{work_pool_name}-result-storage"
+        block_data = {
+            "container_name": container,
+            "credentials": {
+                "$ref": {"block_document_id": credentials_block_document.id}
+            },
+        }
+
+        block_document = await _create_or_update_result_storage_block(
+            client=client,
+            block_document_name=result_storage_block_document_name,
+            block_document_data=block_data,
+            block_type_slug="azure-blob-storage-container",
+            missing_block_definition_error="Azure Blob Storage container block definition does not exist server-side. Please install `prefect-azure[storage]` and run `prefect blocks register -m prefect_azure`.",
+        )
+
+        try:
+            await client.update_work_pool(
+                work_pool_name=work_pool_name,
+                work_pool=WorkPoolUpdate(
+                    storage_configuration=WorkPoolStorageConfiguration(
+                        bundle_upload_step={
+                            "prefect_azure.experimental.bundles.upload": {
+                                "requires": "prefect-azure",
+                                "container": container,
+                                "azure_blob_storage_credentials_block_name": credentials_block_name,
+                            }
+                        },
+                        bundle_execution_step={
+                            "prefect_azure.experimental.bundles.execute": {
+                                "requires": "prefect-azure",
+                                "container": container,
+                                "azure_blob_storage_credentials_block_name": credentials_block_name,
+                            }
+                        },
+                        default_result_storage_block_id=block_document.id,
+                    ),
+                ),
+            )
+        except ObjectNotFound:
+            exit_with_error(f"Work pool {work_pool_name!r} does not exist.")
+
+        exit_with_success(
+            f"Configured Azure Blob Storage for work pool {work_pool_name!r}"
+        )

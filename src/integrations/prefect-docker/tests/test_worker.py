@@ -1,5 +1,4 @@
 import copy
-import os
 import uuid
 from unittest.mock import MagicMock, call, patch
 
@@ -10,7 +9,6 @@ import docker.models.containers
 import pytest
 from docker import DockerClient
 from docker.models.containers import Container
-from exceptiongroup import ExceptionGroup
 from prefect_docker.credentials import DockerRegistryCredentials
 from prefect_docker.types import VolumeStr
 from prefect_docker.worker import (
@@ -115,6 +113,18 @@ async def registry_credentials():
     return block
 
 
+async def test_initiate_run_does_not_wait_for_container_completion(
+    mock_docker_client, flow_run, default_docker_worker_job_configuration
+):
+    default_docker_worker_job_configuration.prepare_for_flow_run(flow_run)
+    async with DockerWorker(work_pool_name="test") as worker:
+        await worker._initiate_run(
+            flow_run=flow_run, configuration=default_docker_worker_job_configuration
+        )
+        mock_docker_client.containers.create.assert_called_once()
+        mock_docker_client.containers.get.assert_not_called()
+
+
 @pytest.mark.parametrize(
     "requested_name,container_name",
     [
@@ -212,14 +222,11 @@ async def test_container_creation_failure_reraises_if_not_name_conflict(
         "test error"
     )
 
-    with pytest.raises(ExceptionGroup) as exc:
+    with pytest.raises(docker.errors.APIError, match="test error"):
         async with DockerWorker(work_pool_name="test") as worker:
             await worker.run(
                 flow_run=flow_run, configuration=default_docker_worker_job_configuration
             )
-    assert len(exc.value.exceptions) == 1
-    assert isinstance(exc.value.exceptions[0], docker.errors.APIError)
-    assert "test error" in str(exc.value.exceptions[0])
 
 
 async def test_uses_image_setting(
@@ -635,6 +642,35 @@ async def test_adds_docker_host_gateway_on_linux(
     monkeypatch.setattr("sys.platform", "linux")
 
     default_docker_worker_job_configuration.prepare_for_flow_run(flow_run=flow_run)
+    async with DockerWorker(work_pool_name="test") as worker:
+        await worker.run(
+            flow_run=flow_run, configuration=default_docker_worker_job_configuration
+        )
+
+    mock_docker_client.containers.create.assert_called_once()
+    call_extra_hosts = mock_docker_client.containers.create.call_args[1].get(
+        "extra_hosts"
+    )
+    assert call_extra_hosts == {"host.docker.internal": "host-gateway"}
+
+
+async def test_user_provided_extra_hosts_merge_with_auto_generated(
+    mock_docker_client: MagicMock,
+    monkeypatch: pytest.MonkeyPatch,
+    flow_run: FlowRun,
+    default_docker_worker_job_configuration: DockerWorkerJobConfiguration,
+):
+    """Test that user-provided extra_hosts are merged with auto-generated ones without error.
+
+    this is a regression test for https://github.com/PrefectHQ/prefect/issues/18187
+    """
+    monkeypatch.setattr("sys.platform", "linux")
+
+    default_docker_worker_job_configuration.container_create_kwargs = {
+        "extra_hosts": ["host.docker.internal:host-gateway"]
+    }
+    default_docker_worker_job_configuration.prepare_for_flow_run(flow_run=flow_run)
+
     async with DockerWorker(work_pool_name="test") as worker:
         await worker.run(
             flow_run=flow_run, configuration=default_docker_worker_job_configuration
@@ -1195,15 +1231,13 @@ async def test_emits_event_container_creation_failure(
 
     worker_resource = None
     with patch("prefect_docker.worker.emit_event") as mock_emit:
-        with pytest.raises(ExceptionGroup) as exc:
+        with pytest.raises(docker.errors.APIError, match="test error"):
             async with DockerWorker(work_pool_name="test") as worker:
                 worker_resource = worker._event_resource()
                 await worker.run(
                     flow_run=flow_run,
                     configuration=default_docker_worker_job_configuration,
                 )
-        assert len(exc.value.exceptions) == 1
-        assert isinstance(exc.value.exceptions[0], docker.errors.APIError)
 
         mock_emit.assert_called_once_with(
             event="prefect.docker.container.creation-failed",
@@ -1225,12 +1259,13 @@ async def test_docker_client_default_timeout_configuration(
         mocked_from_env.assert_called_once_with(timeout=default_timeout_duration)
 
 
-@patch.dict(os.environ, {"DOCKER_CLIENT_TIMEOUT": "30"})
 @patch("docker.from_env")
 async def test_docker_client_overwrite_timeout_configuration(
-    mocked_from_env: MagicMock,
+    mocked_from_env: MagicMock, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     """Validate we can pass a timeout via environment variables to the underlying docker client."""
+
+    monkeypatch.setenv("DOCKER_CLIENT_TIMEOUT", "30")
 
     async with DockerWorker(work_pool_name="test") as worker:
         _ = worker._get_client()

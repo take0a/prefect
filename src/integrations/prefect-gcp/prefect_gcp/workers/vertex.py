@@ -398,7 +398,11 @@ class VertexAIWorkerResult(BaseWorkerResult):
     """Contains information about the final state of a completed process"""
 
 
-class VertexAIWorker(BaseWorker):
+class VertexAIWorker(
+    BaseWorker[
+        VertexAIWorkerJobConfiguration, VertexAIWorkerVariables, VertexAIWorkerResult
+    ]
+):
     """Prefect worker that executes flow runs within Vertex AI Jobs."""
 
     type = "vertex-ai"
@@ -411,6 +415,30 @@ class VertexAIWorker(BaseWorker):
     _display_name = "Google Vertex AI"
     _documentation_url = "https://docs.prefect.io/integrations/prefect-gcp"  # noqa
     _logo_url = "https://cdn.sanity.io/images/3ugk85nk/production/10424e311932e31c477ac2b9ef3d53cefbaad708-250x250.png"  # noqa
+
+    async def _initiate_run(
+        self,
+        flow_run: "FlowRun",
+        configuration: VertexAIWorkerJobConfiguration,
+    ):
+        """
+        Initiates a flow run on Vertex AI. This method does not wait for the flow run to complete.
+        """
+        logger = self.get_flow_run_logger(flow_run)
+
+        job_name = configuration.job_name
+        job_spec = self._build_job_spec(configuration)
+        job_service_async_client = (
+            configuration.credentials.get_job_service_async_client()
+        )
+
+        await self._create_and_begin_job(
+            job_name,
+            job_spec,
+            job_service_async_client,
+            configuration,
+            logger,
+        )
 
     async def run(
         self,
@@ -513,12 +541,11 @@ class VertexAIWorker(BaseWorker):
         if "scheduling" in configuration.job_spec:
             scheduling_params = configuration.job_spec.pop("scheduling")
             # allow users to pass 'scheduling.strategy' as str
-            if type(scheduling_params.get("strategy")) is str:
+            if scheduling_params and type(scheduling_params.get("strategy")) is str:
                 scheduling_params["strategy"] = Scheduling.Strategy[
                     scheduling_params["strategy"]
                 ]
-
-            scheduling = Scheduling(**scheduling_params)
+                scheduling = Scheduling(**scheduling_params)
 
         # set 'scheduling.timeout' using "maximum_run_time_hours" for backward compatibility
         if "maximum_run_time_hours" in configuration.job_spec:

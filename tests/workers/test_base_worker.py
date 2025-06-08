@@ -1,12 +1,15 @@
 from __future__ import annotations
 
+import base64
+import sys
 import uuid
 from datetime import timedelta
 from typing import Any, Dict, Optional, Type
 from unittest import mock
-from unittest.mock import MagicMock, Mock
+from unittest.mock import ANY, MagicMock, Mock
 
 import anyio.abc
+import cloudpickle
 import httpx
 import pytest
 import respx
@@ -18,9 +21,11 @@ from starlette import status
 import prefect
 import prefect.client.schemas as schemas
 from prefect._internal.compatibility.deprecated import PrefectDeprecationWarning
+from prefect._result_records import ResultRecord, ResultRecordMetadata
 from prefect.blocks.core import Block
 from prefect.client.base import ServerType
 from prefect.client.orchestration import PrefectClient, get_client
+from prefect.client.schemas.actions import WorkPoolCreate
 from prefect.client.schemas.objects import (
     Flow,
     FlowRun,
@@ -28,19 +33,25 @@ from prefect.client.schemas.objects import (
     StateType,
     WorkerMetadata,
     WorkPool,
+    WorkPoolStorageConfiguration,
     WorkQueue,
 )
+from prefect.context import FlowRunContext, TagsContext
 from prefect.exceptions import (
     CrashedRun,
     ObjectNotFound,
 )
+from prefect.filesystems import WritableFileSystem
 from prefect.flows import flow
+from prefect.futures import PrefectFlowRunFuture
+from prefect.serializers import PickleSerializer
 from prefect.server import models
 from prefect.server.schemas.actions import WorkPoolUpdate as ServerWorkPoolUpdate
 from prefect.server.schemas.core import Deployment
 from prefect.server.schemas.responses import DeploymentResponse
 from prefect.settings import (
     PREFECT_API_URL,
+    PREFECT_RESULTS_PERSIST_BY_DEFAULT,
     PREFECT_TEST_MODE,
     PREFECT_WORKER_PREFETCH_SECONDS,
     Setting,
@@ -73,6 +84,16 @@ class WorkerTestImpl(BaseWorker[BaseJobConfiguration, Any, BaseWorkerResult]):
 
     async def run(self):
         pass
+
+
+class FakeResultStorageBlock(WritableFileSystem):
+    place: str = Field(default="test-place")
+
+    async def read_path(self, path: str) -> bytes:
+        return base64.b64encode(cloudpickle.dumps("Here you go chief!"))
+
+    async def write_path(self, path: str, content: bytes) -> None:
+        print("What do you expect me to do with this?")
 
 
 @pytest.fixture(autouse=True)
@@ -2081,6 +2102,480 @@ async def test_worker_removes_flow_run_from_submitting_when_not_ready(
         await worker.get_and_submit_flow_runs()
         # Verify the flow run was removed from _submitting_flow_run_ids
         assert flow_run.id not in worker._submitting_flow_run_ids
+
+
+class TestSubmit:
+    @pytest.fixture
+    def mock_run_process(self, monkeypatch: pytest.MonkeyPatch):
+        mock = AsyncMock()
+        monkeypatch.setattr(anyio, "run_process", mock)
+        return mock
+
+    @pytest.fixture
+    def frozen_uuid(self, monkeypatch: pytest.MonkeyPatch):
+        # Freeze the UUID to ensure the same value is used for the duration of the test
+        frozen_uuid = uuid.uuid4()
+        monkeypatch.setattr(uuid, "uuid4", lambda: frozen_uuid)
+        return frozen_uuid
+
+    @pytest.fixture
+    async def work_pool(self, prefect_client: PrefectClient):
+        UPLOAD_STEP = {
+            "prefect_mock.experimental.bundles.upload": {
+                "requires": "prefect-mock==0.5.5",
+                "bucket": "test-bucket",
+                "credentials_block_name": "my-creds",
+            }
+        }
+
+        EXECUTE_STEP = {
+            "prefect_mock.experimental.bundles.execute": {
+                "requires": "prefect-mock==0.5.5",
+                "bucket": "test-bucket",
+                "credentials_block_name": "my-creds",
+            }
+        }
+
+        result_storage_block = FakeResultStorageBlock(place="test-place")
+        block_document_id = await result_storage_block.save(
+            name="my-result-storage-block"
+        )
+
+        schema = BaseJobConfiguration.model_json_schema()
+        for key, value in schema["properties"].items():
+            if isinstance(value, dict):
+                schema["properties"][key].pop("template", None)
+        variables_schema = schema
+        variables_schema.pop("title", None)
+        base_job_template = {
+            "job_configuration": BaseJobConfiguration.json_template(),
+            "variables": variables_schema,
+        }
+
+        return await prefect_client.create_work_pool(
+            WorkPoolCreate(
+                name=f"test-{uuid.uuid4()}",
+                type="infiltrated",
+                storage_configuration=WorkPoolStorageConfiguration(
+                    bundle_upload_step=UPLOAD_STEP,
+                    bundle_execution_step=EXECUTE_STEP,
+                    default_result_storage_block_id=block_document_id,
+                ),
+                base_job_template=base_job_template,
+            )
+        )
+
+    @pytest.fixture
+    async def work_pool_missing_storage_configuration(
+        self, prefect_client: PrefectClient
+    ):
+        return await prefect_client.create_work_pool(
+            WorkPoolCreate(
+                name=f"test-{uuid.uuid4()}",
+            )
+        )
+
+    async def test_basic(
+        self,
+        work_pool: WorkPool,
+        mock_run_process: AsyncMock,
+        frozen_uuid: uuid.UUID,
+        prefect_client: PrefectClient,
+    ):
+        spy = MagicMock()
+        python_version_info = sys.version_info
+        worker_name = "test-worker"
+
+        class CompromisedWorker(
+            BaseWorker[BaseJobConfiguration, Any, BaseWorkerResult]
+        ):
+            type = "infiltrated"
+            job_configuration = BaseJobConfiguration
+
+            async def run(
+                self,
+                flow_run: FlowRun,
+                configuration: BaseJobConfiguration,
+                task_status: anyio.abc.TaskStatus[int] | None = None,
+            ):
+                spy(
+                    flow_run=flow_run,
+                    configuration=configuration,
+                    task_status=task_status,
+                )
+                return BaseWorkerResult(identifier="test", status_code=0)
+
+        @flow
+        def unsuspecting_flow():
+            print("I sure hope no spies are listening")
+
+        async with CompromisedWorker(
+            work_pool_name=work_pool.name, name=worker_name
+        ) as worker:
+            with pytest.warns(FutureWarning):
+                future = await worker.submit(unsuspecting_flow)
+                assert isinstance(future, PrefectFlowRunFuture)
+
+        expected_upload_command = [
+            "uv",
+            "run",
+            "--quiet",
+            "--with",
+            "prefect-mock==0.5.5",
+            "--python",
+            f"{python_version_info.major}.{python_version_info.minor}",
+            "-m",
+            "prefect_mock.experimental.bundles.upload",
+            "--bucket",
+            "test-bucket",
+            "--credentials-block-name",
+            "my-creds",
+            "--key",
+            str(frozen_uuid),
+            str(frozen_uuid),
+        ]
+        mock_run_process.assert_called_once_with(
+            expected_upload_command,
+            cwd=ANY,
+        )
+        expected_execute_command = [
+            "uv",
+            "run",
+            "--with",
+            "prefect-mock==0.5.5",
+            "--python",
+            f"{python_version_info.major}.{python_version_info.minor}",
+            "-m",
+            "prefect_mock.experimental.bundles.execute",
+            "--bucket",
+            "test-bucket",
+            "--credentials-block-name",
+            "my-creds",
+            "--key",
+            str(frozen_uuid),
+        ]
+        flow_run = await prefect_client.read_flow_run(future.flow_run_id)
+        assert flow_run.work_pool_name == work_pool.name
+        assert flow_run.work_queue_name == "default"
+        assert flow_run.job_variables == {"command": " ".join(expected_execute_command)}
+
+        expected_configuration = await BaseJobConfiguration.from_template_and_values(
+            work_pool.base_job_template,
+            flow_run.job_variables or {},
+        )
+
+        expected_configuration.prepare_for_flow_run(
+            flow_run=flow_run,
+            flow=Flow(id=flow_run.flow_id, name=unsuspecting_flow.name, labels={}),
+            work_pool=work_pool,
+            worker_name=worker_name,
+        )
+
+        spy.assert_called_once_with(
+            flow_run=flow_run,
+            configuration=expected_configuration,
+            task_status=ANY,
+        )
+
+    async def test_submission_failed(
+        self,
+        work_pool: WorkPool,
+        prefect_client: PrefectClient,
+        mock_run_process: AsyncMock,
+    ):
+        class OverwhelmedWorker(
+            BaseWorker[BaseJobConfiguration, Any, BaseWorkerResult]
+        ):
+            type = "overwhelmed"
+            job_configuration = BaseJobConfiguration
+
+            async def run(
+                self,
+                flow_run: FlowRun,
+                configuration: BaseJobConfiguration,
+                task_status: anyio.abc.TaskStatus[int] | None = None,
+            ):
+                raise Exception("I need a vacation")
+
+        @flow
+        def test_flow():
+            print("I'd like to speak to your supervisor")
+
+        async with OverwhelmedWorker(work_pool_name=work_pool.name) as worker:
+            with pytest.warns(FutureWarning):
+                future = await worker.submit(test_flow)
+                assert isinstance(future, PrefectFlowRunFuture)
+
+        flow_run = await prefect_client.read_flow_run(future.flow_run_id)
+        assert flow_run.state
+        assert flow_run.state.is_crashed()
+
+        # Upload step should have been run
+        mock_run_process.assert_called_once()
+
+    async def test_work_pool_is_missing_storage_configuration(
+        self,
+        work_pool_missing_storage_configuration: WorkPool,
+    ):
+        spy = MagicMock()
+
+        class UnsupportedWorker(
+            BaseWorker[BaseJobConfiguration, Any, BaseWorkerResult]
+        ):
+            type = "unsupported"
+            job_configuration = BaseJobConfiguration
+
+            async def run(
+                self,
+                flow_run: FlowRun,
+                configuration: BaseJobConfiguration,
+                task_status: anyio.abc.TaskStatus[int] | None = None,
+            ):
+                spy(flow_run, configuration, task_status)
+                return BaseWorkerResult(identifier="test", status_code=0)
+
+        @flow
+        def test_flow():
+            print("I've got a bad feeling about this")
+
+        async with UnsupportedWorker(
+            work_pool_name=work_pool_missing_storage_configuration.name
+        ) as worker:
+            with (
+                pytest.warns(FutureWarning),
+                pytest.raises(
+                    Exception, match="Storage is not configured for work pool"
+                ),
+            ):
+                future = await worker.submit(test_flow)
+                assert isinstance(future, PrefectFlowRunFuture)
+
+        spy.assert_not_called()
+
+    async def test_non_zero_status_code(
+        self,
+        work_pool: WorkPool,
+        prefect_client: PrefectClient,
+        mock_run_process: AsyncMock,
+    ):
+        class OnStrikeWorker(BaseWorker[BaseJobConfiguration, Any, BaseWorkerResult]):
+            type = "on-strike"
+            job_configuration = BaseJobConfiguration
+
+            async def run(
+                self,
+                flow_run: FlowRun,
+                configuration: BaseJobConfiguration,
+                task_status: anyio.abc.TaskStatus[int] | None = None,
+            ):
+                return BaseWorkerResult(identifier="test", status_code=1)
+
+        @flow
+        def test_flow():
+            print("I'd like to speak to your supervisor")
+
+        async with OnStrikeWorker(work_pool_name=work_pool.name) as worker:
+            with pytest.warns(FutureWarning):
+                future = await worker.submit(test_flow)
+                assert isinstance(future, PrefectFlowRunFuture)
+
+        flow_run = await prefect_client.read_flow_run(future.flow_run_id)
+        assert flow_run.state
+        assert flow_run.state.is_crashed()
+
+        # Upload step should have been run
+        mock_run_process.assert_called_once()
+
+    @pytest.mark.usefixtures("mock_run_process")
+    async def test_submit_flow_from_within_flow(
+        self,
+        work_pool: WorkPool,
+        prefect_client: PrefectClient,
+    ):
+        class PlainOlWorker(BaseWorker[BaseJobConfiguration, Any, BaseWorkerResult]):
+            type = "plain-ol'"
+            job_configuration = BaseJobConfiguration
+
+            async def run(
+                self,
+                flow_run: FlowRun,
+                configuration: BaseJobConfiguration,
+                task_status: anyio.abc.TaskStatus[int] | None = None,
+            ):
+                return BaseWorkerResult(identifier="test", status_code=0)
+
+        @flow
+        def test_flow():
+            print("It ain't much, but it's a living")
+
+        @flow
+        async def parent_flow():
+            flow_run_ctx = FlowRunContext.get()
+            async with PlainOlWorker(work_pool_name=work_pool.name) as worker:
+                with pytest.warns(FutureWarning):
+                    future = await worker.submit(test_flow)
+                    assert isinstance(future, PrefectFlowRunFuture)
+                    return flow_run_ctx.flow_run.id, future.flow_run_id
+
+        parent_flow_run_id, child_flow_run_id = await parent_flow()
+        parent_flow_run = await prefect_client.read_flow_run(parent_flow_run_id)
+        child_flow_run = await prefect_client.read_flow_run(child_flow_run_id)
+        parent_task_run = await prefect_client.read_task_run(
+            child_flow_run.parent_task_run_id
+        )
+        assert child_flow_run.parent_task_run_id == parent_task_run.id
+        assert parent_task_run.flow_run_id == parent_flow_run.id
+
+    @pytest.mark.usefixtures("mock_run_process")
+    async def test_submit_flow_from_within_flow_propagates_tags(
+        self,
+        work_pool: WorkPool,
+        prefect_client: PrefectClient,
+    ):
+        class AnotherPlainOlWorker(
+            BaseWorker[BaseJobConfiguration, Any, BaseWorkerResult]
+        ):
+            type = "another-plain-ol'"
+            job_configuration = BaseJobConfiguration
+
+            async def run(
+                self,
+                flow_run: FlowRun,
+                configuration: BaseJobConfiguration,
+                task_status: anyio.abc.TaskStatus[int] | None = None,
+            ):
+                return BaseWorkerResult(identifier="test", status_code=0)
+
+        @flow
+        def test_flow():
+            print("It ain't much, but it's a living")
+
+        async with AnotherPlainOlWorker(work_pool_name=work_pool.name) as worker:
+            with TagsContext(current_tags={"foo", "bar"}):
+                with pytest.warns(FutureWarning):
+                    future = await worker.submit(test_flow)
+                    assert isinstance(future, PrefectFlowRunFuture)
+
+        flow_run = await prefect_client.read_flow_run(future.flow_run_id)
+        assert set(flow_run.tags) == {"foo", "bar"}
+
+    @pytest.mark.usefixtures("mock_run_process")
+    async def test_submit_uses_work_pool_result_storage_block(
+        self,
+        work_pool: WorkPool,
+    ):
+        class SubmitterOfUnpreparedFlows(
+            BaseWorker[BaseJobConfiguration, Any, BaseWorkerResult]
+        ):
+            type = "submitter-of-unprepared-flows"
+            job_configuration = BaseJobConfiguration
+
+            async def run(
+                self,
+                flow_run: FlowRun,
+                configuration: BaseJobConfiguration,
+                task_status: anyio.abc.TaskStatus[int] | None = None,
+            ):
+                # Need to trick the client into saving the result record
+                with temporary_settings({PREFECT_RESULTS_PERSIST_BY_DEFAULT: True}):
+                    fake_state = Completed(
+                        data=ResultRecord(
+                            result="Totally legit result",
+                            metadata=ResultRecordMetadata(
+                                serializer=PickleSerializer(),
+                                expiration=None,
+                                storage_key="totally-legit-result",
+                                storage_block_id=work_pool.storage_configuration.default_result_storage_block_id,
+                            ),
+                        )
+                    )
+                    await self.client.set_flow_run_state(
+                        flow_run.id,
+                        state=fake_state,
+                        force=True,
+                    )
+                return BaseWorkerResult(identifier="test", status_code=0)
+
+        @flow
+        def unprepared_flow():
+            print("Dang it, I forgot my result storage. Can I borrow yours?")
+
+        async with SubmitterOfUnpreparedFlows(work_pool_name=work_pool.name) as worker:
+            with pytest.warns(FutureWarning):
+                future = await worker.submit(unprepared_flow)
+                assert isinstance(future, PrefectFlowRunFuture)
+
+        # Return value is hardcoded in the FakeResultStorage to ensure it is used as expected
+        assert future.result() == "Here you go chief!"
+
+    @pytest.mark.usefixtures("mock_run_process")
+    async def test_submit_calls_initiate_run_if_implemented(
+        self,
+        work_pool: WorkPool,
+        prefect_client: PrefectClient,
+    ):
+        @flow
+        def a_garden_variety_flow():
+            pass
+
+        run_spy = AsyncMock()
+        initiate_run_spy = AsyncMock()
+
+        class WorkerThatImplementsInitiateRun(
+            BaseWorker[BaseJobConfiguration, Any, BaseWorkerResult]
+        ):
+            type = "worker-that-implements-initiate-run"
+            job_configuration = BaseJobConfiguration
+
+            async def run(
+                self,
+                flow_run: FlowRun,
+                configuration: BaseJobConfiguration,
+                task_status: anyio.abc.TaskStatus[int] | None = None,
+            ):
+                run_spy()
+                return BaseWorkerResult(identifier="test", status_code=0)
+
+            async def _initiate_run(
+                self,
+                flow_run: FlowRun,
+                configuration: BaseJobConfiguration,
+            ):
+                initiate_run_spy(
+                    flow_run=flow_run,
+                    configuration=configuration,
+                )
+
+        async with WorkerThatImplementsInitiateRun(
+            work_pool_name=work_pool.name, name="test-worker"
+        ) as worker:
+            with pytest.warns(FutureWarning):
+                future = await worker.submit(a_garden_variety_flow)
+                assert isinstance(future, PrefectFlowRunFuture)
+
+        assert run_spy.call_count == 0
+
+        flow_run = await prefect_client.read_flow_run(future.flow_run_id)
+        assert flow_run.work_pool_name == work_pool.name
+
+        expected_configuration = await BaseJobConfiguration.from_template_and_values(
+            work_pool.base_job_template,
+            flow_run.job_variables or {},
+        )
+
+        expected_configuration.prepare_for_flow_run(
+            flow_run=flow_run,
+            flow=Flow(id=flow_run.flow_id, name=a_garden_variety_flow.name, labels={}),
+            work_pool=work_pool,
+            worker_name="test-worker",
+        )
+
+        initiate_run_spy.assert_called_once_with(
+            flow_run=flow_run,
+            configuration=expected_configuration,
+        )
+
+        assert initiate_run_spy.call_count == 1
 
 
 class TestBackwardsCompatibility:

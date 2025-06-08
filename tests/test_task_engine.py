@@ -35,7 +35,7 @@ from prefect.logging import get_run_logger
 from prefect.results import ResultRecord, ResultStore
 from prefect.server.schemas.core import ConcurrencyLimitV2
 from prefect.settings import PREFECT_TASK_DEFAULT_RETRIES, temporary_settings
-from prefect.states import Completed, Pending, Running, State
+from prefect.states import Completed, Failed, Pending, Running, State
 from prefect.task_engine import (
     AsyncTaskRunEngine,
     SyncTaskRunEngine,
@@ -1225,6 +1225,42 @@ class TestTaskRetries:
 
             await test_flow()
             assert mock.call_count == 2
+
+    async def test_task_retries_with_explicit_failed_state(self):
+        mock = MagicMock()
+
+        @task(retries=3)
+        async def flaky_function():
+            mock()
+            if mock.call_count == 2:
+                return True
+            return Failed(message="oops", data=ValueError("oops"))
+
+        @flow
+        async def test_flow():
+            return await flaky_function()
+
+        await test_flow()
+
+        assert mock.call_count == 2
+
+    async def test_sync_task_retries_with_explicit_failed_state(self):
+        mock = MagicMock()
+
+        @task(retries=3)
+        def flaky_function():
+            mock()
+            if mock.call_count == 2:
+                return True
+            return Failed(message="oops", data=ValueError("oops"))
+
+        @flow
+        def test_flow():
+            return flaky_function()
+
+        test_flow()
+
+        assert mock.call_count == 2
 
     @pytest.mark.parametrize(
         "retry_delay_seconds,expected_delay_sequence",
@@ -2592,27 +2628,50 @@ class TestTaskConcurrencyLimits:
     async def test_tag_concurrency_is_taken_prior_to_running_state(
         self, events_pipeline, prefect_client
     ):
+        """
+        Tests that the synchronous engine attempts concurrency acquisition
+        *after* entering the Running state (specifically, during call_task_fn).
+        Mocking the acquisition function to raise ensures the task crashes
+        *after* being marked as Running.
+        """
         task_run_id = None
 
         @task(tags=["limit-tag"])
         def bar():
+            # This task function body might not even run if the mocked
+            # concurrency context raises immediately in call_task_fn
             pass
 
         def side_effect(*args, **kwargs):
+            # This side effect simulates the concurrency context raising an error
+            # when acquire_concurrency_slots is called.
             nonlocal task_run_id
-            task_run_id = TaskRunContext.get().task_run.id
-            raise BaseException("stop")
+            # Capture the task_run_id when acquire is attempted
+            if task_run_context := TaskRunContext.get():
+                if task_run_context.task_run:
+                    task_run_id = task_run_context.task_run.id
+            raise BaseException("stop concurrency")  # Simulate acquisition failure
 
+        # Mock the sync concurrency function called by SyncTaskRunEngine.call_task_fn
         with mock.patch(
             "prefect.concurrency.v1.sync.acquire_concurrency_slots",
             side_effect=side_effect,
         ):
-            with pytest.raises(BaseException, match="stop"):
+            # The task call itself should raise because the mocked function raises
+            with pytest.raises(BaseException, match="stop concurrency"):
                 bar()
 
+            # Ensure task_run_id was captured (meaning acquire was attempted)
+            assert task_run_id is not None
+
+            # Wait for events to process
             await events_pipeline.process_events()
+
+            # Read the final states from the API
             task_run_states = await prefect_client.read_task_run_states(task_run_id)
 
+            # EXPECTED SEQUENCE: Pending -> Crashed
+            # The engine catches the BaseException and transitions to Crashed.
             assert [state.name for state in task_run_states] == [
                 "Pending",
                 "Crashed",
@@ -2621,6 +2680,12 @@ class TestTaskConcurrencyLimits:
     async def test_tag_concurrency_is_taken_prior_to_running_state_async(
         self, events_pipeline, prefect_client
     ):
+        """
+        Tests that the asynchronous engine attempts concurrency acquisition
+        *before* entering the Running state (within the start method).
+        Mocking the acquisition function to raise ensures the task crashes
+        *before* being marked as Running.
+        """
         task_run_id = None
 
         @task(tags=["limit-tag"])
@@ -2628,18 +2693,31 @@ class TestTaskConcurrencyLimits:
             pass
 
         def side_effect(*args, **kwargs):
+            # This side effect simulates the aconcurrency context raising an error
+            # when acquire_concurrency_slots is called.
             nonlocal task_run_id
-            task_run_id = TaskRunContext.get().task_run.id
-            raise BaseException("stop")
+            # Capture the task_run_id when acquire is attempted
+            if task_run_context := TaskRunContext.get():
+                if task_run_context.task_run:
+                    task_run_id = task_run_context.task_run.id
+            raise BaseException("stop concurrency")  # Simulate acquisition failure
 
+        # Mock the async concurrency function called by AsyncTaskRunEngine.start
         with mock.patch(
             "prefect.concurrency.v1.asyncio.acquire_concurrency_slots",
             side_effect=side_effect,
         ):
-            with pytest.raises(BaseException, match="stop"):
+            # The task call itself should raise because the mocked function raises
+            with pytest.raises(BaseException, match="stop concurrency"):
                 await bar()
 
+            # Ensure task_run_id was captured (meaning acquire was attempted)
+            assert task_run_id is not None
+
+            # Wait for events to process
             await events_pipeline.process_events()
+
+            # Read the final states from the API
             task_run_states = await prefect_client.read_task_run_states(task_run_id)
 
             assert [state.name for state in task_run_states] == [

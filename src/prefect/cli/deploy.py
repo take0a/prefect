@@ -263,6 +263,11 @@ async def deploy(
             " will be populated from the flow's description."
         ),
     ),
+    version_type: str = typer.Option(
+        None,
+        "--version-type",
+        help="The type of version to use for this deployment.",
+    ),
     version: str = typer.Option(
         None, "--version", help="A version to give the deployment."
     ),
@@ -414,6 +419,7 @@ async def deploy(
     options: dict[str, Any] = {
         "entrypoint": entrypoint,
         "description": description,
+        "version_type": version_type,
         "version": version,
         "tags": tags,
         "concurrency_limit": concurrency_limit_config,
@@ -743,7 +749,8 @@ async def _run_single_deploy(
         work_queue_name=get_from_dict(deploy_config, "work_pool.work_queue_name"),
         parameters=deploy_config.get("parameters"),
         description=deploy_config.get("description"),
-        version=deploy_config.get("version"),
+        version=deploy_config.get("version") or options.get("version"),
+        version_type=deploy_config.get("version_type") or options.get("version_type"),
         tags=deploy_config.get("tags"),
         concurrency_limit=deploy_config.get("concurrency_limit"),
         concurrency_options=deploy_config.get("concurrency_options"),
@@ -752,6 +759,8 @@ async def _run_single_deploy(
         storage=_PullStepStorage(pull_steps),
         job_variables=get_from_dict(deploy_config, "work_pool.job_variables"),
     )
+
+    deployment._set_defaults_from_flow(flow)
 
     deployment._parameter_openapi_schema = deploy_config["parameter_openapi_schema"]
 

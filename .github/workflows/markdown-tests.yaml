@@ -51,7 +51,7 @@ jobs:
         database:
           - "sqlite"
         python-version:
-          - "3.9"
+          - "3.10"
 
       fail-fast: true
 
@@ -67,7 +67,7 @@ jobs:
           fetch-depth: 0
 
       - name: Set up uv
-        uses: astral-sh/setup-uv@v5
+        uses: astral-sh/setup-uv@v6
         with:
           enable-cache: true
           python-version: ${{ matrix.python-version }}
